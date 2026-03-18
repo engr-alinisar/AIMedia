@@ -1,0 +1,6 @@
+@AiMedia.API_HostAddress = http://localhost:5015
+
+GET {{AiMedia.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

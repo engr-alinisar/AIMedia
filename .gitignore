@@ -1,0 +1,29 @@
+# Secrets — never commit
+**/appsettings.Development.json
+**/*.Development.json
+
+# .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+.vs/
+**/.vs/
+**/TestResults/
+*.nupkg
+
+# EF migrations (keep the files, ignore tool output)
+# migrations are committed intentionally
+
+# Node / Angular
+**/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

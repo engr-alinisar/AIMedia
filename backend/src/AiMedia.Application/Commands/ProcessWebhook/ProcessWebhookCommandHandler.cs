@@ -1,0 +1,95 @@
+using AiMedia.Application.Interfaces;
+using AiMedia.Domain.Enums;
+using AiMedia.Domain.Events;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+
+namespace AiMedia.Application.Commands.ProcessWebhook;
+
+public class ProcessWebhookCommandHandler(
+    IAppDbContext db,
+    IStorageService storage,
+    ICreditService creditService,
+    IPublisher publisher) : IRequestHandler<ProcessWebhookCommand>
+{
+    public async Task Handle(ProcessWebhookCommand request, CancellationToken cancellationToken)
+    {
+        var job = await db.GenerationJobs
+            .FirstOrDefaultAsync(j => j.FalRequestId == request.FalRequestId, cancellationToken);
+
+        if (job == null) return;
+
+        // Idempotency: skip if already processed
+        if (job.Status is JobStatus.Completed or JobStatus.Failed) return;
+
+        if (request.Status == "OK" && request.OutputUrl != null)
+        {
+            // Download from fal (temporary URL) → upload to R2
+            string? r2Key = null;
+            try
+            {
+                var ext = Path.GetExtension(new Uri(request.OutputUrl).LocalPath).TrimStart('.');
+                if (string.IsNullOrEmpty(ext)) ext = GetDefaultExtension(job.Product);
+
+                var filename = $"output.{ext}";
+                r2Key = storage.BuildKey(job.UserId, job.Id, filename);
+
+                using var stream = await storage.DownloadAsync(request.OutputUrl, cancellationToken);
+                var contentType = GetContentType(job.Product);
+                await storage.UploadAsync(stream, r2Key, contentType, cancellationToken);
+            }
+            catch
+            {
+                // If R2 upload fails, mark failed and release credits
+                job.Status = JobStatus.Failed;
+                job.ErrorMessage = "Failed to store output.";
+                job.CompletedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync(cancellationToken);
+                await creditService.ReleaseAsync(job.UserId, job.Id, job.CreditsReserved, "Output storage failed", cancellationToken);
+                await publisher.Publish(new JobFailedEvent(job.Id, job.UserId, job.CreditsReserved, job.ErrorMessage), cancellationToken);
+                return;
+            }
+
+            job.Status = JobStatus.Completed;
+            job.OutputR2Key = r2Key;
+            job.CreditsCharged = job.CreditsReserved;
+            job.CompletedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync(cancellationToken);
+
+            await creditService.DeductAsync(job.UserId, job.Id, job.CreditsReserved, $"Job completed: {job.Product}", cancellationToken);
+            await publisher.Publish(new JobCompletedEvent(job.Id, job.UserId, r2Key, job.CreditsCharged), cancellationToken);
+        }
+        else
+        {
+            job.Status = JobStatus.Failed;
+            job.ErrorMessage = request.ErrorMessage ?? "Generation failed.";
+            job.CompletedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync(cancellationToken);
+
+            await creditService.ReleaseAsync(job.UserId, job.Id, job.CreditsReserved, "Job failed - credits refunded", cancellationToken);
+            await publisher.Publish(new JobFailedEvent(job.Id, job.UserId, job.CreditsReserved, job.ErrorMessage), cancellationToken);
+        }
+    }
+
+    private static string GetDefaultExtension(Domain.Enums.ProductType product) => product switch
+    {
+        Domain.Enums.ProductType.ImageGen            => "png",
+        Domain.Enums.ProductType.BackgroundRemoval   => "png",
+        Domain.Enums.ProductType.ImageToVideo        => "mp4",
+        Domain.Enums.ProductType.TextToVideo         => "mp4",
+        Domain.Enums.ProductType.Voice               => "mp3",
+        Domain.Enums.ProductType.Transcription       => "txt",
+        _ => "bin"
+    };
+
+    private static string GetContentType(Domain.Enums.ProductType product) => product switch
+    {
+        Domain.Enums.ProductType.ImageGen            => "image/png",
+        Domain.Enums.ProductType.BackgroundRemoval   => "image/png",
+        Domain.Enums.ProductType.ImageToVideo        => "video/mp4",
+        Domain.Enums.ProductType.TextToVideo         => "video/mp4",
+        Domain.Enums.ProductType.Voice               => "audio/mpeg",
+        Domain.Enums.ProductType.Transcription       => "text/plain",
+        _ => "application/octet-stream"
+    };
+}

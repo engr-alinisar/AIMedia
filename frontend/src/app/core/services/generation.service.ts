@@ -1,0 +1,66 @@
+import { Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import type { GenerationResponse, JobDto, JobStatusUpdate, ModelTier, PagedResult } from '../models/models';
+
+export interface PendingJob {
+  jobId: string;
+  product: string;
+  creditsReserved: number;
+  status: string;
+  outputUrl?: string;
+  errorMessage?: string;
+  startedAt: Date;
+}
+
+@Injectable({ providedIn: 'root' })
+export class GenerationService {
+  private _pendingJobs = signal<PendingJob[]>([]);
+  readonly pendingJobs = this._pendingJobs.asReadonly();
+
+  constructor(private http: HttpClient) {}
+
+  generateImage(payload: { prompt: string; tier: ModelTier; width?: number; height?: number; negativePrompt?: string }) {
+    return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image`, payload);
+  }
+
+  generateImageToVideo(payload: { imageUrl: string; tier: ModelTier; prompt?: string; durationSeconds?: number }) {
+    return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image-to-video`, payload);
+  }
+
+  generateTextToVideo(payload: { prompt: string; tier: ModelTier; durationSeconds?: number; aspectRatio?: string }) {
+    return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/text-to-video`, payload);
+  }
+
+  generateVoice(payload: { text: string; tier: ModelTier; voiceId?: string; voiceCloneId?: string }) {
+    return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/voice`, payload);
+  }
+
+  generateTranscription(formData: FormData) {
+    return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/transcription`, formData);
+  }
+
+  generateBackgroundRemoval(formData: FormData) {
+    return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/background-removal`, formData);
+  }
+
+  getJob(id: string) {
+    return this.http.get<JobDto>(`${environment.apiUrl}/api/jobs/${id}`);
+  }
+
+  getJobs(page = 1, pageSize = 20) {
+    return this.http.get<PagedResult<JobDto>>(`${environment.apiUrl}/api/jobs?page=${page}&pageSize=${pageSize}`);
+  }
+
+  addPendingJob(job: PendingJob) {
+    this._pendingJobs.update(jobs => [job, ...jobs]);
+  }
+
+  applyUpdate(update: JobStatusUpdate) {
+    this._pendingJobs.update(jobs =>
+      jobs.map(j => j.jobId === update.jobId
+        ? { ...j, status: update.status, outputUrl: update.outputUrl, errorMessage: update.errorMessage }
+        : j)
+    );
+  }
+}
