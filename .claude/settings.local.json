@@ -39,7 +39,13 @@
       "Bash(find D:/Projects/AiMedia/frontend/src -name register*)",
       "Bash(xargs ls:*)",
       "Bash(node_modules/.bin/ng build:*)",
-      "Bash(copy \"C:\\\\Users\\\\Ali Nisar\\\\AppData\\\\Local\\\\Microsoft\\\\WinGet\\\\Packages\\\\Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe\\\\ngrok.exe\" \"C:\\\\Windows\\\\System32\\\\ngrok.exe\")"
+      "Bash(copy \"C:\\\\Users\\\\Ali Nisar\\\\AppData\\\\Local\\\\Microsoft\\\\WinGet\\\\Packages\\\\Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe\\\\ngrok.exe\" \"C:\\\\Windows\\\\System32\\\\ngrok.exe\")",
+      "Bash(find D:/Projects/AiMedia/backend/src/AiMedia.Application/Commands -name *Webhook* -o -name *webhook*)",
+      "mcp__Claude_Preview__preview_start",
+      "WebFetch(domain:fal.ai)",
+      "Bash(ls /mnt/)",
+      "Bash(ls /drives/)",
+      "Bash(find D:/Projects/AiMedia/backend -name *.cs -path */Migrations/*)"
     ]
   }
 }
