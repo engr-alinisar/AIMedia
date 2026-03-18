@@ -16,8 +16,10 @@ public class GenerateBackgroundRemovalCommandHandler(
 {
     public async Task<GenerationResponse> Handle(GenerateBackgroundRemovalCommand request, CancellationToken cancellationToken)
     {
-        const int credits = 3; // fixed cost
-        const string endpoint = "fal-ai/pixelcut/remove-background";
+        var model = ModelRegistry.Get(request.ModelId)
+            ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
+
+        var credits = ModelRegistry.CalculateCredits(request.ModelId);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -34,12 +36,12 @@ public class GenerateBackgroundRemovalCommandHandler(
 
         var input = new { image_url = imageUrl };
 
-        await creditService.ReserveAsync(request.UserId, jobId, credits, "Background removal", cancellationToken);
+        await creditService.ReserveAsync(request.UserId, jobId, credits, $"Background removal ({model.Name})", cancellationToken);
 
-        string falRequestId;
+        FalSubmitResult falSubmit;
         try
         {
-            falRequestId = await falClient.SubmitJobAsync(endpoint, input, $"WEBHOOK_PLACEHOLDER/{jobId}", cancellationToken);
+            falSubmit = await falClient.SubmitJobAsync(request.ModelId, input, $"{falClient.WebhookBaseUrl}/api/webhooks/fal?jobId={jobId}", cancellationToken);
         }
         catch
         {
@@ -52,9 +54,11 @@ public class GenerateBackgroundRemovalCommandHandler(
             Id = jobId,
             UserId = request.UserId,
             Product = ProductType.BackgroundRemoval,
-            Tier = ModelTier.Standard,
-            FalEndpoint = endpoint,
-            FalRequestId = falRequestId,
+            Tier = model.Tier,
+            FalEndpoint = request.ModelId,
+            FalRequestId = falSubmit.RequestId,
+            FalStatusUrl = falSubmit.StatusUrl,
+            FalResponseUrl = falSubmit.ResponseUrl,
             Status = JobStatus.Queued,
             CreditsReserved = credits,
             FalInput = JsonDocument.Parse(JsonSerializer.Serialize(input)),

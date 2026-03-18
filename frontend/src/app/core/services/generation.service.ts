@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import type { GenerationResponse, JobDto, JobStatusUpdate, ModelTier, PagedResult } from '../models/models';
+import type { GenerationResponse, JobDto, JobStatusUpdate, PagedResult } from '../models/models';
 
 export interface PendingJob {
   jobId: string;
@@ -20,19 +20,25 @@ export class GenerationService {
 
   constructor(private http: HttpClient) {}
 
-  generateImage(payload: { prompt: string; tier: ModelTier; width?: number; height?: number; negativePrompt?: string }) {
+  uploadFile(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ url: string }>(`${environment.apiUrl}/api/upload`, formData);
+  }
+
+  generateImage(payload: { prompt: string; modelId: string; width?: number; height?: number; negativePrompt?: string }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image`, payload);
   }
 
-  generateImageToVideo(payload: { imageUrl: string; tier: ModelTier; prompt?: string; durationSeconds?: number }) {
+  generateImageToVideo(payload: { imageUrl: string; modelId: string; prompt?: string; durationSeconds?: number }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image-to-video`, payload);
   }
 
-  generateTextToVideo(payload: { prompt: string; tier: ModelTier; durationSeconds?: number; aspectRatio?: string }) {
+  generateTextToVideo(payload: { prompt: string; modelId: string; durationSeconds?: number; aspectRatio?: string }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/text-to-video`, payload);
   }
 
-  generateVoice(payload: { text: string; tier: ModelTier; voiceId?: string; voiceCloneId?: string }) {
+  generateVoice(payload: { text: string; modelId: string; voiceId?: string; voiceCloneId?: string }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/voice`, payload);
   }
 

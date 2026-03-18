@@ -34,7 +34,17 @@ public class PollStuckJobsJob(
         {
             try
             {
-                var status = await falClient.GetJobStatusAsync($"{job.FalEndpoint}/{job.FalRequestId}", ct);
+                // Jobs without FalStatusUrl were created before the status URL was stored.
+                // They cannot be reliably polled — mark them as failed so they don't loop forever.
+                if (string.IsNullOrEmpty(job.FalStatusUrl))
+                {
+                    logger.LogWarning("PollStuckJobs: job {JobId} has no FalStatusUrl — marking as failed", job.Id);
+                    await mediator.Send(
+                        new ProcessWebhookCommand(job.FalRequestId, "ERROR", null, "Job status unavailable — please retry.", null), ct);
+                    continue;
+                }
+
+                var status = await falClient.GetJobStatusAsync(job.FalStatusUrl, ct);
 
                 if (status.Status is "COMPLETED" or "FAILED")
                 {
@@ -45,7 +55,7 @@ public class PollStuckJobsJob(
                     if (status.Status == "COMPLETED")
                     {
                         falStatus = "OK";
-                        outputUrl = await falClient.GetResultUrlAsync(job.FalEndpoint, job.FalRequestId, ct);
+                        outputUrl = await falClient.GetResultUrlAsync(job.FalResponseUrl!, ct);
                     }
                     else
                     {

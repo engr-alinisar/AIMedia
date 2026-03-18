@@ -16,7 +16,10 @@ public class GenerateTranscriptionCommandHandler(
 {
     public async Task<GenerationResponse> Handle(GenerateTranscriptionCommand request, CancellationToken cancellationToken)
     {
-        var credits = CreditCalculator.Calculate(ProductType.Transcription, request.Tier);
+        var model = ModelRegistry.Get(request.ModelId)
+            ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
+
+        var credits = ModelRegistry.CalculateCredits(request.ModelId);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -34,12 +37,12 @@ public class GenerateTranscriptionCommandHandler(
 
         var input = new { audio_url = audioUrl };
 
-        await creditService.ReserveAsync(request.UserId, jobId, credits, $"Transcription ({request.Tier})", cancellationToken);
+        await creditService.ReserveAsync(request.UserId, jobId, credits, $"Transcription ({model.Name})", cancellationToken);
 
-        string falRequestId;
+        FalSubmitResult falSubmit;
         try
         {
-            falRequestId = await falClient.SubmitJobAsync(GetEndpoint(request.Tier), input, $"WEBHOOK_PLACEHOLDER/{jobId}", cancellationToken);
+            falSubmit = await falClient.SubmitJobAsync(request.ModelId, input, $"{falClient.WebhookBaseUrl}/api/webhooks/fal?jobId={jobId}", cancellationToken);
         }
         catch
         {
@@ -52,9 +55,11 @@ public class GenerateTranscriptionCommandHandler(
             Id = jobId,
             UserId = request.UserId,
             Product = ProductType.Transcription,
-            Tier = request.Tier,
-            FalEndpoint = GetEndpoint(request.Tier),
-            FalRequestId = falRequestId,
+            Tier = model.Tier,
+            FalEndpoint = request.ModelId,
+            FalRequestId = falSubmit.RequestId,
+            FalStatusUrl = falSubmit.StatusUrl,
+            FalResponseUrl = falSubmit.ResponseUrl,
             Status = JobStatus.Queued,
             CreditsReserved = credits,
             FalInput = JsonDocument.Parse(JsonSerializer.Serialize(input)),
@@ -64,10 +69,4 @@ public class GenerateTranscriptionCommandHandler(
         await db.SaveChangesAsync(cancellationToken);
         return new GenerationResponse(jobId, credits, 30);
     }
-
-    private static string GetEndpoint(ModelTier tier) => tier switch
-    {
-        ModelTier.Premium => "fal-ai/elevenlabs/speech-to-text",
-        _                 => "fal-ai/whisper"
-    };
 }

@@ -34,7 +34,9 @@ try
         cfg.RegisterServicesFromAssembly(typeof(AiMedia.Application.Commands.Auth.LoginCommand).Assembly));
 
     // Controllers
-    builder.Services.AddControllers();
+    builder.Services.AddControllers()
+        .AddJsonOptions(opts =>
+            opts.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
     // JWT Bearer auth
     var jwtSecret = builder.Configuration["Jwt:Secret"]
@@ -90,14 +92,13 @@ try
         .UseRecommendedSerializerSettings()
         .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(dbConn)));
 
-    builder.Services.AddHangfireServer();
-
     // CORS — allow Angular dev server and Vercel
     builder.Services.AddCors(opts =>
     {
         opts.AddDefaultPolicy(policy =>
         {
-            var origins = builder.Configuration["AllowedOrigins"]?.Split(',')
+            var origins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+                ?? builder.Configuration["AllowedOrigins"]?.Split(',')
                 ?? ["http://localhost:4200"];
             policy.WithOrigins(origins)
                   .AllowAnyHeader()

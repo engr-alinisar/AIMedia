@@ -15,7 +15,10 @@ public class GenerateImageCommandHandler(
 {
     public async Task<GenerationResponse> Handle(GenerateImageCommand request, CancellationToken cancellationToken)
     {
-        var credits = CreditCalculator.Calculate(ProductType.ImageGen, request.Tier);
+        var model = ModelRegistry.Get(request.ModelId)
+            ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
+
+        var credits = ModelRegistry.CalculateCredits(request.ModelId);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -25,20 +28,19 @@ public class GenerateImageCommandHandler(
         {
             prompt = request.Prompt,
             image_size = $"{request.Width}x{request.Height}",
-            negative_prompt = request.NegativePrompt,
-            tier = request.Tier.ToString().ToLower()
+            negative_prompt = request.NegativePrompt
         };
 
         // Reserve credits before submission
-        await creditService.ReserveAsync(request.UserId, jobId, credits, $"Image generation ({request.Tier})", cancellationToken);
+        await creditService.ReserveAsync(request.UserId, jobId, credits, $"Image generation ({model.Name})", cancellationToken);
 
-        string falRequestId;
+        FalSubmitResult falSubmit;
         try
         {
-            falRequestId = await falClient.SubmitJobAsync(
-                GetEndpoint(request.Tier),
+            falSubmit = await falClient.SubmitJobAsync(
+                request.ModelId,
                 input,
-                $"WEBHOOK_PLACEHOLDER/{jobId}",
+                $"{falClient.WebhookBaseUrl}/api/webhooks/fal?jobId={jobId}",
                 cancellationToken);
         }
         catch
@@ -52,9 +54,11 @@ public class GenerateImageCommandHandler(
             Id = jobId,
             UserId = request.UserId,
             Product = ProductType.ImageGen,
-            Tier = request.Tier,
-            FalEndpoint = GetEndpoint(request.Tier),
-            FalRequestId = falRequestId,
+            Tier = model.Tier,
+            FalEndpoint = request.ModelId,
+            FalRequestId = falSubmit.RequestId,
+            FalStatusUrl = falSubmit.StatusUrl,
+            FalResponseUrl = falSubmit.ResponseUrl,
             Status = JobStatus.Queued,
             CreditsReserved = credits,
             FalInput = JsonDocument.Parse(JsonSerializer.Serialize(input)),
@@ -66,12 +70,4 @@ public class GenerateImageCommandHandler(
 
         return new GenerationResponse(jobId, credits, 15);
     }
-
-    private static string GetEndpoint(ModelTier tier) => tier switch
-    {
-        ModelTier.Free     => "fal-ai/flux/dev",
-        ModelTier.Standard => "fal-ai/flux-pro/v1.1",
-        ModelTier.Premium  => "fal-ai/flux-pro/v2",
-        _ => "fal-ai/flux/dev"
-    };
 }

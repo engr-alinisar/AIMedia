@@ -15,7 +15,10 @@ public class GenerateTextToVideoCommandHandler(
 {
     public async Task<GenerationResponse> Handle(GenerateTextToVideoCommand request, CancellationToken cancellationToken)
     {
-        var credits = CreditCalculator.Calculate(ProductType.TextToVideo, request.Tier, request.DurationSeconds);
+        var model = ModelRegistry.Get(request.ModelId)
+            ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
+
+        var credits = ModelRegistry.CalculateCredits(request.ModelId, request.DurationSeconds);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -23,12 +26,12 @@ public class GenerateTextToVideoCommandHandler(
         var jobId = Guid.NewGuid();
         var input = new { prompt = request.Prompt, duration = request.DurationSeconds, aspect_ratio = request.AspectRatio };
 
-        await creditService.ReserveAsync(request.UserId, jobId, credits, $"Text-to-video ({request.Tier})", cancellationToken);
+        await creditService.ReserveAsync(request.UserId, jobId, credits, $"Text-to-video ({model.Name})", cancellationToken);
 
-        string falRequestId;
+        FalSubmitResult falSubmit;
         try
         {
-            falRequestId = await falClient.SubmitJobAsync(GetEndpoint(request.Tier), input, $"WEBHOOK_PLACEHOLDER/{jobId}", cancellationToken);
+            falSubmit = await falClient.SubmitJobAsync(request.ModelId, input, $"{falClient.WebhookBaseUrl}/api/webhooks/fal?jobId={jobId}", cancellationToken);
         }
         catch
         {
@@ -41,9 +44,11 @@ public class GenerateTextToVideoCommandHandler(
             Id = jobId,
             UserId = request.UserId,
             Product = ProductType.TextToVideo,
-            Tier = request.Tier,
-            FalEndpoint = GetEndpoint(request.Tier),
-            FalRequestId = falRequestId,
+            Tier = model.Tier,
+            FalEndpoint = request.ModelId,
+            FalRequestId = falSubmit.RequestId,
+            FalStatusUrl = falSubmit.StatusUrl,
+            FalResponseUrl = falSubmit.ResponseUrl,
             Status = JobStatus.Queued,
             CreditsReserved = credits,
             DurationSeconds = request.DurationSeconds,
@@ -54,12 +59,4 @@ public class GenerateTextToVideoCommandHandler(
         await db.SaveChangesAsync(cancellationToken);
         return new GenerationResponse(jobId, credits, request.DurationSeconds * 10);
     }
-
-    private static string GetEndpoint(ModelTier tier) => tier switch
-    {
-        ModelTier.Free     => "fal-ai/wan/t2v",
-        ModelTier.Standard => "fal-ai/kling-video/v3/pro/text-to-video",
-        ModelTier.Premium  => "fal-ai/veo3/text-to-video",
-        _ => "fal-ai/wan/t2v"
-    };
 }

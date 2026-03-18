@@ -11,6 +11,8 @@ public class GenerationJob
     public ModelTier Tier { get; set; }
     public string FalEndpoint { get; set; } = string.Empty;
     public string FalRequestId { get; set; } = string.Empty;
+    public string? FalStatusUrl { get; set; }
+    public string? FalResponseUrl { get; set; }
     public JobStatus Status { get; set; } = JobStatus.Queued;
     public int CreditsReserved { get; set; }
     public int CreditsCharged { get; set; }

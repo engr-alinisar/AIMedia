@@ -18,16 +18,8 @@ public class JobCompletedEventHandler(
         string? outputUrl = null;
         if (notification.OutputR2Key is not null)
         {
-            try
-            {
-                outputUrl = await storage.GetPresignedUrlAsync(
-                    notification.OutputR2Key,
-                    TimeSpan.FromHours(24));
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to generate presigned URL for job {JobId}", notification.JobId);
-            }
+            try { outputUrl = storage.GetPublicUrl(notification.OutputR2Key); }
+            catch (Exception ex) { logger.LogWarning(ex, "Failed to build public URL for job {JobId}", notification.JobId); }
         }
 
         await hubContext.Clients

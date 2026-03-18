@@ -1,11 +1,21 @@
-import { Component, signal, inject, OnDestroy } from '@angular/core';
+import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GenerationService } from '../../core/services/generation.service';
 import { CreditsService } from '../../core/services/credits.service';
 import { SignalRService } from '../../core/services/signalr.service';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
-import { estimateCredits, type ModelTier, type JobStatus } from '../../core/models/models';
+import { type JobStatus } from '../../core/models/models';
+
+interface TranscriptionModel {
+  id: string;
+  name: string;
+  description: string;
+  creditsPerMin: number;
+  badge?: string;
+  badgeColor?: string;
+  tags: string[];
+}
 
 @Component({
   selector: 'app-transcription',
@@ -13,28 +23,83 @@ import { estimateCredits, type ModelTier, type JobStatus } from '../../core/mode
   imports: [CommonModule, FormsModule, JobStatusComponent],
   template: `
 <div class="flex h-full">
-  <div class="w-[380px] flex-shrink-0 border-r border-border bg-white flex flex-col overflow-y-auto">
+  <div class="w-[420px] flex-shrink-0 border-r border-border bg-white flex flex-col overflow-y-auto">
     <div class="px-5 py-4 border-b border-border">
       <h1 class="text-base font-semibold text-gray-900">Transcription</h1>
     </div>
+
     <div class="flex-1 px-5 py-4 space-y-5">
+
+      <!-- Model dropdown -->
       <div>
         <label class="form-label">Model</label>
-        <div class="flex gap-2">
-          @for (t of tiers; track t.value) {
-            <button class="tier-btn" [class.active]="tier() === t.value" (click)="tier.set(t.value)">{{ t.label }}</button>
+        <div class="relative">
+          <button type="button"
+                  class="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-border rounded-lg hover:border-accent transition-colors text-left"
+                  (click)="dropdownOpen.set(!dropdownOpen())">
+            <div class="flex items-center gap-2 min-w-0">
+              <svg class="w-4 h-4 text-accent flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+              </svg>
+              <span class="text-sm font-medium text-gray-900 truncate">{{ selectedModel()?.name ?? 'Select a model' }}</span>
+              @if (selectedModel()?.badge) {
+                <span class="px-1.5 py-0.5 text-[10px] font-bold rounded flex-shrink-0"
+                      [style.background]="selectedModel()!.badgeColor ?? '#7C3AED'"
+                      style="color:white">{{ selectedModel()!.badge }}</span>
+              }
+            </div>
+            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform" [class.rotate-180]="dropdownOpen()"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+
+          @if (dropdownOpen()) {
+            <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+              @for (m of models; track m.id) {
+                <div (click)="selectModel(m)"
+                     class="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+                     [class.bg-accent-light]="selectedModel()?.id === m.id">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="text-sm font-semibold text-gray-900">{{ m.name }}</span>
+                      @if (m.badge) {
+                        <span class="px-1.5 py-0.5 text-[10px] font-bold rounded"
+                              [style.background]="m.badgeColor ?? '#7C3AED'"
+                              style="color:white">{{ m.badge }}</span>
+                      }
+                    </div>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ m.description }}</p>
+                    <div class="flex gap-1.5 flex-wrap mt-1.5">
+                      @for (tag of m.tags; track tag) {
+                        <span class="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded-full">{{ tag }}</span>
+                      }
+                      <span class="px-2 py-0.5 text-[10px] bg-accent-light text-accent rounded-full font-medium">{{ m.creditsPerMin }} cr/min</span>
+                    </div>
+                  </div>
+                  @if (selectedModel()?.id === m.id) {
+                    <svg class="w-4 h-4 text-accent flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  }
+                </div>
+              }
+            </div>
           }
         </div>
       </div>
+
+      <!-- File upload -->
       <div>
         <label class="form-label">Audio / Video File</label>
         <div class="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-accent hover:bg-accent-light/30 transition-colors"
              (click)="fileInput.click()">
           @if (fileName()) {
             <div class="text-sm text-gray-700 font-medium">📎 {{ fileName() }}</div>
+            <p class="text-xs text-gray-400 mt-1">Click to change</p>
           } @else {
             <div class="text-gray-400">
-              <div class="text-2xl mb-1">🎵</div>
+              <div class="text-3xl mb-2">🎵</div>
               <p class="text-sm">Click to upload audio/video</p>
               <p class="text-xs text-gray-400 mt-1">MP3, MP4, WAV, M4A, WebM</p>
             </div>
@@ -42,22 +107,35 @@ import { estimateCredits, type ModelTier, type JobStatus } from '../../core/mode
           <input #fileInput type="file" accept="audio/*,video/*" class="hidden" (change)="onFile($event)"/>
         </div>
       </div>
+
+      <!-- Or URL -->
       <div>
-        <label class="form-label">Or URL</label>
+        <label class="form-label">Or Audio URL</label>
         <input type="url" class="form-input" [(ngModel)]="audioUrl" placeholder="https://..."/>
       </div>
+
+      @if (errorMsg()) {
+        <div class="p-3 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700">{{ errorMsg() }}</div>
+      }
     </div>
+
+    <!-- Footer -->
     <div class="px-5 py-4 border-t border-border space-y-3">
       <div class="flex items-center justify-between text-sm">
         <span class="text-gray-500">Cost estimate</span>
-        <span class="font-semibold"><span class="text-accent">{{ costEstimate() }}</span> credits / 30min</span>
+        <span class="font-semibold text-gray-900">
+          <span class="text-accent">{{ costEstimate() }}</span> credits / 30 min
+        </span>
       </div>
-      <button class="btn-primary w-full" (click)="generate()" [disabled]="(!audioFile && !audioUrl) || generating()">
-        @if (generating()) { <span class="animate-spin">⟳</span> Transcribing... }
+      <button class="btn-primary w-full" (click)="generate()"
+              [disabled]="(!audioFile && !audioUrl.trim()) || generating() || !selectedModel()">
+        @if (generating()) { <span class="animate-spin mr-1">⟳</span> Transcribing... }
         @else { 📝 Transcribe }
       </button>
     </div>
   </div>
+
+  <!-- Right panel -->
   <div class="flex-1 p-6 flex flex-col gap-4">
     <div class="flex items-center justify-between">
       <h2 class="text-sm font-medium text-gray-600">Transcript</h2>
@@ -75,27 +153,65 @@ import { estimateCredits, type ModelTier, type JobStatus } from '../../core/mode
         </div>
       </div>
     }
-    @if (errorMsg()) {
-      <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{{ errorMsg() }}</div>
-    }
   </div>
 </div>
   `
 })
-export class TranscriptionComponent implements OnDestroy {
+export class TranscriptionComponent implements OnInit, OnDestroy {
   private gen = inject(GenerationService);
   private credits = inject(CreditsService);
   private signalR = inject(SignalRService);
 
-  tiers = [{ value: 'Free' as ModelTier, label: 'Whisper' }, { value: 'Premium' as ModelTier, label: 'ElevenLabs' }];
-  tier = signal<ModelTier>('Free');
-  audioUrl = ''; audioFile: File | null = null;
-  fileName = signal<string>('');
-  generating = signal(false); jobStatus = signal<JobStatus | null>(null);
-  transcript = signal<string | undefined>(undefined); errorMsg = signal<string | undefined>(undefined);
-  private currentJobId: string | null = null; private pollInterval?: ReturnType<typeof setInterval>;
+  models: TranscriptionModel[] = [
+    {
+      id: 'fal-ai/whisper',
+      name: 'Whisper',
+      description: 'OpenAI Whisper — fast and accurate speech recognition.',
+      creditsPerMin: 3,
+      tags: ['Open Source', 'Fast', 'Multi-language']
+    },
+    {
+      id: 'fal-ai/elevenlabs/speech-to-text',
+      name: 'ElevenLabs Scribe',
+      description: 'High-accuracy transcription with speaker diarization.',
+      creditsPerMin: 8,
+      badge: 'PRO',
+      badgeColor: '#7C3AED',
+      tags: ['Speaker ID', 'High Accuracy']
+    }
+  ];
 
-  costEstimate = () => estimateCredits('Transcription', this.tier());
+  selectedModel = signal<TranscriptionModel | null>(this.models[0]);
+  dropdownOpen = signal(false);
+
+  audioUrl = '';
+  audioFile: File | null = null;
+  fileName = signal<string>('');
+
+  generating = signal(false);
+  jobStatus = signal<JobStatus | null>(null);
+  transcript = signal<string | undefined>(undefined);
+  errorMsg = signal<string | undefined>(undefined);
+
+  costEstimate = signal(this.models[0].creditsPerMin);
+
+  private currentJobId: string | null = null;
+  private pollInterval?: ReturnType<typeof setInterval>;
+
+  ngOnInit() {
+    document.addEventListener('click', this.onDocumentClick);
+  }
+
+  private onDocumentClick = (e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.relative')) this.dropdownOpen.set(false);
+  };
+
+  selectModel(m: TranscriptionModel) {
+    this.selectedModel.set(m);
+    this.dropdownOpen.set(false);
+    this.costEstimate.set(m.creditsPerMin);
+  }
 
   onFile(e: Event) {
     const f = (e.target as HTMLInputElement).files?.[0];
@@ -103,12 +219,17 @@ export class TranscriptionComponent implements OnDestroy {
   }
 
   generate() {
-    if ((!this.audioFile && !this.audioUrl) || this.generating()) return;
-    this.generating.set(true); this.jobStatus.set('Queued'); this.transcript.set(undefined); this.errorMsg.set(undefined);
+    if ((!this.audioFile && !this.audioUrl.trim()) || this.generating() || !this.selectedModel()) return;
+    this.generating.set(true);
+    this.jobStatus.set('Queued');
+    this.transcript.set(undefined);
+    this.errorMsg.set(undefined);
+
     const fd = new FormData();
     if (this.audioFile) fd.append('file', this.audioFile);
     else fd.append('audioUrl', this.audioUrl);
-    fd.append('tier', this.tier());
+    fd.append('modelId', this.selectedModel()!.id);
+
     this.gen.generateTranscription(fd).subscribe({
       next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.startFallback(); },
       error: err => { this.generating.set(false); this.jobStatus.set('Failed'); this.errorMsg.set(err.error?.error ?? 'Failed.'); }
@@ -132,5 +253,8 @@ export class TranscriptionComponent implements OnDestroy {
     else { this.errorMsg.set(err ?? 'Failed.'); this.credits.loadBalance().subscribe(); }
   }
 
-  ngOnDestroy() { clearInterval(this.pollInterval); }
+  ngOnDestroy() {
+    document.removeEventListener('click', this.onDocumentClick);
+    clearInterval(this.pollInterval);
+  }
 }

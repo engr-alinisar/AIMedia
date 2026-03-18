@@ -5,7 +5,6 @@ using AiMedia.Application.Commands.GenerateImageToVideo;
 using AiMedia.Application.Commands.GenerateTextToVideo;
 using AiMedia.Application.Commands.GenerateTranscription;
 using AiMedia.Application.Commands.GenerateVoice;
-using AiMedia.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +27,7 @@ public class GenerationController : ControllerBase
     public async Task<IActionResult> Image([FromBody] GenerateImageRequest request, CancellationToken ct)
     {
         var result = await _mediator.Send(new GenerateImageCommand(
-            GetUserId(), request.Prompt, request.Tier,
+            GetUserId(), request.Prompt, request.ModelId,
             request.Width, request.Height, request.NegativePrompt), ct);
         return Accepted(result);
     }
@@ -38,7 +37,7 @@ public class GenerationController : ControllerBase
     {
         var result = await _mediator.Send(new GenerateImageToVideoCommand(
             GetUserId(), request.ImageUrl, request.Prompt,
-            request.Tier, request.DurationSeconds), ct);
+            request.ModelId, request.DurationSeconds), ct);
         return Accepted(result);
     }
 
@@ -46,7 +45,7 @@ public class GenerationController : ControllerBase
     public async Task<IActionResult> TextToVideo([FromBody] GenerateTextToVideoRequest request, CancellationToken ct)
     {
         var result = await _mediator.Send(new GenerateTextToVideoCommand(
-            GetUserId(), request.Prompt, request.Tier,
+            GetUserId(), request.Prompt, request.ModelId,
             request.DurationSeconds, request.AspectRatio), ct);
         return Accepted(result);
     }
@@ -55,7 +54,7 @@ public class GenerationController : ControllerBase
     public async Task<IActionResult> Voice([FromBody] GenerateVoiceRequest request, CancellationToken ct)
     {
         var result = await _mediator.Send(new GenerateVoiceCommand(
-            GetUserId(), request.Text, request.Tier,
+            GetUserId(), request.Text, request.ModelId,
             request.VoiceId, request.VoiceCloneId), ct);
         return Accepted(result);
     }
@@ -67,7 +66,7 @@ public class GenerationController : ControllerBase
         CancellationToken ct)
     {
         var result = await _mediator.Send(new GenerateTranscriptionCommand(
-            GetUserId(), request.Tier,
+            GetUserId(), request.ModelId,
             request.AudioUrl,
             file?.OpenReadStream(),
             file?.FileName), ct);
@@ -84,7 +83,8 @@ public class GenerationController : ControllerBase
             GetUserId(),
             request.ImageUrl,
             file?.OpenReadStream(),
-            file?.FileName), ct);
+            file?.FileName,
+            request.ModelId), ct);
         return Accepted(result);
     }
 
@@ -99,31 +99,33 @@ public class GenerationController : ControllerBase
 
 public record GenerateImageRequest(
     string Prompt,
-    ModelTier Tier = ModelTier.Standard,
+    string ModelId = "fal-ai/flux-pro/v1.1",
     int Width = 1024,
     int Height = 1024,
     string? NegativePrompt = null);
 
 public record GenerateImageToVideoRequest(
     string ImageUrl,
-    ModelTier Tier = ModelTier.Standard,
+    string ModelId = "fal-ai/kling-video/v3/pro/image-to-video",
     string? Prompt = null,
     int DurationSeconds = 5);
 
 public record GenerateTextToVideoRequest(
     string Prompt,
-    ModelTier Tier = ModelTier.Standard,
+    string ModelId = "fal-ai/kling-video/v3/pro/text-to-video",
     int DurationSeconds = 5,
     string AspectRatio = "16:9");
 
 public record GenerateVoiceRequest(
     string Text,
-    ModelTier Tier = ModelTier.Standard,
+    string ModelId = "fal-ai/kokoro",
     string? VoiceId = null,
     Guid? VoiceCloneId = null);
 
 public record TranscriptionRequest(
-    ModelTier Tier = ModelTier.Standard,
+    string ModelId = "fal-ai/whisper",
     string? AudioUrl = null);
 
-public record BackgroundRemovalRequest(string? ImageUrl = null);
+public record BackgroundRemovalRequest(
+    string? ImageUrl = null,
+    string ModelId = "fal-ai/pixelcut/remove-background");

@@ -16,10 +16,13 @@ public class GenerateVoiceCommandHandler(
 {
     public async Task<GenerationResponse> Handle(GenerateVoiceCommand request, CancellationToken cancellationToken)
     {
+        var model = ModelRegistry.Get(request.ModelId)
+            ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
+
         // Cost per 1000 characters
         var charCount = Math.Max(1, request.Text.Length);
         var units = (int)Math.Ceiling(charCount / 1000.0);
-        var credits = CreditCalculator.Calculate(ProductType.Voice, request.Tier) * units;
+        var credits = ModelRegistry.CalculateCredits(request.ModelId) * units;
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -42,12 +45,12 @@ public class GenerateVoiceCommandHandler(
             custom_voice_id = customVoiceId
         };
 
-        await creditService.ReserveAsync(request.UserId, jobId, credits, $"Voice TTS ({request.Tier})", cancellationToken);
+        await creditService.ReserveAsync(request.UserId, jobId, credits, $"Voice TTS ({model.Name})", cancellationToken);
 
-        string falRequestId;
+        FalSubmitResult falSubmit;
         try
         {
-            falRequestId = await falClient.SubmitJobAsync(GetEndpoint(request.Tier), input, $"WEBHOOK_PLACEHOLDER/{jobId}", cancellationToken);
+            falSubmit = await falClient.SubmitJobAsync(request.ModelId, input, $"{falClient.WebhookBaseUrl}/api/webhooks/fal?jobId={jobId}", cancellationToken);
         }
         catch
         {
@@ -60,9 +63,11 @@ public class GenerateVoiceCommandHandler(
             Id = jobId,
             UserId = request.UserId,
             Product = ProductType.Voice,
-            Tier = request.Tier,
-            FalEndpoint = GetEndpoint(request.Tier),
-            FalRequestId = falRequestId,
+            Tier = model.Tier,
+            FalEndpoint = request.ModelId,
+            FalRequestId = falSubmit.RequestId,
+            FalStatusUrl = falSubmit.StatusUrl,
+            FalResponseUrl = falSubmit.ResponseUrl,
             Status = JobStatus.Queued,
             CreditsReserved = credits,
             FalInput = JsonDocument.Parse(JsonSerializer.Serialize(input)),
@@ -72,10 +77,4 @@ public class GenerateVoiceCommandHandler(
         await db.SaveChangesAsync(cancellationToken);
         return new GenerationResponse(jobId, credits, 10);
     }
-
-    private static string GetEndpoint(ModelTier tier) => tier switch
-    {
-        ModelTier.Free    => "fal-ai/kokoro",
-        _                 => "fal-ai/minimax/speech-02-hd"
-    };
 }

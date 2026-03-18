@@ -16,10 +16,15 @@ public class FalService : IFalClient
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
 
-    public FalService(HttpClient http, ILogger<FalService> logger)
+    public string WebhookBaseUrl { get; }
+
+    public FalService(HttpClient http, ILogger<FalService> logger, Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
         _http = http;
         _logger = logger;
+        WebhookBaseUrl = configuration["FalAi:WebhookBaseUrl"]
+                      ?? configuration["FAL_WEBHOOK_BASE_URL"]
+                      ?? "http://localhost:5015";
     }
 
     /// <summary>
@@ -37,7 +42,12 @@ public class FalService : IFalClient
         _logger.LogInformation("Submitting job to fal.ai endpoint {Endpoint}", endpoint);
 
         var response = await _http.PostAsJsonAsync(url, input, JsonOptions, ct);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(ct);
+            _logger.LogError("fal.ai returned {Status} for {Endpoint}: {Body}", (int)response.StatusCode, endpoint, body);
+            throw new HttpRequestException($"fal.ai {(int)response.StatusCode}: {body}");
+        }
 
         var result = await response.Content.ReadFromJsonAsync<FalQueueResponse>(JsonOptions, ct)
             ?? throw new InvalidOperationException("fal.ai returned empty queue response");
@@ -88,30 +98,31 @@ public class FalService : IFalClient
 
     // IFalClient implementation
 
-    public async Task<string?> GetResultUrlAsync(string endpoint, string requestId, CancellationToken ct = default)
-    {
-        var result = await GetResultAsync<AiMedia.FalAi.Models.FalOutputUrls>(endpoint, requestId, ct);
-        return result?.GetFirstUrl();
-    }
-
-    public async Task<string> SubmitJobAsync(
+    public async Task<FalSubmitResult> SubmitJobAsync(
         string endpoint, object input, string webhookUrl,
         CancellationToken cancellationToken = default)
     {
         var result = await SubmitAsync(endpoint, input, webhookUrl, cancellationToken);
-        return result.RequestId;
+        return new FalSubmitResult(result.RequestId, result.StatusUrl, result.ResponseUrl);
     }
 
+    /// <summary>
+    /// Polls fal.ai for job status using the exact status_url returned at submission time.
+    /// </summary>
     public async Task<FalJobStatusResult> GetJobStatusAsync(
-        string requestId, CancellationToken cancellationToken = default)
+        string statusUrl, CancellationToken cancellationToken = default)
     {
-        // requestId format from fal is "{endpoint}/{id}" — split to get endpoint
-        var parts = requestId.Split('/', 2);
-        if (parts.Length < 2)
-            throw new ArgumentException($"Expected requestId in format 'endpoint/id', got: {requestId}");
-
-        var endpoint = parts[0];
-        var status = await GetStatusAsync(endpoint, parts[1], cancellationToken);
+        var status = await _http.GetFromJsonAsync<FalJobStatus>(statusUrl, JsonOptions, cancellationToken)
+            ?? throw new InvalidOperationException($"fal.ai returned empty status for {statusUrl}");
         return new FalJobStatusResult(status.Status, status.ResponseUrl, null, null);
+    }
+
+    /// <summary>
+    /// Fetches the result using the exact response_url returned at submission time.
+    /// </summary>
+    public async Task<string?> GetResultUrlAsync(string responseUrl, CancellationToken ct = default)
+    {
+        var result = await _http.GetFromJsonAsync<AiMedia.FalAi.Models.FalOutputUrls>(responseUrl, JsonOptions, ct);
+        return result?.GetFirstUrl();
     }
 }

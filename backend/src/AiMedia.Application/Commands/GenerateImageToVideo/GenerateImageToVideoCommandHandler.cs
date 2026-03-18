@@ -15,20 +15,24 @@ public class GenerateImageToVideoCommandHandler(
 {
     public async Task<GenerationResponse> Handle(GenerateImageToVideoCommand request, CancellationToken cancellationToken)
     {
-        var credits = CreditCalculator.Calculate(ProductType.ImageToVideo, request.Tier, request.DurationSeconds);
+        var model = ModelRegistry.Get(request.ModelId)
+            ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
+
+        var credits = ModelRegistry.CalculateCredits(request.ModelId, request.DurationSeconds);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
 
         var jobId = Guid.NewGuid();
-        var input = new { image_url = request.ImageUrl, prompt = request.Prompt, duration = request.DurationSeconds };
+        // kling-video expects duration as string ("5" | "10"), wan/i2v accepts int — use string for all
+        var input = new { image_url = request.ImageUrl, prompt = request.Prompt, duration = request.DurationSeconds.ToString() };
 
-        await creditService.ReserveAsync(request.UserId, jobId, credits, $"Image-to-video ({request.Tier})", cancellationToken);
+        await creditService.ReserveAsync(request.UserId, jobId, credits, $"Image-to-video ({model.Name})", cancellationToken);
 
-        string falRequestId;
+        FalSubmitResult falSubmit;
         try
         {
-            falRequestId = await falClient.SubmitJobAsync(GetEndpoint(request.Tier), input, $"WEBHOOK_PLACEHOLDER/{jobId}", cancellationToken);
+            falSubmit = await falClient.SubmitJobAsync(request.ModelId, input, $"{falClient.WebhookBaseUrl}/api/webhooks/fal?jobId={jobId}", cancellationToken);
         }
         catch
         {
@@ -41,9 +45,11 @@ public class GenerateImageToVideoCommandHandler(
             Id = jobId,
             UserId = request.UserId,
             Product = ProductType.ImageToVideo,
-            Tier = request.Tier,
-            FalEndpoint = GetEndpoint(request.Tier),
-            FalRequestId = falRequestId,
+            Tier = model.Tier,
+            FalEndpoint = request.ModelId,
+            FalRequestId = falSubmit.RequestId,
+            FalStatusUrl = falSubmit.StatusUrl,
+            FalResponseUrl = falSubmit.ResponseUrl,
             Status = JobStatus.Queued,
             CreditsReserved = credits,
             DurationSeconds = request.DurationSeconds,
@@ -54,12 +60,4 @@ public class GenerateImageToVideoCommandHandler(
         await db.SaveChangesAsync(cancellationToken);
         return new GenerationResponse(jobId, credits, request.DurationSeconds * 10);
     }
-
-    private static string GetEndpoint(ModelTier tier) => tier switch
-    {
-        ModelTier.Free     => "fal-ai/wan/i2v",
-        ModelTier.Standard => "fal-ai/kling-video/v3/pro/image-to-video",
-        ModelTier.Premium  => "fal-ai/veo3/image-to-video",
-        _ => "fal-ai/wan/i2v"
-    };
 }

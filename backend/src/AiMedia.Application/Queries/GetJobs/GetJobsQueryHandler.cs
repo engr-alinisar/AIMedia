@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AiMedia.Application.Queries.GetJobs;
 
-public class GetJobsQueryHandler(IAppDbContext db) : IRequestHandler<GetJobsQuery, PagedResult<JobDto>>
+public class GetJobsQueryHandler(IAppDbContext db, IStorageService storage) : IRequestHandler<GetJobsQuery, PagedResult<JobDto>>
 {
     public async Task<PagedResult<JobDto>> Handle(GetJobsQuery request, CancellationToken cancellationToken)
     {
@@ -29,6 +29,7 @@ public class GetJobsQueryHandler(IAppDbContext db) : IRequestHandler<GetJobsQuer
                 Status = j.Status,
                 CreditsReserved = j.CreditsReserved,
                 CreditsCharged = j.CreditsCharged,
+                OutputUrl = j.OutputR2Key != null ? storage.GetPublicUrl(j.OutputR2Key) : null,
                 ErrorMessage = j.ErrorMessage,
                 DurationSeconds = j.DurationSeconds,
                 CreatedAt = j.CreatedAt,

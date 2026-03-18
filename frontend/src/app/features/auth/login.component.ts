@@ -12,10 +12,22 @@ import { AuthService } from '../../core/auth/auth.service';
 <div class="min-h-screen bg-sidebar flex items-center justify-center p-4">
   <div class="w-full max-w-sm">
     <div class="text-center mb-8">
-      <div class="w-12 h-12 rounded-xl bg-accent flex items-center justify-center mx-auto mb-4">
-        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      <div class="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-5 py-3 mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 128 128">
+          <defs><linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8B5CF6"/><stop offset="100%" stop-color="#4F46E5"/></linearGradient></defs>
+          <rect width="128" height="128" rx="28" fill="url(#lg)"/>
+          <rect x="18" y="18" width="8" height="92" rx="4" fill="rgba(255,255,255,0.2)"/>
+          <rect x="20" y="26" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/><rect x="20" y="40" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/><rect x="20" y="54" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/><rect x="20" y="68" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/><rect x="20" y="82" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/><rect x="20" y="96" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+          <rect x="102" y="18" width="8" height="92" rx="4" fill="rgba(255,255,255,0.2)"/>
+          <rect x="104" y="26" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/><rect x="104" y="40" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/><rect x="104" y="54" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/><rect x="104" y="68" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/><rect x="104" y="82" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/><rect x="104" y="96" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+          <polygon points="50,42 50,86 88,64" fill="white" opacity="0.95"/>
+          <circle cx="90" cy="36" r="5" fill="#A78BFA"/>
+          <line x1="90" y1="28" x2="90" y2="32" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="90" y1="40" x2="90" y2="44" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="82" y1="36" x2="86" y2="36" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="94" y1="36" x2="98" y2="36" stroke="white" stroke-width="2" stroke-linecap="round"/>
         </svg>
+        <div class="text-left">
+          <div class="text-xl font-bold leading-tight"><span class="text-gray-900">Ai</span><span style="color:#7C3AED">Media</span></div>
+          <div class="text-[10px] text-gray-400 uppercase tracking-widest mt-0.5">AI-Powered Media</div>
+        </div>
       </div>
       <h1 class="text-2xl font-bold text-white">Welcome back</h1>
       <p class="text-gray-400 text-sm mt-1">Sign in to AiMedia</p>

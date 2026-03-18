@@ -78,6 +78,15 @@ export interface JobStatusUpdate {
   errorMessage?: string;
 }
 
+export interface ModelDto {
+  id: string;
+  name: string;
+  description: string;
+  creditsBase: number;
+  creditsPerSecond: number;
+  tier: string;
+}
+
 // Credit costs mirrored from CreditCalculator.cs
 export const CREDIT_COSTS: Record<ProductType, Record<ModelTier, number>> = {
   ImageGen:          { Free: 5,  Standard: 8,  Premium: 11 },

@@ -14,10 +14,9 @@ public class GetJobQueryHandler(IAppDbContext db, IStorageService storage) : IRe
 
         if (job == null) return null;
 
-        // Generate fresh presigned URL (24hr) — never return stale URL
         string? outputUrl = null;
         if (job.OutputR2Key != null)
-            outputUrl = await storage.GetPresignedUrlAsync(job.OutputR2Key, TimeSpan.FromHours(24));
+            outputUrl = storage.GetPublicUrl(job.OutputR2Key);
 
         return new JobDto
         {

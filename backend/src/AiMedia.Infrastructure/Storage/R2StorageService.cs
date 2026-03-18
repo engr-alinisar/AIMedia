@@ -11,6 +11,7 @@ public class R2StorageService : IStorageService
 {
     private readonly AmazonS3Client _client;
     private readonly string _bucketName;
+    private readonly string _publicBaseUrl;
     private readonly ILogger<R2StorageService> _logger;
     private readonly HttpClient _httpClient;
 
@@ -19,6 +20,7 @@ public class R2StorageService : IStorageService
         _logger = logger;
         _httpClient = httpClient;
         _bucketName = config["Cloudflare:R2:BucketName"] ?? "ai-media-outputs";
+        _publicBaseUrl = (config["Cloudflare:R2:PublicUrl"] ?? "").TrimEnd('/');
 
         var accountId = config["Cloudflare:R2:AccountId"] ?? throw new InvalidOperationException("R2AccountId not configured");
         var accessKeyId = config["Cloudflare:R2:AccessKeyId"] ?? throw new InvalidOperationException("R2AccessKeyId not configured");
@@ -66,6 +68,11 @@ public class R2StorageService : IStorageService
         return url;
     }
 
+    public string GetPublicUrl(string key) =>
+        string.IsNullOrEmpty(_publicBaseUrl)
+            ? throw new InvalidOperationException("Cloudflare:R2:PublicUrl is not configured.")
+            : $"{_publicBaseUrl}/{key}";
+
     public async Task DeleteAsync(string key, CancellationToken cancellationToken = default)
     {
         await _client.DeleteObjectAsync(_bucketName, key, cancellationToken);
@@ -87,6 +94,6 @@ public class R2StorageService : IStorageService
     public string BuildKey(Guid userId, Guid jobId, string filename)
     {
         var now = DateTime.UtcNow;
-        return $"{userId}/{now.Year}/{now.Month:D2}/{jobId}/{filename}";
+        return $"{userId}/outputs/{now.Year}/{now.Month:D2}/{jobId}/{filename}";
     }
 }

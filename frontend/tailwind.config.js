@@ -6,8 +6,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        sidebar: '#1a1d27',
-        'sidebar-hover': '#252836',
+        sidebar: '#ffffff',
+        'sidebar-hover': '#f4f5f7',
         surface: '#f4f5f7',
         card: '#ffffff',
         accent: {
