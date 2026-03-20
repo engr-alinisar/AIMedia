@@ -70,8 +70,19 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                   <!-- Header -->
                   <tr>
                     <td style="background:linear-gradient(135deg,#6d28d9,#7c3aed);padding:32px 40px;text-align:center;">
-                      <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">AiMedia</h1>
-                      <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">AI-Powered Media Generation</p>
+                      <table cellpadding="0" cellspacing="0" style="display:inline-table;">
+                        <tr>
+                          <td style="vertical-align:middle;padding-right:12px;">
+                            <div style="width:44px;height:44px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:44px;">
+                              <span style="color:#ffffff;font-size:22px;">&#9654;</span>
+                            </div>
+                          </td>
+                          <td style="vertical-align:middle;text-align:left;">
+                            <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">AiMedia</div>
+                            <div style="color:rgba(255,255,255,0.75);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">AI-POWERED MEDIA</div>
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                   </tr>
                   <!-- Body -->
