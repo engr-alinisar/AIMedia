@@ -1,5 +1,6 @@
 using System.Text;
 using AiMedia.API.Hubs;
+using Microsoft.EntityFrameworkCore;
 using AiMedia.API.Middleware;
 using AiMedia.FalAi.Extensions;
 using AiMedia.Infrastructure.Extensions;
