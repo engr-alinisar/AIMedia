@@ -70,12 +70,11 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                   <!-- Header -->
                   <tr>
                     <td style="background:linear-gradient(135deg,#6d28d9,#7c3aed);padding:32px 40px;text-align:center;">
-                      <table cellpadding="0" cellspacing="0" style="display:inline-table;">
+                      <table cellpadding="0" cellspacing="0" align="center">
                         <tr>
                           <td style="vertical-align:middle;padding-right:12px;">
-                            <div style="width:44px;height:44px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:44px;">
-                              <span style="color:#ffffff;font-size:22px;">&#9654;</span>
-                            </div>
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDQiIGhlaWdodD0iNDQiIHZpZXdCb3g9IjAgMCA0NCA0NCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDQiIGhlaWdodD0iNDQiIHJ4PSIxMCIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjIpIi8+PHBvbHlnb24gcG9pbnRzPSIxNywxMyAxNywzMSAzMywyMiIgZmlsbD0id2hpdGUiLz48L3N2Zz4="
+                                 width="44" height="44" alt="AiMedia" style="display:block;border-radius:10px;" />
                           </td>
                           <td style="vertical-align:middle;text-align:left;">
                             <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">AiMedia</div>
