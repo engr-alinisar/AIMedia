@@ -12,42 +12,43 @@ import type { JobDto } from '../../core/models/models';
   standalone: true,
   imports: [CommonModule, RouterLink, JobStatusComponent],
   template: `
-<div class="p-6 max-w-5xl mx-auto space-y-6">
+<div class="p-4 sm:p-6 max-w-5xl mx-auto space-y-5 sm:space-y-6">
   <!-- Welcome -->
   <div>
     <h1 class="text-xl font-semibold text-gray-900">Welcome back, {{ name() }} 👋</h1>
     <p class="text-sm text-gray-500 mt-1">Here's what's happening with your media.</p>
   </div>
 
-  <!-- Stats -->
-  <div class="grid grid-cols-3 gap-4">
-    <div class="card p-5">
-      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Credit Balance</p>
-      <p class="text-3xl font-bold text-gray-900 mt-1">{{ credits.balance().balance }}</p>
-      <p class="text-xs text-gray-400 mt-1">{{ credits.balance().reserved }} reserved</p>
+  <!-- Stats — 3 cols on all sizes but compact on mobile -->
+  <div class="grid grid-cols-3 gap-3">
+    <div class="card p-3 sm:p-5">
+      <p class="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">Credit Balance</p>
+      <p class="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{{ credits.balance().balance }}</p>
+      <p class="text-[10px] sm:text-xs text-gray-400 mt-1">{{ credits.balance().reserved }} reserved</p>
     </div>
-    <div class="card p-5">
-      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Jobs</p>
-      <p class="text-3xl font-bold text-gray-900 mt-1">{{ recentJobs().length }}</p>
-      <p class="text-xs text-gray-400 mt-1">This session</p>
+    <div class="card p-3 sm:p-5">
+      <p class="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">Total Jobs</p>
+      <p class="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{{ recentJobs().length }}</p>
+      <p class="text-[10px] sm:text-xs text-gray-400 mt-1">This session</p>
     </div>
-    <div class="card p-5">
-      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Plan</p>
-      <p class="text-3xl font-bold text-gray-900 mt-1">{{ auth.user()?.plan }}</p>
-      <a routerLink="/credits" class="text-xs text-accent hover:underline mt-1 block">Upgrade →</a>
+    <div class="card p-3 sm:p-5">
+      <p class="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">Plan</p>
+      <p class="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{{ auth.user()?.plan }}</p>
+      <a routerLink="/credits" class="text-[10px] sm:text-xs text-accent hover:underline mt-1 block">Upgrade →</a>
     </div>
   </div>
 
-  <!-- Quick actions -->
+  <!-- Quick actions — 2 cols on mobile, 3 on sm+ -->
   <div>
     <h2 class="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h2>
-    <div class="grid grid-cols-3 gap-3">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       @for (action of quickActions; track action.route) {
-        <a [routerLink]="action.route" class="card p-4 flex items-center gap-3 hover:border-accent/50 hover:shadow-md transition-all group">
-          <span class="text-2xl">{{ action.icon }}</span>
-          <div>
-            <p class="text-sm font-medium text-gray-900 group-hover:text-accent transition-colors">{{ action.label }}</p>
-            <p class="text-xs text-gray-400">{{ action.cost }}</p>
+        <a [routerLink]="action.route"
+           class="card p-3 sm:p-4 flex items-center gap-2 sm:gap-3 hover:border-accent/50 hover:shadow-md transition-all group">
+          <span class="text-xl sm:text-2xl flex-shrink-0">{{ action.icon }}</span>
+          <div class="min-w-0">
+            <p class="text-xs sm:text-sm font-medium text-gray-900 group-hover:text-accent transition-colors leading-tight">{{ action.label }}</p>
+            <p class="text-[10px] sm:text-xs text-gray-400 mt-0.5">{{ action.cost }}</p>
           </div>
         </a>
       }
@@ -70,14 +71,16 @@ import type { JobDto } from '../../core/models/models';
     } @else {
       <div class="card divide-y divide-border">
         @for (job of recentJobs(); track job.id) {
-          <div class="flex items-center gap-4 px-4 py-3">
-            <span class="text-lg">{{ productIcon(job.product) }}</span>
+          <div class="flex items-center gap-3 px-4 py-3">
+            <span class="text-lg flex-shrink-0">{{ productIcon(job.product) }}</span>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-900">{{ job.product }}</p>
-              <p class="text-xs text-gray-400">{{ job.createdAt | date:'short' }}</p>
+              <p class="text-sm font-medium text-gray-900 truncate">{{ productLabel(job.product) }}</p>
+              <p class="text-xs text-gray-400">{{ job.createdAt | date:'M/d/yy, h:mm a' }}</p>
             </div>
-            <app-job-status [status]="job.status"/>
-            <span class="text-xs text-gray-400">{{ job.creditsCharged || job.creditsReserved }}cr</span>
+            <div class="flex flex-col items-end gap-0.5 flex-shrink-0">
+              <app-job-status [status]="job.status"/>
+              <span class="text-[10px] text-gray-400">{{ job.creditsCharged || job.creditsReserved }} cr</span>
+            </div>
           </div>
         }
       </div>
@@ -108,6 +111,11 @@ export class DashboardComponent implements OnInit {
   productIcon(p: string) {
     const map: Record<string, string> = { ImageGen: '🖼️', ImageToVideo: '🎬', TextToVideo: '🎥', Voice: '🎙️', Transcription: '📝', BackgroundRemoval: '✂️' };
     return map[p] ?? '🎨';
+  }
+
+  productLabel(p: string) {
+    const map: Record<string, string> = { ImageGen: 'Image Generation', ImageToVideo: 'Image to Video', TextToVideo: 'Text to Video', Voice: 'Text to Voice', Transcription: 'Transcription', BackgroundRemoval: 'Background Removal' };
+    return map[p] ?? p;
   }
 
   ngOnInit() {

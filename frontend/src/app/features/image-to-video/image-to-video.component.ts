@@ -24,9 +24,9 @@ interface VideoModel {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, MediaPreviewComponent, JobStatusComponent],
   template: `
-<div class="flex h-full">
+<div class="flex flex-col lg:flex-row lg:h-full">
   <!-- Left panel -->
-  <div class="w-[420px] flex-shrink-0 border-r border-border bg-white flex flex-col overflow-y-auto">
+  <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
     <div class="px-5 py-4 border-b border-border">
       <h1 class="text-base font-semibold text-gray-900">Image to Video</h1>
     </div>
@@ -156,7 +156,7 @@ interface VideoModel {
   </div>
 
   <!-- Right panel — output area -->
-  <div class="flex-1 p-6 flex flex-col gap-4">
+  <div class="flex-1 p-4 lg:p-6 flex flex-col gap-4">
     <div class="flex items-center justify-between">
       <h2 class="text-sm font-medium text-gray-600">Video Output</h2>
       <div class="flex items-center gap-3">
@@ -190,7 +190,7 @@ interface VideoModel {
       </div>
     }
 
-    <div class="flex-1 min-h-0">
+    <div class="h-[55vw] sm:h-[420px] lg:h-auto lg:flex-1 lg:min-h-0">
       <app-media-preview [url]="outputUrl()" product="ImageToVideo"/>
     </div>
   </div>

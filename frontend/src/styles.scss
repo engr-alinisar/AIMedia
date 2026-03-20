@@ -85,3 +85,10 @@
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 9999px; }
+
+/* On mobile, feature pages scroll as a normal page */
+@media (max-width: 1023px) {
+  app-shell main { overflow-y: auto; }
+  /* Feature page panels scroll naturally in the stacked layout */
+  .flex.flex-col > div { overflow-y: visible; }
+}

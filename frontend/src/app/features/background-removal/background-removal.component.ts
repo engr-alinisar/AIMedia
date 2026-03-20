@@ -24,8 +24,8 @@ interface BgModel {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, MediaPreviewComponent, JobStatusComponent],
   template: `
-<div class="flex h-full">
-  <div class="w-[420px] flex-shrink-0 border-r border-border bg-white flex flex-col overflow-y-auto">
+<div class="flex flex-col lg:flex-row lg:h-full">
+  <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
     <div class="px-5 py-4 border-b border-border">
       <h1 class="text-base font-semibold text-gray-900">Background Removal</h1>
     </div>
@@ -136,7 +136,7 @@ interface BgModel {
   </div>
 
   <!-- Right panel -->
-  <div class="flex-1 p-6 flex flex-col gap-4">
+  <div class="flex-1 p-4 lg:p-6 flex flex-col gap-4">
     <div class="flex items-center justify-between">
       <h2 class="text-sm font-medium text-gray-600">Result</h2>
       <div class="flex items-center gap-3">
@@ -168,7 +168,7 @@ interface BgModel {
     }
 
     <!-- Checkerboard background to show transparency -->
-    <div class="flex-1 min-h-0 rounded-xl overflow-hidden border border-border"
+    <div class="h-[55vw] sm:h-[420px] lg:h-auto lg:flex-1 lg:min-h-0 rounded-xl overflow-hidden border border-border"
          style="background-image: url('data:image/svg+xml,%3Csvg width%3D%2220%22 height%3D%2220%22 xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Crect width%3D%2210%22 height%3D%2210%22 fill%3D%22%23f3f4f6%22/%3E%3Crect x%3D%2210%22 y%3D%2210%22 width%3D%2210%22 height%3D%2210%22 fill%3D%22%23f3f4f6%22/%3E%3Crect x%3D%2210%22 width%3D%2210%22 height%3D%2210%22 fill%3D%22%23e5e7eb%22/%3E%3Crect y%3D%2210%22 width%3D%2210%22 height%3D%2210%22 fill%3D%22%23e5e7eb%22/%3E%3C/svg%3E')">
       <app-media-preview [url]="outputUrl()" product="BackgroundRemoval"/>
     </div>

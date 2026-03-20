@@ -27,7 +27,7 @@ import type { JobDto, PagedResult } from '../../core/models/models';
     }
   `],
   template: `
-<div class="p-6 max-w-5xl mx-auto space-y-5">
+<div class="p-4 sm:p-6 max-w-5xl mx-auto space-y-4 sm:space-y-5">
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-xl font-semibold text-gray-900">My Jobs</h1>
@@ -61,40 +61,41 @@ import type { JobDto, PagedResult } from '../../core/models/models';
     <div class="card divide-y divide-gray-100">
       @for (job of result()?.items; track job.id) {
         <div [attr.data-job-id]="job.id"
-             class="flex items-center gap-4 px-5 py-4 transition-colors duration-300"
+             class="px-4 py-3 sm:px-5 sm:py-4 transition-colors duration-300"
              [class.bg-accent-light]="highlightedJobId() === job.id"
              [class.ring-2]="highlightedJobId() === job.id"
              [class.ring-accent]="highlightedJobId() === job.id"
              [class.ring-inset]="highlightedJobId() === job.id">
 
-          <!-- Icon -->
-          <span class="text-2xl flex-shrink-0">{{ productIcon(job.product) }}</span>
+          <!-- Top row: icon + name + status + credits -->
+          <div class="flex items-center gap-3">
+            <span class="text-xl flex-shrink-0">{{ productIcon(job.product) }}</span>
 
-          <!-- Details -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <p class="text-sm font-medium text-gray-900">{{ productLabel(job.product) }}</p>
-              @if (highlightedJobId() === job.id) {
-                <span class="px-1.5 py-0.5 text-[10px] font-bold bg-accent text-white rounded animate-pulse">New</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <p class="text-sm font-medium text-gray-900">{{ productLabel(job.product) }}</p>
+                @if (highlightedJobId() === job.id) {
+                  <span class="px-1.5 py-0.5 text-[10px] font-bold bg-accent text-white rounded animate-pulse">New</span>
+                }
+              </div>
+              <p class="text-xs text-gray-400 mt-0.5">{{ job.createdAt | date:'MMM d, y · h:mm a' }}</p>
+              @if (job.status === 'Failed' && job.errorMessage) {
+                <p class="text-xs text-red-500 mt-0.5 truncate" [title]="job.errorMessage">{{ job.errorMessage }}</p>
               }
             </div>
-            <p class="text-xs text-gray-400 mt-0.5">{{ job.createdAt | date:'MMM d, y · h:mm a' }}</p>
-            @if (job.status === 'Failed' && job.errorMessage) {
-              <p class="text-xs text-red-500 mt-1 truncate max-w-xs" [title]="job.errorMessage">{{ job.errorMessage }}</p>
-            }
+
+            <!-- Status + credits (always visible on right) -->
+            <div class="flex flex-col items-end gap-1 flex-shrink-0">
+              <app-job-status [status]="job.status"/>
+              <span class="text-xs text-gray-400">
+                {{ job.status === 'Completed' ? job.creditsCharged : job.creditsReserved }} cr
+              </span>
+            </div>
           </div>
 
-          <!-- Status -->
-          <app-job-status [status]="job.status"/>
-
-          <!-- Credits -->
-          <span class="text-sm text-gray-500 w-20 text-right flex-shrink-0">
-            {{ job.status === 'Completed' ? job.creditsCharged : job.creditsReserved }} cr
-          </span>
-
-          <!-- Actions -->
-          <div class="flex gap-2 flex-shrink-0">
-            @if (job.status === 'Completed' && job.outputUrl) {
+          <!-- Bottom row: action buttons -->
+          @if (job.status === 'Completed' && job.outputUrl) {
+            <div class="flex gap-2 mt-2.5 ml-8">
               <a [href]="job.outputUrl" target="_blank"
                  class="text-xs px-3 py-1.5 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors">
                 ▶ View
@@ -103,17 +104,21 @@ import type { JobDto, PagedResult } from '../../core/models/models';
                  class="text-xs px-3 py-1.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                 ↓ Download
               </a>
-            }
-            @if (job.status === 'Failed') {
+            </div>
+          }
+          @if (job.status === 'Failed') {
+            <div class="mt-2.5 ml-8">
               <a [routerLink]="retryLink(job)"
                  class="text-xs px-3 py-1.5 border border-amber-300 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors">
                 ↺ Retry
               </a>
-            }
-            @if (job.status === 'Queued' || job.status === 'Processing') {
-              <span class="text-xs px-3 py-1.5 text-gray-400 animate-pulse">Processing...</span>
-            }
-          </div>
+            </div>
+          }
+          @if (job.status === 'Queued' || job.status === 'Processing') {
+            <div class="mt-2 ml-8">
+              <span class="text-xs text-gray-400 animate-pulse">Processing...</span>
+            </div>
+          }
         </div>
       }
     </div>

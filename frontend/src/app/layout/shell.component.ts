@@ -17,10 +17,22 @@ interface NavGroup { category: string; items: NavItem[]; }
   template: `
 <div class="flex h-screen overflow-hidden bg-surface">
 
+  <!-- Mobile overlay -->
+  @if (sidebarOpen()) {
+    <div class="fixed inset-0 bg-black/40 z-40 lg:hidden" (click)="sidebarOpen.set(false)"></div>
+  }
+
   <!-- Sidebar -->
-  <aside class="w-56 flex-shrink-0 bg-sidebar border-r border-border flex flex-col h-full overflow-y-auto">
-    <!-- Logo -->
+  <aside class="fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-56 flex-shrink-0 bg-sidebar border-r border-border flex flex-col h-full overflow-y-auto transition-transform duration-300 lg:translate-x-0"
+         [class.-translate-x-full]="!sidebarOpen()">
+    <!-- Logo + mobile close -->
     <div class="px-4 py-5 flex items-center gap-2.5">
+      <button class="lg:hidden absolute top-3 right-3 p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              (click)="sidebarOpen.set(false)" aria-label="Close menu">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
       <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 128 128">
         <defs>
           <linearGradient id="logo-g" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -58,12 +70,13 @@ interface NavGroup { category: string; items: NavItem[]; }
       </div>
     </div>
 
+
     <!-- Nav -->
     <nav class="flex-1 px-2 pb-4">
       @for (group of navGroups; track group.category) {
         <p class="nav-category">{{ group.category }}</p>
         @for (item of group.items; track item.route) {
-          <a class="nav-item" [routerLink]="item.route" routerLinkActive="active">
+          <a class="nav-item" [routerLink]="item.route" routerLinkActive="active" (click)="sidebarOpen.set(false)">
             <span class="text-base">{{ item.icon }}</span>
             <span class="flex-1">{{ item.label }}</span>
             @if (item.badge) {
@@ -95,18 +108,33 @@ interface NavGroup { category: string; items: NavItem[]; }
   </aside>
 
   <!-- Main -->
-  <div class="flex-1 flex flex-col overflow-hidden">
+  <div class="flex-1 flex flex-col overflow-hidden min-w-0">
     <!-- Top bar -->
-    <header class="h-12 bg-white border-b border-border flex items-center justify-end px-6 gap-4 flex-shrink-0">
+    <header class="h-12 bg-white border-b border-border flex items-center px-3 lg:px-6 gap-2 lg:gap-4 flex-shrink-0">
+
+      <!-- Hamburger (mobile/tablet only) -->
+      <button class="lg:hidden p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors flex-shrink-0"
+              (click)="sidebarOpen.set(true)" aria-label="Open menu">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+
+      <!-- Mobile logo -->
+      <span class="lg:hidden font-bold text-gray-900 text-sm flex-shrink-0">
+        Ai<span style="color:#7C3AED;">Media</span>
+      </span>
+
+      <div class="flex-1"></div>
 
       <!-- Credit balance -->
-      <a routerLink="/credits" class="flex items-center gap-1.5 text-sm text-gray-600 hover:text-accent transition-colors">
+      <a routerLink="/credits" class="flex items-center gap-1 lg:gap-1.5 text-sm text-gray-600 hover:text-accent transition-colors">
         <svg class="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="12" cy="12" r="10"/>
           <path fill="white" d="M12 6v12M9 9h4.5a1.5 1.5 0 010 3H10.5a1.5 1.5 0 000 3H15"/>
         </svg>
         <span class="font-semibold text-gray-900">{{ credits.balance().balance }}</span>
-        <span class="text-gray-400">credits</span>
+        <span class="hidden sm:inline text-gray-400">credits</span>
         @if (credits.balance().balance < 50) {
           <span class="px-1.5 py-0.5 text-[10px] bg-red-50 text-red-600 rounded font-medium">Low</span>
         }
@@ -129,7 +157,7 @@ interface NavGroup { category: string; items: NavItem[]; }
 
         <!-- Dropdown -->
         @if (showNotifications()) {
-          <div class="absolute right-0 top-10 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+          <div class="absolute right-0 top-10 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
 
             <!-- Header -->
             <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -243,6 +271,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   private router = inject(Router);
 
   showNotifications = signal(false);
+  sidebarOpen = signal(false);
 
   navGroups: NavGroup[] = [
     {

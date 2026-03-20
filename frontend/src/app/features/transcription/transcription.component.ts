@@ -22,8 +22,8 @@ interface TranscriptionModel {
   standalone: true,
   imports: [CommonModule, FormsModule, JobStatusComponent],
   template: `
-<div class="flex h-full">
-  <div class="w-[420px] flex-shrink-0 border-r border-border bg-white flex flex-col overflow-y-auto">
+<div class="flex flex-col lg:flex-row lg:h-full">
+  <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
     <div class="px-5 py-4 border-b border-border">
       <h1 class="text-base font-semibold text-gray-900">Transcription</h1>
     </div>
@@ -136,17 +136,17 @@ interface TranscriptionModel {
   </div>
 
   <!-- Right panel -->
-  <div class="flex-1 p-6 flex flex-col gap-4">
+  <div class="flex-1 p-4 lg:p-6 flex flex-col gap-4">
     <div class="flex items-center justify-between">
       <h2 class="text-sm font-medium text-gray-600">Transcript</h2>
       @if (jobStatus()) { <app-job-status [status]="jobStatus()!"/> }
     </div>
     @if (transcript()) {
-      <div class="flex-1 card p-5 overflow-y-auto">
+      <div class="h-[300px] sm:h-[400px] lg:h-auto lg:flex-1 card p-5 overflow-y-auto">
         <pre class="text-sm text-gray-800 whitespace-pre-wrap font-sans leading-relaxed">{{ transcript() }}</pre>
       </div>
     } @else {
-      <div class="flex-1 card flex items-center justify-center text-gray-400">
+      <div class="h-[300px] sm:h-[400px] lg:h-auto lg:flex-1 card flex items-center justify-center text-gray-400">
         <div class="text-center">
           <div class="text-4xl mb-2">📝</div>
           <p class="text-sm">Transcript will appear here</p>
