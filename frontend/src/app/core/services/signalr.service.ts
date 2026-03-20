@@ -23,6 +23,16 @@ export class SignalRService {
     this.jobProductMap.set(jobId, product);
   }
 
+  /** Called by feature components when HTTP-fallback polling resolves a job
+   *  so that ShellComponent can show a notification even without SignalR. */
+  publishUpdate(update: JobStatusUpdate) {
+    const product = this.jobProductMap.get(update.jobId);
+    this._updates.set({ ...update, product });
+    if (update.status === 'Completed' || update.status === 'Failed') {
+      this.jobProductMap.delete(update.jobId);
+    }
+  }
+
   start() {
     if (this.connection) return;
 

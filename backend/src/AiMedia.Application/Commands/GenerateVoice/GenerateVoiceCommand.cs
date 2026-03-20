@@ -8,4 +8,5 @@ public record GenerateVoiceCommand(
     string Text,
     string ModelId,
     string? VoiceId = null,
-    Guid? VoiceCloneId = null) : IRequest<GenerationResponse>;
+    Guid? VoiceCloneId = null,
+    string? RefAudioUrl = null) : IRequest<GenerationResponse>;

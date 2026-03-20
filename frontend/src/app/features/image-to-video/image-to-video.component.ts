@@ -1,9 +1,13 @@
 import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { GenerationService } from '../../core/services/generation.service';
 import { CreditsService } from '../../core/services/credits.service';
+import { SignalRService } from '../../core/services/signalr.service';
+import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
+import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
+import { type JobStatus } from '../../core/models/models';
 
 interface VideoModel {
   id: string;
@@ -18,7 +22,7 @@ interface VideoModel {
 @Component({
   selector: 'app-image-to-video',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink, MediaPreviewComponent, JobStatusComponent],
   template: `
 <div class="flex h-full">
   <!-- Left panel -->
@@ -33,7 +37,6 @@ interface VideoModel {
       <div>
         <label class="form-label">Model</label>
         <div class="relative">
-          <!-- Trigger -->
           <button type="button"
                   class="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-border rounded-lg hover:border-accent transition-colors text-left"
                   (click)="dropdownOpen.set(!dropdownOpen())">
@@ -54,7 +57,6 @@ interface VideoModel {
             </svg>
           </button>
 
-          <!-- Dropdown panel -->
           @if (dropdownOpen()) {
             <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
               @for (m of models; track m.id) {
@@ -116,6 +118,7 @@ interface VideoModel {
       <div>
         <label class="form-label">Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
         <textarea class="form-textarea h-24" [(ngModel)]="prompt"
+          spellcheck="true"
           placeholder="Describe the motion or scene...&#10;Longer prompts work best."
           maxlength="2500"></textarea>
         <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2500</p>
@@ -146,33 +149,49 @@ interface VideoModel {
       </div>
       <button class="btn-primary w-full" (click)="generate()"
               [disabled]="(!imageUrl() && !selectedFile()) || generating() || !selectedModel()">
-        @if (generating()) { <span class="animate-spin mr-1">⟳</span> Submitting... }
+        @if (generating()) { <span class="animate-spin mr-1">⟳</span> Generating... }
         @else { ✨ Generate }
       </button>
     </div>
   </div>
 
-  <!-- Right panel -->
-  <div class="flex-1 p-10 flex flex-col items-center justify-center text-center gap-4 text-gray-400">
-    <div class="text-6xl">🎬</div>
-    <p class="text-base font-medium text-gray-600">How it works</p>
-    <div class="max-w-xs space-y-3 text-sm text-left">
-      <div class="flex gap-3 items-start">
-        <span class="w-6 h-6 rounded-full bg-accent text-white text-xs flex items-center justify-center flex-shrink-0">1</span>
-        <span>Select a model, upload an image and set your prompt &amp; duration</span>
+  <!-- Right panel — output area -->
+  <div class="flex-1 p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-sm font-medium text-gray-600">Video Output</h2>
+      <div class="flex items-center gap-3">
+        @if (jobStatus()) {
+          <app-job-status [status]="jobStatus()!"/>
+        }
+        @if (outputUrl()) {
+          <a [href]="outputUrl()" download target="_blank"
+             class="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent/90 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download
+          </a>
+        }
+        <a routerLink="/jobs" class="text-xs text-accent hover:underline">My Jobs →</a>
       </div>
-      <div class="flex gap-3 items-start">
-        <span class="w-6 h-6 rounded-full bg-accent text-white text-xs flex items-center justify-center flex-shrink-0">2</span>
-        <span>Hit Generate — your job is submitted to the AI model</span>
+    </div>
+
+    <!-- Processing status banner -->
+    @if (generating() && !outputUrl()) {
+      <div class="flex items-center gap-3 px-4 py-3 bg-accent-light border border-accent/20 rounded-xl">
+        <svg class="w-5 h-5 text-accent animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+        <div>
+          <p class="text-sm font-medium text-accent">Processing your video...</p>
+          <p class="text-xs text-accent/70">This usually takes 1–3 minutes. You can navigate away — results will be in <a routerLink="/jobs" class="underline">My Jobs</a>.</p>
+        </div>
       </div>
-      <div class="flex gap-3 items-start">
-        <span class="w-6 h-6 rounded-full bg-accent text-white text-xs flex items-center justify-center flex-shrink-0">3</span>
-        <span>You'll be redirected to <strong>My Jobs</strong> — results appear there in 1–3 minutes</span>
-      </div>
-      <div class="flex gap-3 items-start">
-        <span class="w-6 h-6 rounded-full bg-accent text-white text-xs flex items-center justify-center flex-shrink-0">4</span>
-        <span>View and download your video once complete</span>
-      </div>
+    }
+
+    <div class="flex-1 min-h-0">
+      <app-media-preview [url]="outputUrl()" product="ImageToVideo"/>
     </div>
   </div>
 </div>
@@ -181,7 +200,7 @@ interface VideoModel {
 export class ImageToVideoComponent implements OnInit, OnDestroy {
   private gen = inject(GenerationService);
   private credits = inject(CreditsService);
-  private router = inject(Router);
+  private signalR = inject(SignalRService);
 
   models: VideoModel[] = [
     {
@@ -241,10 +260,15 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   duration = 5;
 
   generating = signal(false);
+  jobStatus = signal<JobStatus | null>(null);
+  outputUrl = signal<string | undefined>(undefined);
   errorMsg = signal<string | undefined>(undefined);
   selectedFile = signal<File | null>(null);
 
   costEstimate = signal(this.models[0].creditsPerSec * 5);
+
+  private currentJobId: string | null = null;
+  private pollInterval?: ReturnType<typeof setInterval>;
 
   ngOnInit() {
     document.addEventListener('click', this.onDocumentClick);
@@ -290,6 +314,8 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   generate() {
     if ((!this.imageUrl() && !this.selectedFile()) || this.generating() || !this.selectedModel()) return;
     this.generating.set(true);
+    this.jobStatus.set('Queued');
+    this.outputUrl.set(undefined);
     this.errorMsg.set(undefined);
 
     const submit = (imageUrl: string) => {
@@ -300,11 +326,14 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
         durationSeconds: this.duration
       }).subscribe({
         next: res => {
+          this.currentJobId = res.jobId;
           this.credits.reserveLocally(res.creditsReserved);
-          this.router.navigate(['/jobs'], { queryParams: { submitted: '1' } });
+          this.signalR.trackJob(res.jobId, 'ImageToVideo');
+          this.startFallback();
         },
         error: err => {
           this.generating.set(false);
+          this.jobStatus.set('Failed');
           this.errorMsg.set(err.error?.error ?? err.error?.detail ?? 'Generation failed.');
         }
       });
@@ -315,6 +344,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
         next: res => { this.imageUrl.set(res.url); submit(res.url); },
         error: err => {
           this.generating.set(false);
+          this.jobStatus.set('Failed');
           this.errorMsg.set(err.error?.error ?? 'Upload failed.');
         }
       });
@@ -323,7 +353,44 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
     }
   }
 
+  private startFallback() {
+    let polling = false;
+    this.pollInterval = setInterval(() => {
+      const u = this.signalR.latestUpdate();
+      if (u?.jobId === this.currentJobId) {
+        this.apply(u.status as JobStatus, u.outputUrl, u.errorMessage);
+        clearInterval(this.pollInterval); return;
+      }
+      if (polling || !this.currentJobId) return;
+      polling = true;
+      this.gen.getJob(this.currentJobId).subscribe({
+        next: j => {
+          polling = false;
+          if (j.status === 'Completed' || j.status === 'Failed') {
+            this.signalR.publishUpdate({ jobId: j.id, status: j.status, outputUrl: j.outputUrl, creditsCharged: j.creditsCharged, errorMessage: j.errorMessage });
+            this.apply(j.status, j.outputUrl, j.errorMessage);
+            clearInterval(this.pollInterval);
+          }
+        },
+        error: () => { polling = false; }
+      });
+    }, 5000);
+  }
+
+  private apply(status: JobStatus, url?: string, err?: string) {
+    this.jobStatus.set(status);
+    this.generating.set(false);
+    if (status === 'Completed') {
+      this.outputUrl.set(url);
+      this.credits.loadBalance().subscribe();
+    } else {
+      this.errorMsg.set(err ?? 'Generation failed.');
+      this.credits.loadBalance().subscribe();
+    }
+  }
+
   ngOnDestroy() {
     document.removeEventListener('click', this.onDocumentClick);
+    clearInterval(this.pollInterval);
   }
 }

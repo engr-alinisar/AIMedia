@@ -26,7 +26,13 @@ export class GenerationService {
     return this.http.post<{ url: string }>(`${environment.apiUrl}/api/upload`, formData);
   }
 
-  generateImage(payload: { prompt: string; modelId: string; width?: number; height?: number; negativePrompt?: string }) {
+  uploadAudio(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ url: string }>(`${environment.apiUrl}/api/upload/audio`, formData);
+  }
+
+  generateImage(payload: { prompt: string; modelId: string; imageSize?: string; negativePrompt?: string }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image`, payload);
   }
 
@@ -38,7 +44,7 @@ export class GenerationService {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/text-to-video`, payload);
   }
 
-  generateVoice(payload: { text: string; modelId: string; voiceId?: string; voiceCloneId?: string }) {
+  generateVoice(payload: { text: string; modelId: string; voiceId?: string; voiceCloneId?: string; refAudioUrl?: string }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/voice`, payload);
   }
 

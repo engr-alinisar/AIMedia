@@ -231,7 +231,7 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
     fd.append('modelId', this.selectedModel()!.id);
 
     this.gen.generateTranscription(fd).subscribe({
-      next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.startFallback(); },
+      next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.signalR.trackJob(res.jobId, 'Transcription'); this.startFallback(); },
       error: err => { this.generating.set(false); this.jobStatus.set('Failed'); this.errorMsg.set(err.error?.error ?? 'Failed.'); }
     });
   }
@@ -242,15 +242,28 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
       const u = this.signalR.latestUpdate();
       if (u?.jobId === this.currentJobId) { this.apply(u.status as JobStatus, u.outputUrl, u.errorMessage); clearInterval(this.pollInterval); return; }
       if (Date.now() - start > 30000 && this.currentJobId) {
-        this.gen.getJob(this.currentJobId).subscribe(j => { if (j.status === 'Completed' || j.status === 'Failed') { this.apply(j.status, j.outputUrl, j.errorMessage); clearInterval(this.pollInterval); } });
+        this.gen.getJob(this.currentJobId).subscribe(j => { if (j.status === 'Completed' || j.status === 'Failed') { this.signalR.publishUpdate({ jobId: j.id, status: j.status, outputUrl: j.outputUrl, creditsCharged: j.creditsCharged, errorMessage: j.errorMessage }); this.apply(j.status, j.outputUrl, j.errorMessage); clearInterval(this.pollInterval); } });
       }
     }, 1000);
   }
 
   private apply(status: JobStatus, url?: string, err?: string) {
     this.jobStatus.set(status); this.generating.set(false);
-    if (status === 'Completed') { this.transcript.set(url ?? '(no transcript returned)'); this.credits.loadBalance().subscribe(); }
-    else { this.errorMsg.set(err ?? 'Failed.'); this.credits.loadBalance().subscribe(); }
+    if (status === 'Completed') {
+      if (url) {
+        // Fetch transcript text from R2 public URL
+        fetch(url)
+          .then(r => r.text())
+          .then(text => { this.transcript.set(text); })
+          .catch(() => { this.transcript.set('(could not load transcript)'); });
+      } else {
+        this.transcript.set('(no transcript returned)');
+      }
+      this.credits.loadBalance().subscribe();
+    } else {
+      this.errorMsg.set(err ?? 'Failed.');
+      this.credits.loadBalance().subscribe();
+    }
   }
 
   ngOnDestroy() {

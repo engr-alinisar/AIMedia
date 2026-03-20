@@ -54,17 +54,37 @@ public class PollStuckJobsJob(
 
                     if (status.Status == "COMPLETED")
                     {
-                        falStatus = "OK";
-                        outputUrl = await falClient.GetResultUrlAsync(job.FalResponseUrl!, ct);
+                        string? outputText = null;
+
+                        if (!string.IsNullOrEmpty(job.FalResponseUrl))
+                        {
+                            var result = await falClient.GetResultOutputAsync(job.FalResponseUrl, ct);
+                            outputUrl = result?.Url;
+                            outputText = result?.Text;
+                        }
+
+                        if (outputUrl != null || outputText != null)
+                        {
+                            falStatus = "OK";
+                        }
+                        else
+                        {
+                            falStatus = "ERROR";
+                            errorMessage = "Job reported completed but result was unavailable — please retry.";
+                            logger.LogWarning("PollStuckJobs: job {JobId} status=COMPLETED but result returned null", job.Id);
+                        }
+
+                        await mediator.Send(
+                            new ProcessWebhookCommand(job.FalRequestId, falStatus, outputUrl, errorMessage, null, outputText), ct);
                     }
                     else
                     {
                         falStatus = "ERROR";
                         errorMessage = "Job failed on fal.ai (detected by poll)";
-                    }
 
-                    await mediator.Send(
-                        new ProcessWebhookCommand(job.FalRequestId, falStatus, outputUrl, errorMessage, null), ct);
+                        await mediator.Send(
+                            new ProcessWebhookCommand(job.FalRequestId, falStatus, outputUrl, errorMessage, null), ct);
+                    }
 
                     logger.LogInformation(
                         "PollStuckJobs: processed job {JobId} with status {Status}",

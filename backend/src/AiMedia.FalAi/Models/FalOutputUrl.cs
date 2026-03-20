@@ -13,9 +13,13 @@ public class FalOutputUrls
     [JsonPropertyName("video")]
     public FalMediaItem? Video { get; set; }
 
-    // Audio / TTS: audio.url
+    // Audio / TTS: audio.url (some models)
     [JsonPropertyName("audio")]
     public FalMediaItem? Audio { get; set; }
+
+    // F5-TTS uses audio_url instead of audio
+    [JsonPropertyName("audio_url")]
+    public FalMediaItem? AudioUrl { get; set; }
 
     // Transcription: text (plain string, not a URL)
     [JsonPropertyName("text")]
@@ -29,6 +33,7 @@ public class FalOutputUrls
         Images?.FirstOrDefault()?.Url
         ?? Video?.Url
         ?? Audio?.Url
+        ?? AudioUrl?.Url
         ?? Image?.Url;
 }
 

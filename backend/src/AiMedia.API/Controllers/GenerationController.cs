@@ -28,7 +28,7 @@ public class GenerationController : ControllerBase
     {
         var result = await _mediator.Send(new GenerateImageCommand(
             GetUserId(), request.Prompt, request.ModelId,
-            request.Width, request.Height, request.NegativePrompt), ct);
+            request.ImageSize, request.NegativePrompt), ct);
         return Accepted(result);
     }
 
@@ -53,9 +53,13 @@ public class GenerationController : ControllerBase
     [HttpPost("voice")]
     public async Task<IActionResult> Voice([FromBody] GenerateVoiceRequest request, CancellationToken ct)
     {
+        Guid? cloneId = request.VoiceCloneId.HasValue ? request.VoiceCloneId
+            : request.VoiceCloneIdStr is not null && Guid.TryParse(request.VoiceCloneIdStr, out var parsed)
+                ? parsed : null;
+
         var result = await _mediator.Send(new GenerateVoiceCommand(
             GetUserId(), request.Text, request.ModelId,
-            request.VoiceId, request.VoiceCloneId), ct);
+            request.VoiceId, cloneId, request.RefAudioUrl), ct);
         return Accepted(result);
     }
 
@@ -100,8 +104,7 @@ public class GenerationController : ControllerBase
 public record GenerateImageRequest(
     string Prompt,
     string ModelId = "fal-ai/flux-pro/v1.1",
-    int Width = 1024,
-    int Height = 1024,
+    string ImageSize = "square_hd",
     string? NegativePrompt = null);
 
 public record GenerateImageToVideoRequest(
@@ -120,7 +123,9 @@ public record GenerateVoiceRequest(
     string Text,
     string ModelId = "fal-ai/kokoro",
     string? VoiceId = null,
-    Guid? VoiceCloneId = null);
+    Guid? VoiceCloneId = null,
+    string? VoiceCloneIdStr = null,
+    string? RefAudioUrl = null);
 
 public record TranscriptionRequest(
     string ModelId = "fal-ai/whisper",

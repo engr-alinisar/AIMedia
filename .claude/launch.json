@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "logo-preview",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5099", "--directory", "D:\\Projects\\AiMedia"],
-      "port": 5099
+      "name": "frontend",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd D:\\Projects\\AiMedia\\frontend && npm run start -- --port 4200"],
+      "port": 4200
     }
   ]
 }

@@ -27,7 +27,7 @@ public class GenerateImageCommandHandler(
         var input = new
         {
             prompt = request.Prompt,
-            image_size = $"{request.Width}x{request.Height}",
+            image_size = request.ImageSize,
             negative_prompt = request.NegativePrompt
         };
 

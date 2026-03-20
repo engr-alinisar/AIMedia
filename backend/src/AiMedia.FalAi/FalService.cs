@@ -119,10 +119,35 @@ public class FalService : IFalClient
 
     /// <summary>
     /// Fetches the result using the exact response_url returned at submission time.
+    /// Returns null (instead of throwing) when fal.ai returns 4xx/5xx — caller should treat as failure.
     /// </summary>
     public async Task<string?> GetResultUrlAsync(string responseUrl, CancellationToken ct = default)
     {
-        var result = await _http.GetFromJsonAsync<AiMedia.FalAi.Models.FalOutputUrls>(responseUrl, JsonOptions, ct);
-        return result?.GetFirstUrl();
+        var output = await GetResultOutputAsync(responseUrl, ct);
+        return output?.Url;
+    }
+
+    /// <summary>
+    /// Fetches both the output URL and output text from a completed fal.ai job.
+    /// Transcription jobs return Text only; all other jobs return Url only.
+    /// Returns null on failure.
+    /// </summary>
+    public async Task<AiMedia.Application.Interfaces.FalResultOutput?> GetResultOutputAsync(string responseUrl, CancellationToken ct = default)
+    {
+        var response = await _http.GetAsync(responseUrl, ct);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(ct);
+            _logger.LogWarning(
+                "GetResultOutputAsync: fal.ai returned {Status} for response URL — treating as failed. Body: {Body}",
+                (int)response.StatusCode, body);
+            return null;
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<AiMedia.FalAi.Models.FalOutputUrls>(JsonOptions, ct);
+        if (result is null) return null;
+
+        return new AiMedia.Application.Interfaces.FalResultOutput(result.GetFirstUrl(), result.Text);
     }
 }

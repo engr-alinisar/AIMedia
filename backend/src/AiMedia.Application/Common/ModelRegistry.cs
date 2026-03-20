@@ -38,6 +38,7 @@ public static class ModelRegistry
         // Voice
         new("fal-ai/kokoro",                              "Kokoro",          "Lightweight TTS, natural voice quality",               4,  0, ProductType.Voice, ModelTier.Free),
         new("fal-ai/minimax/speech-02-hd",                "MiniMax HD",      "High definition voice synthesis",                     18, 0, ProductType.Voice, ModelTier.Standard),
+        new("fal-ai/f5-tts",                              "F5-TTS",          "Clone any voice from a 15–30s audio sample",          12, 0, ProductType.Voice, ModelTier.Premium),
 
         // Transcription
         new("fal-ai/whisper",                             "Whisper",         "OpenAI Whisper, accurate and free",                    10, 0, ProductType.Transcription, ModelTier.Free),

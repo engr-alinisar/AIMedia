@@ -1,6 +1,7 @@
 import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { GenerationService } from '../../core/services/generation.service';
 import { CreditsService } from '../../core/services/credits.service';
 import { SignalRService } from '../../core/services/signalr.service';
@@ -21,7 +22,7 @@ interface VideoModel {
 @Component({
   selector: 'app-text-to-video',
   standalone: true,
-  imports: [CommonModule, FormsModule, MediaPreviewComponent, JobStatusComponent],
+  imports: [CommonModule, FormsModule, RouterLink, MediaPreviewComponent, JobStatusComponent],
   template: `
 <div class="flex h-full">
   <div class="w-[420px] flex-shrink-0 border-r border-border bg-white flex flex-col overflow-y-auto">
@@ -94,6 +95,7 @@ interface VideoModel {
       <div>
         <label class="form-label">Prompt</label>
         <textarea class="form-textarea h-32" [(ngModel)]="prompt"
+          spellcheck="true"
           placeholder="Describe your video scene in detail..." maxlength="2500"></textarea>
         <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2500</p>
       </div>
@@ -142,9 +144,33 @@ interface VideoModel {
   <!-- Right panel -->
   <div class="flex-1 p-6 flex flex-col gap-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-sm font-medium text-gray-600">Preview</h2>
-      @if (jobStatus()) { <app-job-status [status]="jobStatus()!"/> }
+      <h2 class="text-sm font-medium text-gray-600">Video Output</h2>
+      <div class="flex items-center gap-3">
+        @if (jobStatus()) { <app-job-status [status]="jobStatus()!"/> }
+        @if (outputUrl()) {
+          <a [href]="outputUrl()" download target="_blank"
+             class="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent/90 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Download
+          </a>
+        }
+        <a routerLink="/jobs" class="text-xs text-accent hover:underline">My Jobs →</a>
+      </div>
     </div>
+    @if (generating() && !outputUrl()) {
+      <div class="flex items-center gap-3 px-4 py-3 bg-accent-light border border-accent/20 rounded-xl">
+        <svg class="w-5 h-5 text-accent animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+        <div>
+          <p class="text-sm font-medium text-accent">Processing your video...</p>
+          <p class="text-xs text-accent/70">This usually takes 1–3 minutes. You can navigate away — results will be in <a routerLink="/jobs" class="underline">My Jobs</a>.</p>
+        </div>
+      </div>
+    }
     <div class="flex-1 min-h-0"><app-media-preview [url]="outputUrl()" product="TextToVideo"/></div>
   </div>
 </div>
@@ -234,20 +260,33 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
       durationSeconds: this.duration,
       aspectRatio: this.aspectRatio
     }).subscribe({
-      next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.startFallback(); },
+      next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.signalR.trackJob(res.jobId, 'TextToVideo'); this.startFallback(); },
       error: err => { this.generating.set(false); this.jobStatus.set('Failed'); this.errorMsg.set(err.error?.error ?? 'Failed.'); }
     });
   }
 
   private startFallback() {
-    const start = Date.now();
+    let polling = false;
     this.pollInterval = setInterval(() => {
       const u = this.signalR.latestUpdate();
-      if (u?.jobId === this.currentJobId) { this.apply(u.status as JobStatus, u.outputUrl, u.errorMessage); clearInterval(this.pollInterval); return; }
-      if (Date.now() - start > 30000 && this.currentJobId) {
-        this.gen.getJob(this.currentJobId).subscribe(j => { if (j.status === 'Completed' || j.status === 'Failed') { this.apply(j.status, j.outputUrl, j.errorMessage); clearInterval(this.pollInterval); } });
+      if (u?.jobId === this.currentJobId) {
+        this.apply(u.status as JobStatus, u.outputUrl, u.errorMessage);
+        clearInterval(this.pollInterval); return;
       }
-    }, 1000);
+      if (polling || !this.currentJobId) return;
+      polling = true;
+      this.gen.getJob(this.currentJobId).subscribe({
+        next: j => {
+          polling = false;
+          if (j.status === 'Completed' || j.status === 'Failed') {
+            this.signalR.publishUpdate({ jobId: j.id, status: j.status, outputUrl: j.outputUrl, creditsCharged: j.creditsCharged, errorMessage: j.errorMessage });
+            this.apply(j.status, j.outputUrl, j.errorMessage);
+            clearInterval(this.pollInterval);
+          }
+        },
+        error: () => { polling = false; }
+      });
+    }, 5000);
   }
 
   private apply(status: JobStatus, url?: string, err?: string) {

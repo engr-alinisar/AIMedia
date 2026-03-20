@@ -45,7 +45,13 @@
       "WebFetch(domain:fal.ai)",
       "Bash(ls /mnt/)",
       "Bash(ls /drives/)",
-      "Bash(find D:/Projects/AiMedia/backend -name *.cs -path */Migrations/*)"
+      "Bash(find D:/Projects/AiMedia/backend -name *.cs -path */Migrations/*)",
+      "Bash(\"D:\\\\Projects\\\\AiMedia\\\\backend\\\\src\\\\AiMedia.API\\\\Controllers\\\\VoiceClonesController.cs\")",
+      "Bash(\"D:/Projects/AiMedia/backend/src/AiMedia.API/Controllers/VoiceClonesController.cs\")",
+      "Bash(\"D:/Projects/AiMedia/frontend/src/app/core/services/voice-clone.service.ts\")",
+      "Bash(\"D:/Projects/AiMedia/frontend/src/app/shared/components/clone-voice-modal/clone-voice-modal.component.ts\")",
+      "Bash(dir D:ProjectsAiMediabackendsrcAiMedia.ApplicationCommands /s /b)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

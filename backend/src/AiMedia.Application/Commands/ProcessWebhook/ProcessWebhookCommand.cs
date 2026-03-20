@@ -2,4 +2,11 @@ using MediatR;
 
 namespace AiMedia.Application.Commands.ProcessWebhook;
 
-public record ProcessWebhookCommand(string FalRequestId, string Status, string? OutputUrl, string? ErrorMessage, string? RawPayload) : IRequest;
+public record ProcessWebhookCommand(
+    string FalRequestId,
+    string Status,
+    string? OutputUrl,
+    string? ErrorMessage,
+    string? RawPayload,
+    string? OutputText = null   // for transcription results (plain text, not a URL)
+) : IRequest;

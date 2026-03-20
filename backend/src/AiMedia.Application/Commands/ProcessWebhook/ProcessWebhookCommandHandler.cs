@@ -1,3 +1,4 @@
+using System.Text;
 using AiMedia.Application.Interfaces;
 using AiMedia.Domain.Enums;
 using AiMedia.Domain.Events;
@@ -22,20 +23,35 @@ public class ProcessWebhookCommandHandler(
         // Idempotency: skip if already processed
         if (job.Status is JobStatus.Completed or JobStatus.Failed) return;
 
-        if (request.Status == "OK" && request.OutputUrl != null)
+        if (request.Status == "OK" && (request.OutputUrl != null || request.OutputText != null))
         {
-            // Download from fal (temporary URL) → upload to R2
+            // Upload output to R2:
+            //   - Standard jobs: download the fal.ai file URL → re-upload to R2
+            //   - Transcription: save plain text directly to R2 (fal returns text, not a URL)
             string? r2Key = null;
             try
             {
-                var ext = Path.GetExtension(new Uri(request.OutputUrl).LocalPath).TrimStart('.');
-                if (string.IsNullOrEmpty(ext)) ext = GetDefaultExtension(job.Product);
+                string filename;
+                string contentType;
+                Stream fileStream;
 
-                var filename = $"output.{ext}";
+                if (request.OutputText != null)
+                {
+                    filename = "transcription.txt";
+                    contentType = "text/plain; charset=utf-8";
+                    fileStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(request.OutputText));
+                }
+                else
+                {
+                    var ext = Path.GetExtension(new Uri(request.OutputUrl!).LocalPath).TrimStart('.');
+                    if (string.IsNullOrEmpty(ext)) ext = GetDefaultExtension(job.Product);
+                    filename = $"output.{ext}";
+                    contentType = GetContentType(job.Product);
+                    fileStream = await storage.DownloadAsync(request.OutputUrl!, cancellationToken);
+                }
+
                 r2Key = storage.BuildKey(job.UserId, job.Id, filename);
-
-                using var stream = await storage.DownloadAsync(request.OutputUrl, cancellationToken);
-                var contentType = GetContentType(job.Product);
+                using var stream = fileStream;
                 await storage.UploadAsync(stream, r2Key, contentType, cancellationToken);
             }
             catch

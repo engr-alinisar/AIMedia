@@ -38,7 +38,12 @@ try
     var redisUrl = builder.Configuration["REDIS_URL"]
                 ?? builder.Configuration.GetConnectionString("Redis");
 
-    var signalR = builder.Services.AddSignalR();
+    var signalR = builder.Services.AddSignalR()
+        .AddJsonProtocol(opts =>
+        {
+            opts.PayloadSerializerOptions.Converters.Add(
+                new System.Text.Json.Serialization.JsonStringEnumConverter());
+        });
     if (!string.IsNullOrEmpty(redisUrl))
         signalR.AddStackExchangeRedis(redisUrl);
 

@@ -29,21 +29,44 @@ public class GenerateVoiceCommandHandler(
 
         var jobId = Guid.NewGuid();
 
-        string? customVoiceId = null;
-        if (request.VoiceCloneId.HasValue)
+        object input;
+        if (request.ModelId == "fal-ai/f5-tts")
         {
-            var clone = await db.VoiceClones.FirstOrDefaultAsync(
-                v => v.Id == request.VoiceCloneId && v.UserId == request.UserId,
-                cancellationToken) ?? throw new InvalidOperationException("Voice clone not found.");
-            customVoiceId = clone.FalVoiceId;
-        }
+            string? refAudioUrl = request.RefAudioUrl;
+            string refText = "";
 
-        var input = new
+            // Saved voice clone takes priority over inline upload
+            if (request.VoiceCloneId.HasValue)
+            {
+                var clone = await db.VoiceClones.FirstOrDefaultAsync(
+                    v => v.Id == request.VoiceCloneId && v.UserId == request.UserId,
+                    cancellationToken) ?? throw new InvalidOperationException("Voice clone not found.");
+
+                refAudioUrl = clone.FalVoiceId; // R2 public URL stored in FalVoiceId
+                refText = clone.ReferenceText;
+                clone.LastUsedAt = DateTime.UtcNow;
+            }
+
+            if (string.IsNullOrEmpty(refAudioUrl))
+                throw new InvalidOperationException("A reference audio URL is required for F5-TTS voice cloning.");
+
+            input = new
+            {
+                gen_text = request.Text,
+                ref_audio_url = refAudioUrl,
+                ref_text = refText,
+                model_type = "F5-TTS"
+            };
+        }
+        else
         {
-            text = request.Text,
-            voice_id = request.VoiceId,
-            custom_voice_id = customVoiceId
-        };
+            // fal-ai/kokoro uses "voice" field (not "voice_id")
+            input = new
+            {
+                text = request.Text,
+                voice = request.VoiceId
+            };
+        }
 
         await creditService.ReserveAsync(request.UserId, jobId, credits, $"Voice TTS ({model.Name})", cancellationToken);
 

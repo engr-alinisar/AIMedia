@@ -7,6 +7,5 @@ public record GenerateImageCommand(
     Guid UserId,
     string Prompt,
     string ModelId,
-    int Width = 1024,
-    int Height = 1024,
+    string ImageSize = "square_hd",
     string? NegativePrompt = null) : IRequest<GenerationResponse>;

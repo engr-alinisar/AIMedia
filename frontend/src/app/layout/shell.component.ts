@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, effect, untracked } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../core/auth/auth.service';
@@ -113,7 +113,7 @@ interface NavGroup { category: string; items: NavItem[]; }
       </a>
 
       <!-- Notification Bell -->
-      <div class="relative" #bellContainer>
+      <div class="relative" data-bell-container>
         <button (click)="toggleNotifications()"
                 class="relative p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,6 +224,22 @@ export class ShellComponent implements OnInit, OnDestroy {
   notif = inject(NotificationService);
   private signalR = inject(SignalRService);
   private generation = inject(GenerationService);
+
+  constructor() {
+    // effect() is truly reactive — fires instantly when latestUpdate signal changes,
+    // no polling interval needed, works regardless of NgZone
+    effect(() => {
+      const update = this.signalR.latestUpdate();
+      if (!update) return;
+      untracked(() => {
+        this.generation.applyUpdate(update);
+        if (update.status === 'Completed' || update.status === 'Failed') {
+          this.credits.loadBalance().subscribe();
+          this.notif.addFromJobUpdate(update, update.product ?? 'Unknown');
+        }
+      });
+    });
+  }
   private router = inject(Router);
 
   showNotifications = signal(false);
@@ -272,11 +288,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   onNotificationClick(n: AppNotification) {
     this.notif.markRead(n.id);
     this.showNotifications.set(false);
-    if (n.type === 'completed' && n.outputUrl) {
-      window.open(n.outputUrl, '_blank');
-    } else {
-      this.router.navigate(['/jobs']);
-    }
+    this.router.navigate(['/jobs'], { queryParams: { highlight: n.jobId } });
   }
 
   timeAgo(iso: string): string {
@@ -292,7 +304,6 @@ export class ShellComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.signalR.start();
     this.credits.loadBalance().subscribe();
-    this.watchUpdates();
 
     // Close dropdown when clicking outside
     document.addEventListener('click', this.onDocumentClick);
@@ -300,35 +311,13 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   private onDocumentClick = (e: MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (!target.closest('[\\#bellContainer]') && !target.closest('.relative')) {
+    const bellEl = document.querySelector('[data-bell-container]');
+    if (bellEl && !bellEl.contains(target)) {
       this.showNotifications.set(false);
     }
   };
 
-  private updateInterval?: ReturnType<typeof setInterval>;
-  private lastSeenUpdateKey: string | null = null;
-
-  private watchUpdates() {
-    this.updateInterval = setInterval(() => {
-      const update = this.signalR.latestUpdate();
-      if (!update) return;
-
-      // Deduplicate — only process each update once
-      const key = `${update.jobId}-${update.status}`;
-      if (key === this.lastSeenUpdateKey) return;
-      this.lastSeenUpdateKey = key;
-
-      this.generation.applyUpdate(update);
-
-      if (update.status === 'Completed' || update.status === 'Failed') {
-        this.credits.loadBalance().subscribe();
-        this.notif.addFromJobUpdate(update, update.product ?? 'Unknown');
-      }
-    }, 500);
-  }
-
   ngOnDestroy() {
-    clearInterval(this.updateInterval);
     this.signalR.stop();
     document.removeEventListener('click', this.onDocumentClick);
   }

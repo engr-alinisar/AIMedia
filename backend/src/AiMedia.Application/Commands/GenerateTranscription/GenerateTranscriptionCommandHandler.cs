@@ -28,11 +28,12 @@ public class GenerateTranscriptionCommandHandler(
         string audioUrl = request.AudioUrl ?? string.Empty;
 
         // Upload file to R2 if stream provided
+        // Use public URL (not presigned) — fal.ai cannot fetch presigned R2 URLs
         if (request.AudioStream != null && request.FileName != null)
         {
             var key = storage.BuildKey(request.UserId, jobId, request.FileName);
             await storage.UploadAsync(request.AudioStream, key, "audio/mpeg", cancellationToken);
-            audioUrl = await storage.GetPresignedUrlAsync(key, TimeSpan.FromHours(1));
+            audioUrl = storage.GetPublicUrl(key);
         }
 
         var input = new { audio_url = audioUrl };

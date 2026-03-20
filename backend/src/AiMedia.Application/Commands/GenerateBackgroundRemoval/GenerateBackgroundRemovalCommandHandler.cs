@@ -31,7 +31,7 @@ public class GenerateBackgroundRemovalCommandHandler(
         {
             var key = storage.BuildKey(request.UserId, jobId, request.FileName);
             await storage.UploadAsync(request.ImageStream, key, "image/png", cancellationToken);
-            imageUrl = await storage.GetPresignedUrlAsync(key, TimeSpan.FromHours(1));
+            imageUrl = storage.GetPublicUrl(key); // public URL required — fal.ai cannot fetch presigned R2 URLs
         }
 
         var input = new { image_url = imageUrl };

@@ -85,12 +85,14 @@ public class WebhooksController : ControllerBase
             return new EmptyResult();
         }
 
-        // Extract first output URL from payload if status=OK
+        // Extract first output URL (or transcription text) from payload if status=OK
         string? outputUrl = null;
+        string? outputText = null;
         if (payload.Status == "OK" && payload.Payload is not null)
         {
             var outputs = payload.Payload.Deserialize<FalOutputUrls>();
             outputUrl = outputs?.GetFirstUrl();
+            outputText = outputs?.Text; // transcription result — plain text, not a URL
         }
 
         // Enqueue Hangfire job — never process inline
@@ -98,7 +100,7 @@ public class WebhooksController : ControllerBase
         var status = payload.Status;
         var errorMessage = payload.Error?.Message;
         _jobs.Enqueue<IMediator>(m => m.Send(
-            new ProcessWebhookCommand(requestId, status, outputUrl, errorMessage, rawBody),
+            new ProcessWebhookCommand(requestId, status, outputUrl, errorMessage, rawBody, outputText),
             CancellationToken.None));
 
         _logger.LogInformation("Fal webhook enqueued for RequestId {RequestId}", payload.RequestId);
