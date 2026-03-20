@@ -51,7 +51,9 @@
       "Bash(\"D:/Projects/AiMedia/frontend/src/app/core/services/voice-clone.service.ts\")",
       "Bash(\"D:/Projects/AiMedia/frontend/src/app/shared/components/clone-voice-modal/clone-voice-modal.component.ts\")",
       "Bash(dir D:ProjectsAiMediabackendsrcAiMedia.ApplicationCommands /s /b)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(dir /b \"D:\\\\Projects\\\\AiMedia\")",
+      "Bash(del \"D:\\\\Projects\\\\AiMedia\\\\backend\\\\railway.toml\")"
     ]
   }
 }

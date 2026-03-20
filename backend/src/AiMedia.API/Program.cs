@@ -121,6 +121,14 @@ try
 
     var app = builder.Build();
 
+    // Auto-apply pending EF Core migrations on startup (safe for single-instance Railway deployment)
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider
+            .GetRequiredService<AiMedia.Infrastructure.Persistence.AppDbContext>();
+        db.Database.Migrate();
+    }
+
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseSerilogRequestLogging();
 
