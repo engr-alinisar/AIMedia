@@ -9,7 +9,6 @@ COPY src/AiMedia.Infrastructure/AiMedia.Infrastructure.csproj src/AiMedia.Infras
 COPY src/AiMedia.FalAi/AiMedia.FalAi.csproj             src/AiMedia.FalAi/
 COPY src/AiMedia.API/AiMedia.API.csproj                 src/AiMedia.API/
 COPY src/AiMedia.Worker/AiMedia.Worker.csproj           src/AiMedia.Worker/
-COPY tests/AiMedia.Tests/AiMedia.Tests.csproj           tests/AiMedia.Tests/
 RUN dotnet restore src/AiMedia.API/AiMedia.API.csproj
 
 # Copy all source and publish
