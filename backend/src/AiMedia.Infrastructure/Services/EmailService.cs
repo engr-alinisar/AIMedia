@@ -73,13 +73,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                       <table cellpadding="0" cellspacing="0" align="center">
                         <tr>
                           <td style="vertical-align:middle;padding-right:12px;">
-                            <table cellpadding="0" cellspacing="0">
-                              <tr>
-                                <td width="44" height="44" style="width:44px;height:44px;background:rgba(255,255,255,0.2);border-radius:10px;text-align:center;vertical-align:middle;font-size:20px;line-height:44px;font-family:Arial,sans-serif;color:#ffffff;font-style:normal;">
-                                  &#x25B6;&#xFE0E;
-                                </td>
-                              </tr>
-                            </table>
+                            <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="AiMedia" style="display:block;border-radius:10px;" />
                           </td>
                           <td style="vertical-align:middle;text-align:left;">
                             <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">AiMedia</div>
