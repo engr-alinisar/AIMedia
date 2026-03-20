@@ -56,7 +56,8 @@
       "Bash(del \"D:\\\\Projects\\\\AiMedia\\\\backend\\\\railway.toml\")",
       "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" status --short)",
       "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" diff HEAD --stat)",
-      "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" show a106cb7 --stat)"
+      "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" show a106cb7 --stat)",
+      "Bash(ls \"D:\\\\Projects\\\\AiMedia\\\\frontend\\\\public\"\" 2>/dev/null || ls \"D:ProjectsAiMediafrontendsrcassets\"\")"
     ]
   }
 }
