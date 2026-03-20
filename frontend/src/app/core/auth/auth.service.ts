@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import type { AuthResponse, User } from '../models/models';
+import type { AuthResponse, RegisterResponse, User } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -29,7 +29,11 @@ export class AuthService {
   }
 
   register(email: string, password: string, fullName?: string) {
-    return this.http.post<AuthResponse>(`${environment.apiUrl}/api/auth/register`, { email, password, fullName })
+    return this.http.post<RegisterResponse>(`${environment.apiUrl}/api/auth/register`, { email, password, fullName });
+  }
+
+  verifyEmail(token: string) {
+    return this.http.post<AuthResponse>(`${environment.apiUrl}/api/auth/verify-email`, { token })
       .pipe(tap(res => this.setSession(res)));
   }
 

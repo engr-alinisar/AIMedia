@@ -34,6 +34,13 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new VerifyEmailCommand(request.Token), ct);
+        return Ok(result);
+    }
+
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken ct)
@@ -54,3 +61,4 @@ public class AuthController : ControllerBase
 
 public record RegisterRequest(string Email, string Password, string? FullName);
 public record LoginRequest(string Email, string Password);
+public record VerifyEmailRequest(string Token);

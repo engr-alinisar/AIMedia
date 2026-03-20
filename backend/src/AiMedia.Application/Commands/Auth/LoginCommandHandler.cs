@@ -10,11 +10,16 @@ public class LoginCommandHandler(IAppDbContext db, IJwtService jwtService) : IRe
 {
     public async Task<AuthResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLower(), cancellationToken)
-            ?? throw new UnauthorizedAccessException("Invalid credentials.");
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLower(), cancellationToken);
+
+        if (user == null)
+            throw new UnauthorizedAccessException("No account found with this email. Please register first.");
 
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            throw new UnauthorizedAccessException("Invalid credentials.");
+            throw new UnauthorizedAccessException("Incorrect password. Please try again.");
+
+        if (!user.IsEmailVerified)
+            throw new UnauthorizedAccessException("EMAIL_NOT_VERIFIED");
 
         var token = jwtService.GenerateToken(user);
         return new AuthResponse(token, MapToDto(user));

@@ -14,6 +14,8 @@ public class User
     public DateTime? PlanExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsEmailVerified { get; set; }
+    public string? EmailVerificationToken { get; set; }
+    public DateTime? EmailVerificationTokenExpiry { get; set; }
 
     public ICollection<GenerationJob> Jobs { get; set; } = [];
     public ICollection<CreditTransaction> Transactions { get; set; } = [];

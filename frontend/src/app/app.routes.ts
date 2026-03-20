@@ -5,6 +5,7 @@ import { ShellComponent } from './layout/shell.component';
 export const routes: Routes = [
   { path: 'auth/login',    loadComponent: () => import('./features/auth/login.component').then(m => m.LoginComponent) },
   { path: 'auth/register', loadComponent: () => import('./features/auth/register.component').then(m => m.RegisterComponent) },
+  { path: 'verify-email',  loadComponent: () => import('./features/auth/verify-email.component').then(m => m.VerifyEmailComponent) },
   {
     path: '',
     component: ShellComponent,

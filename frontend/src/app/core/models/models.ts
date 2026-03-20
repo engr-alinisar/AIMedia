@@ -19,6 +19,11 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface RegisterResponse {
+  message: string;
+  user: User;
+}
+
 export interface GenerationResponse {
   jobId: string;
   creditsReserved: number;

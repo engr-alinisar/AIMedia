@@ -34,6 +34,11 @@ import { AuthService } from '../../core/auth/auth.service';
     </div>
 
     <div class="card p-6 space-y-4">
+      @if (unverified()) {
+        <div class="p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm text-amber-800">
+          <strong>Email not verified.</strong> Please check your inbox and click the verification link before logging in.
+        </div>
+      }
       @if (error()) {
         <div class="p-3 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700">{{ error() }}</div>
       }
@@ -86,16 +91,22 @@ export class LoginComponent {
   email = ''; password = '';
   loading = signal(false);
   error = signal('');
+  unverified = signal(false);
   showPassword = signal(false);
 
   login() {
     if (!this.email || !this.password) { this.error.set('Email and password are required.'); return; }
-    this.loading.set(true); this.error.set('');
+    this.loading.set(true); this.error.set(''); this.unverified.set(false);
     this.auth.login(this.email, this.password).subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: err => {
         this.loading.set(false);
-        this.error.set(err.error?.detail ?? err.error?.message ?? err.error?.error ?? err.error?.title ?? 'Invalid email or password.');
+        const msg = err.error?.detail ?? err.error?.message ?? err.error?.error ?? err.error?.title ?? '';
+        if (msg === 'EMAIL_NOT_VERIFIED') {
+          this.unverified.set(true);
+        } else {
+          this.error.set(msg || 'Invalid email or password.');
+        }
       }
     });
   }

@@ -36,6 +36,10 @@ public static class ServiceCollectionExtensions
         // JWT
         services.AddSingleton<IJwtService, JwtService>();
 
+        // Email
+        services.AddHttpClient<EmailService>();
+        services.AddScoped<IEmailService, EmailService>();
+
         return services;
     }
 }
