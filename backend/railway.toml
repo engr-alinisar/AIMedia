@@ -1,12 +1,11 @@
-# Railway config for AiMedia API service.
-# In Railway dashboard: set Root Directory = "backend" for this service.
+# Railway config shared by API and Worker services.
+# Dockerfile path is set per-service in Railway dashboard (Settings → Build → Dockerfile Path):
+#   API service:    src/AiMedia.API/Dockerfile
+#   Worker service: src/AiMedia.Worker/Dockerfile
 
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "src/AiMedia.API/Dockerfile"
 
 [deploy]
-healthcheckPath = "/health"
-healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
