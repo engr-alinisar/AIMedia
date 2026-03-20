@@ -53,7 +53,10 @@
       "Bash(dir D:ProjectsAiMediabackendsrcAiMedia.ApplicationCommands /s /b)",
       "Bash(xargs grep:*)",
       "Bash(dir /b \"D:\\\\Projects\\\\AiMedia\")",
-      "Bash(del \"D:\\\\Projects\\\\AiMedia\\\\backend\\\\railway.toml\")"
+      "Bash(del \"D:\\\\Projects\\\\AiMedia\\\\backend\\\\railway.toml\")",
+      "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" status --short)",
+      "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" diff HEAD --stat)",
+      "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" show a106cb7 --stat)"
     ]
   }
 }
