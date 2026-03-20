@@ -1,13 +1,4 @@
-# Railway config-as-code for AiMedia API service.
-# The Worker service is configured separately in the Railway dashboard
-# using the same repo with dockerfilePath = backend/src/AiMedia.Worker/Dockerfile
-
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "backend/src/AiMedia.API/Dockerfile"
-
-[deploy]
-healthcheckPath = "/health"
-healthcheckTimeout = 300
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
+# Railway monorepo config.
+# Each service must set Root Directory = "backend" in Railway dashboard.
+# API service uses:    backend/railway.toml     (dockerfilePath = src/AiMedia.API/Dockerfile)
+# Worker service uses: Railway UI override      (dockerfilePath = src/AiMedia.Worker/Dockerfile)
