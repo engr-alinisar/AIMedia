@@ -19,12 +19,17 @@ public class R2StorageService : IStorageService
     {
         _logger = logger;
         _httpClient = httpClient;
-        _bucketName = config["Cloudflare:R2:BucketName"] ?? "ai-media-outputs";
-        _publicBaseUrl = (config["Cloudflare:R2:PublicUrl"] ?? "").TrimEnd('/');
 
-        var accountId = config["Cloudflare:R2:AccountId"] ?? throw new InvalidOperationException("R2AccountId not configured");
-        var accessKeyId = config["Cloudflare:R2:AccessKeyId"] ?? throw new InvalidOperationException("R2AccessKeyId not configured");
-        var secretKey = config["Cloudflare:R2:SecretKey"] ?? throw new InvalidOperationException("R2SecretKey not configured");
+        // Support both Cloudflare__R2__* (Railway nested) and CF_R2_* (flat env var) naming conventions
+        _bucketName = Get(config, "Cloudflare:R2:BucketName", "CF_R2_BUCKET_NAME") ?? "ai-media-outputs";
+        _publicBaseUrl = (Get(config, "Cloudflare:R2:PublicUrl", "CF_R2_PUBLIC_URL") ?? "").TrimEnd('/');
+
+        var accountId  = Get(config, "Cloudflare:R2:AccountId",   "CF_R2_ACCOUNT_ID")
+            ?? throw new InvalidOperationException("R2 AccountId not configured. Set Cloudflare__R2__AccountId or CF_R2_ACCOUNT_ID.");
+        var accessKeyId = Get(config, "Cloudflare:R2:AccessKeyId", "CF_R2_ACCESS_KEY_ID")
+            ?? throw new InvalidOperationException("R2 AccessKeyId not configured. Set Cloudflare__R2__AccessKeyId or CF_R2_ACCESS_KEY_ID.");
+        var secretKey  = Get(config, "Cloudflare:R2:SecretKey",   "CF_R2_SECRET_KEY")
+            ?? throw new InvalidOperationException("R2 SecretKey not configured. Set Cloudflare__R2__SecretKey or CF_R2_SECRET_KEY.");
 
         var s3Config = new AmazonS3Config
         {
@@ -95,5 +100,17 @@ public class R2StorageService : IStorageService
     {
         var now = DateTime.UtcNow;
         return $"{userId}/outputs/{now.Year}/{now.Month:D2}/{jobId}/{filename}";
+    }
+
+    /// <summary>
+    /// Reads a config value by trying the nested key first (Cloudflare:R2:*),
+    /// then the flat env-var key (CF_R2_*). Returns null only when both are absent or empty.
+    /// </summary>
+    private static string? Get(IConfiguration config, string nestedKey, string flatKey)
+    {
+        var v = config[nestedKey];
+        if (!string.IsNullOrWhiteSpace(v)) return v;
+        v = config[flatKey];
+        return string.IsNullOrWhiteSpace(v) ? null : v;
     }
 }

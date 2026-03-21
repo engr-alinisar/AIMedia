@@ -34,8 +34,10 @@ public class ExceptionHandlingMiddleware
             UnauthorizedAccessException => (HttpStatusCode.Unauthorized, ex.Message),
             KeyNotFoundException        => (HttpStatusCode.NotFound, ex.Message),
             InvalidOperationException   => (HttpStatusCode.Conflict, ex.Message),
+            ArgumentNullException       => (HttpStatusCode.Conflict, ex.Message),
+            ArgumentException           => (HttpStatusCode.BadRequest, ex.Message),
             NotSupportedException       => (HttpStatusCode.BadRequest, ex.Message),
-            _                           => (HttpStatusCode.InternalServerError, "An unexpected error occurred.")
+            _                           => (HttpStatusCode.InternalServerError, $"Unexpected error ({ex.GetType().Name}): {ex.Message}")
         };
 
         context.Response.ContentType = "application/json";
