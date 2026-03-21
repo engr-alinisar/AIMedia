@@ -59,7 +59,8 @@
       "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" show a106cb7 --stat)",
       "Bash(ls \"D:\\\\Projects\\\\AiMedia\\\\frontend\\\\public\"\" 2>/dev/null || ls \"D:ProjectsAiMediafrontendsrcassets\"\")",
       "Bash(Test-Path \"D:\\\\Projects\\\\AiMedia\\\\backend\\\\src\\\\AiMedia.Worker\")",
-      "Bash(powershell -Command \"Remove-Item -Recurse -Force ''D:\\\\Projects\\\\AiMedia\\\\backend\\\\src\\\\AiMedia.Worker''\")"
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force ''D:\\\\Projects\\\\AiMedia\\\\backend\\\\src\\\\AiMedia.Worker''\")",
+      "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" rm backend/src/AiMedia.FalAi/FalWebhookVerifier.cs backend/src/AiMedia.FalAi/ModelRouter.cs backend/src/AiMedia.Infrastructure/Http/PollyPolicies.cs backend/src/AiMedia.FalAi/InputBuilders/BackgroundRemovalInputBuilder.cs backend/src/AiMedia.FalAi/InputBuilders/ImageGenInputBuilder.cs backend/src/AiMedia.FalAi/InputBuilders/ImageToVideoInputBuilder.cs backend/src/AiMedia.FalAi/InputBuilders/TextToVideoInputBuilder.cs backend/src/AiMedia.FalAi/InputBuilders/TranscriptionInputBuilder.cs backend/src/AiMedia.FalAi/InputBuilders/VoiceCloneInputBuilder.cs backend/src/AiMedia.FalAi/InputBuilders/VoiceInputBuilder.cs)"
     ]
   }
 }
