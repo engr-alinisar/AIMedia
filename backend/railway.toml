@@ -1,11 +1,12 @@
-# Railway config shared by API and Worker services.
-# Dockerfile path is set per-service in Railway dashboard (Settings → Build → Dockerfile Path):
+# Railway monorepo config.
+# Both services use Root Directory = "backend" in Railway dashboard.
+# dockerfilePath is intentionally omitted so Railway uses the per-service
+# Dockerfile path set in the dashboard (Settings → Build → Dockerfile Path):
 #   API service:    src/AiMedia.API/Dockerfile
 #   Worker service: src/AiMedia.Worker/Dockerfile
 
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "src/AiMedia.API/Dockerfile"
 
 [deploy]
 restartPolicyType = "ON_FAILURE"
