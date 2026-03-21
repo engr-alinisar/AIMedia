@@ -17,13 +17,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         base.OnModelCreating(modelBuilder);
 
-        // Register PostgreSQL enums
-        modelBuilder.HasPostgresEnum<ProductType>();
-        modelBuilder.HasPostgresEnum<ModelTier>();
-        modelBuilder.HasPostgresEnum<JobStatus>();
-        modelBuilder.HasPostgresEnum<SubscriptionPlan>();
-        modelBuilder.HasPostgresEnum<TransactionType>();
-
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }
