@@ -108,6 +108,9 @@ try
         opts.Queues = ["default"];
     });
 
+    builder.Services.AddScoped<AiMedia.API.BackgroundJobs.PollStuckJobsJob>();
+    builder.Services.AddScoped<AiMedia.API.BackgroundJobs.ExpireCreditsJob>();
+
     // CORS — allow Angular dev server and Vercel
     builder.Services.AddCors(opts =>
     {
@@ -157,6 +160,19 @@ try
     app.MapHub<GenerationHub>("/hubs/generation");
     app.MapHealthChecks("/health");
     app.UseHangfireDashboard("/hangfire");
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+        recurringJobs.AddOrUpdate<AiMedia.API.BackgroundJobs.PollStuckJobsJob>(
+            "poll-stuck-jobs",
+            job => job.ExecuteAsync(CancellationToken.None),
+            "*/5 * * * *");
+        recurringJobs.AddOrUpdate<AiMedia.API.BackgroundJobs.ExpireCreditsJob>(
+            "expire-credits",
+            job => job.ExecuteAsync(CancellationToken.None),
+            Cron.Daily);
+    }
 
     app.Run();
 }

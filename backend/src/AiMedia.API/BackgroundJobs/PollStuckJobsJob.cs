@@ -3,9 +3,8 @@ using AiMedia.Application.Interfaces;
 using AiMedia.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
-namespace AiMedia.Worker.Jobs;
+namespace AiMedia.API.BackgroundJobs;
 
 /// <summary>
 /// Safety net: polls fal.ai for any jobs stuck in Queued/Processing for over 10 minutes.
@@ -34,8 +33,6 @@ public class PollStuckJobsJob(
         {
             try
             {
-                // Jobs without FalStatusUrl were created before the status URL was stored.
-                // They cannot be reliably polled — mark them as failed so they don't loop forever.
                 if (string.IsNullOrEmpty(job.FalStatusUrl))
                 {
                     logger.LogWarning("PollStuckJobs: job {JobId} has no FalStatusUrl — marking as failed", job.Id);
@@ -49,13 +46,12 @@ public class PollStuckJobsJob(
                 if (status.Status is "COMPLETED" or "FAILED")
                 {
                     string? outputUrl = null;
+                    string? outputText = null;
                     string? errorMessage = null;
                     string falStatus;
 
                     if (status.Status == "COMPLETED")
                     {
-                        string? outputText = null;
-
                         if (!string.IsNullOrEmpty(job.FalResponseUrl))
                         {
                             var result = await falClient.GetResultOutputAsync(job.FalResponseUrl, ct);
@@ -81,14 +77,11 @@ public class PollStuckJobsJob(
                     {
                         falStatus = "ERROR";
                         errorMessage = "Job failed on fal.ai (detected by poll)";
-
                         await mediator.Send(
-                            new ProcessWebhookCommand(job.FalRequestId, falStatus, outputUrl, errorMessage, null), ct);
+                            new ProcessWebhookCommand(job.FalRequestId, falStatus, null, errorMessage, null), ct);
                     }
 
-                    logger.LogInformation(
-                        "PollStuckJobs: processed job {JobId} with status {Status}",
-                        job.Id, status.Status);
+                    logger.LogInformation("PollStuckJobs: processed job {JobId} with status {Status}", job.Id, status.Status);
                 }
             }
             catch (Exception ex)

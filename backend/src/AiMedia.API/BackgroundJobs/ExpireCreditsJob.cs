@@ -1,12 +1,11 @@
 using AiMedia.Application.Interfaces;
 using AiMedia.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
-namespace AiMedia.Worker.Jobs;
+namespace AiMedia.API.BackgroundJobs;
 
 /// <summary>
-/// Daily job: releases any credits that have been reserved for over 24 hours
+/// Daily job: releases any credits reserved for over 24 hours
 /// (safety net for jobs that never received a webhook and were missed by PollStuckJobs).
 /// </summary>
 public class ExpireCreditsJob(
@@ -35,7 +34,6 @@ public class ExpireCreditsJob(
                 job.Status = JobStatus.Failed;
                 job.ErrorMessage = "Job expired — no response received within 24 hours.";
                 job.CompletedAt = DateTime.UtcNow;
-
                 await db.SaveChangesAsync(ct);
 
                 await creditService.ReleaseAsync(
