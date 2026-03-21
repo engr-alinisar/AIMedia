@@ -67,7 +67,9 @@
       "Bash(curl -s -X POST http://localhost:5015/api/auth/login -H \"Content-Type: application/json\" -d \"{\"\"email\"\":\"\"test@test.com\"\",\"\"password\"\":\"\"Test1234\"\"}\")",
       "Bash(xargs -I{} taskkill /PID {} /F)",
       "Bash(taskkill /PID 34092 /F)",
-      "Bash(cmd.exe /c \"taskkill /PID 34092 /F\")"
+      "Bash(cmd.exe /c \"taskkill /PID 34092 /F\")",
+      "Bash(npm ls:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4200)"
     ]
   }
 }

@@ -192,11 +192,7 @@ interface VoiceModel {
             <div class="flex flex-col items-center py-6 border-2 border-dashed border-border rounded-xl text-center">
               <span class="text-2xl mb-1">🎤</span>
               <p class="text-sm font-medium text-gray-600">No voice clones yet</p>
-              <p class="text-xs text-gray-400 mt-0.5 mb-3">Click "Clone a Voice" to create your first one</p>
-              <button type="button" (click)="showCloneModal.set(true)"
-                      class="px-3 py-1.5 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent/90 transition-colors">
-                + Clone a Voice
-              </button>
+              <p class="text-xs text-gray-400 mt-0.5">Click "+ Clone a Voice" above to get started</p>
             </div>
           } @else {
             <div class="space-y-2">
