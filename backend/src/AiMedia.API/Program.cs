@@ -30,9 +30,12 @@ try
     // fal.ai integration
     builder.Services.AddFalAi(builder.Configuration);
 
-    // MediatR — scan Application assembly
+    // MediatR — scan Application assembly + API assembly (job event handlers)
     builder.Services.AddMediatR(cfg =>
-        cfg.RegisterServicesFromAssembly(typeof(AiMedia.Application.Commands.Auth.LoginCommand).Assembly));
+    {
+        cfg.RegisterServicesFromAssembly(typeof(AiMedia.Application.Commands.Auth.LoginCommand).Assembly);
+        cfg.RegisterServicesFromAssembly(typeof(AiMedia.API.BackgroundJobs.JobCompletedEventHandler).Assembly);
+    });
 
     // Controllers
     builder.Services.AddControllers()
@@ -97,6 +100,13 @@ try
         .UseSimpleAssemblyNameTypeSerializer()
         .UseRecommendedSerializerSettings()
         .UsePostgreSqlStorage(o => o.UseNpgsqlConnection(dbConn)));
+
+    // API processes its own Hangfire jobs (webhook callbacks, stuck job polling)
+    builder.Services.AddHangfireServer(opts =>
+    {
+        opts.WorkerCount = 4;
+        opts.Queues = ["default"];
+    });
 
     // CORS — allow Angular dev server and Vercel
     builder.Services.AddCors(opts =>
