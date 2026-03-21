@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using AiMedia.Application.Commands.Auth;
 using AiMedia.Application.Interfaces;
-using AiMedia.Application.Queries.GetCreditBalance;
+using AiMedia.Application.Queries.GetCurrentUser;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -46,8 +46,8 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Me(CancellationToken ct)
     {
         var userId = GetUserId();
-        var balance = await _mediator.Send(new GetCreditBalanceQuery(userId), ct);
-        return Ok(balance);
+        var user = await _mediator.Send(new GetCurrentUserQuery(userId), ct);
+        return Ok(user);
     }
 
     private Guid GetUserId()
