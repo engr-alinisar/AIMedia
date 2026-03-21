@@ -3,6 +3,7 @@ using AiMedia.Application.Interfaces;
 using AiMedia.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace AiMedia.API.BackgroundJobs;
 
@@ -14,11 +15,13 @@ public class PollStuckJobsJob(
     IAppDbContext db,
     IFalClient falClient,
     IMediator mediator,
-    ILogger<PollStuckJobsJob> logger)
+    ILogger<PollStuckJobsJob> logger,
+    IConfiguration config)
 {
     public async Task ExecuteAsync(CancellationToken ct = default)
     {
-        var cutoff = DateTime.UtcNow.AddMinutes(-10);
+        var stuckMinutes = config.GetValue<int>("Hangfire:StuckJobMinutes", 10);
+        var cutoff = DateTime.UtcNow.AddMinutes(-stuckMinutes);
 
         var stuckJobs = await db.GenerationJobs
             .Where(j => (j.Status == JobStatus.Queued || j.Status == JobStatus.Processing)

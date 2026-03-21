@@ -159,10 +159,11 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+        var pollCron = app.Environment.IsDevelopment() ? Cron.Minutely() : "*/5 * * * *";
         recurringJobs.AddOrUpdate<AiMedia.API.BackgroundJobs.PollStuckJobsJob>(
             "poll-stuck-jobs",
             job => job.ExecuteAsync(CancellationToken.None),
-            "*/5 * * * *");
+            pollCron);
         recurringJobs.AddOrUpdate<AiMedia.API.BackgroundJobs.ExpireCreditsJob>(
             "expire-credits",
             job => job.ExecuteAsync(CancellationToken.None),
