@@ -57,7 +57,9 @@
       "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" status --short)",
       "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" diff HEAD --stat)",
       "Bash(git -C \"D:\\\\Projects\\\\AiMedia\" show a106cb7 --stat)",
-      "Bash(ls \"D:\\\\Projects\\\\AiMedia\\\\frontend\\\\public\"\" 2>/dev/null || ls \"D:ProjectsAiMediafrontendsrcassets\"\")"
+      "Bash(ls \"D:\\\\Projects\\\\AiMedia\\\\frontend\\\\public\"\" 2>/dev/null || ls \"D:ProjectsAiMediafrontendsrcassets\"\")",
+      "Bash(Test-Path \"D:\\\\Projects\\\\AiMedia\\\\backend\\\\src\\\\AiMedia.Worker\")",
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force ''D:\\\\Projects\\\\AiMedia\\\\backend\\\\src\\\\AiMedia.Worker''\")"
     ]
   }
 }
