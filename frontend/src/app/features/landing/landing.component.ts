@@ -1,7 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, inject, signal, OnInit } from '@angular/core';
+import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth/auth.service';
+import { ExploreService } from '../../core/services/explore.service';
+import type { ExploreItemDto } from '../../core/models/models';
 
 @Component({
   selector: 'app-landing',
@@ -38,9 +40,7 @@ import { AuthService } from '../../core/auth/auth.service';
         <polygon points="50,42 50,86 88,64" fill="white" opacity="0.95"/>
         <circle cx="90" cy="36" r="5" fill="#A78BFA"/>
       </svg>
-      <div>
-        <span style="font-size:16px;font-weight:700;color:#111827;">Ai<span style="color:#7c3aed;">Media</span></span>
-      </div>
+      <span style="font-size:16px;font-weight:700;color:#111827;">Ai<span style="color:#7c3aed;">Media</span></span>
     </a>
 
     <!-- Nav links (desktop) -->
@@ -77,7 +77,7 @@ import { AuthService } from '../../core/auth/auth.service';
         </a>
         <a routerLink="/auth/register"
            class="inline-flex px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
-           style="background:#7c3aed; hover:background:#6d28d9;">
+           style="background:#7c3aed;">
           Sign Up Free
         </a>
       }
@@ -87,40 +87,27 @@ import { AuthService } from '../../core/auth/auth.service';
 
 <!-- ===== HERO ===== -->
 <section class="relative overflow-hidden pt-16">
-  <!-- Purple mesh background -->
   <div class="absolute inset-0 -z-10"
        style="background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 30%, #f0f4ff 60%, #ffffff 100%);">
   </div>
-  <!-- Decorative blobs -->
   <div class="absolute top-0 right-0 -z-10 w-96 h-96 rounded-full opacity-20 blur-3xl"
        style="background: radial-gradient(circle, #7c3aed, transparent 70%); transform: translate(30%, -30%);"></div>
-  <div class="absolute bottom-0 left-0 -z-10 w-80 h-80 rounded-full opacity-15 blur-3xl"
-       style="background: radial-gradient(circle, #4f46e5, transparent 70%); transform: translate(-30%, 30%);"></div>
 
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
-    <!-- Badge -->
-    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-6 border"
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 text-center">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-5 border"
          style="background:#f5f3ff; border-color:#ddd6fe; color:#6d28d9;">
       <span class="w-2 h-2 rounded-full animate-pulse" style="background:#7c3aed;"></span>
       100 free credits on signup — no credit card required
     </div>
-
-    <!-- Headline -->
-    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight leading-tight mb-6">
-      Create stunning<br/>
-      <span style="color:#7c3aed;">AI media</span> in seconds
+    <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
+      Create stunning <span style="color:#7c3aed;">AI media</span> in seconds
     </h1>
-
-    <!-- Subheadline -->
-    <p class="text-lg sm:text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-      Generate images, videos, voice, transcriptions and more — powered by
-      cutting-edge AI models. No skills required.
+    <p class="text-lg text-gray-500 max-w-xl mx-auto mb-8">
+      Generate images, videos, voice, and more — powered by cutting-edge AI. Pick a tool and start creating.
     </p>
-
-    <!-- CTAs -->
     <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
       <a routerLink="/auth/register"
-         class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-white shadow-lg transition-all duration-150 hover:shadow-xl hover:scale-[1.02]"
+         class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]"
          style="background: linear-gradient(135deg, #7c3aed, #4f46e5);">
         Start for Free
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,162 +116,170 @@ import { AuthService } from '../../core/auth/auth.service';
       </a>
       <a routerLink="/explore"
          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-gray-700 border-2 border-gray-200 bg-white hover:border-gray-300 transition-colors">
-        Explore Creations
+        Browse Community Work
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TOOL DISCOVERY GRID ===== -->
+<section class="py-16 bg-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-10">
+      <p class="text-sm font-semibold uppercase tracking-widest mb-2" style="color:#7c3aed;">6 AI Tools</p>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900">What do you want to create?</h2>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      @for (tool of tools; track tool.route) {
+        <div class="group relative rounded-2xl border border-gray-100 bg-white overflow-hidden hover:border-purple-200 hover:shadow-xl transition-all duration-200"
+             style="cursor:pointer;" (click)="tryTool(tool.route)">
+          <!-- Colored top bar -->
+          <div class="h-1.5 w-full" [style.background]="tool.color"></div>
+
+          <div class="p-6">
+            <!-- Icon + title row -->
+            <div class="flex items-start gap-4 mb-3">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform duration-200"
+                   [style.background]="tool.bgColor">
+                {{ tool.icon }}
+              </div>
+              <div>
+                <h3 class="text-base font-semibold text-gray-900">{{ tool.title }}</h3>
+                <span class="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                      [style.background]="tool.bgColor" [style.color]="tool.textColor">
+                  from {{ tool.minCredits }} credits
+                </span>
+              </div>
+            </div>
+
+            <p class="text-sm text-gray-500 leading-relaxed mb-4">{{ tool.description }}</p>
+
+            <!-- CTA -->
+            <div class="flex items-center gap-1.5 text-sm font-semibold transition-colors"
+                 [style.color]="tool.textColor">
+              @if (auth.isLoggedIn()) {
+                Try it now
+              } @else {
+                Sign up to try
+              }
+              <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ===== RECENT FROM EXPLORE ===== -->
+<section class="py-16" style="background:#f9fafb;">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-end justify-between mb-8">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-widest mb-1" style="color:#7c3aed;">Community</p>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900">Recent creations</h2>
+      </div>
+      <a routerLink="/explore"
+         class="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold transition-colors hover:underline"
+         style="color:#7c3aed;">
+        See all
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+        </svg>
       </a>
     </div>
 
-    <!-- Social proof -->
-    <div class="flex items-center justify-center gap-6 mt-10 text-sm text-gray-400">
-      <div class="flex items-center gap-1.5">
-        <svg class="w-4 h-4" style="color:#7c3aed;" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-        </svg>
-        <span>6 AI tools</span>
-      </div>
-      <div class="w-1 h-1 rounded-full bg-gray-300"></div>
-      <span>Credit-based pricing</span>
-      <div class="w-1 h-1 rounded-full bg-gray-300"></div>
-      <span>No subscription needed</span>
-    </div>
-  </div>
-</section>
-
-<!-- ===== FEATURES GRID ===== -->
-<section class="py-20 bg-white">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Section header -->
-    <div class="text-center mb-14">
-      <p class="text-sm font-semibold uppercase tracking-widest mb-3" style="color:#7c3aed;">Everything you need</p>
-      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Six powerful AI tools</h2>
-      <p class="mt-3 text-gray-500 max-w-xl mx-auto">All in one place. Create, transform, and enhance media with state-of-the-art AI.</p>
-    </div>
-
-    <!-- Cards grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      @for (feature of features; track feature.title) {
-        <div class="group relative rounded-2xl border border-gray-100 bg-white p-6 hover:border-purple-200 hover:shadow-lg transition-all duration-200 cursor-default">
-          <!-- Icon blob -->
-          <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-200"
-               style="background:#f5f3ff;">
-            {{ feature.icon }}
-          </div>
-          <h3 class="text-base font-semibold text-gray-900 mb-1.5">{{ feature.title }}</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">{{ feature.description }}</p>
-          <!-- Subtle accent line on hover -->
-          <div class="absolute bottom-0 left-6 right-6 h-0.5 rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"
-               style="background: linear-gradient(90deg, #7c3aed, #4f46e5);"></div>
-        </div>
-      }
-    </div>
-  </div>
-</section>
-
-<!-- ===== HOW IT WORKS ===== -->
-<section class="py-20" style="background:#faf5ff;">
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-14">
-      <p class="text-sm font-semibold uppercase tracking-widest mb-3" style="color:#7c3aed;">Get started in minutes</p>
-      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900">How it works</h2>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      @for (step of steps; track step.number) {
-        <div class="relative text-center">
-          <!-- Step number circle -->
-          <div class="w-14 h-14 rounded-full flex items-center justify-center text-xl font-black text-white mx-auto mb-5 shadow-md"
-               style="background: linear-gradient(135deg, #7c3aed, #4f46e5);">
-            {{ step.number }}
-          </div>
-          <!-- Connector line (desktop only, not on last) -->
-          @if (step.number < 3) {
-            <div class="hidden md:block absolute top-7 left-[calc(50%+28px)] right-0 h-0.5 bg-gradient-to-r from-purple-300 to-purple-100"></div>
-          }
-          <h3 class="text-lg font-bold text-gray-900 mb-2">{{ step.title }}</h3>
-          <p class="text-sm text-gray-500 leading-relaxed">{{ step.description }}</p>
-        </div>
-      }
-    </div>
-  </div>
-</section>
-
-<!-- ===== PRICING ===== -->
-<section class="py-20 bg-white">
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-14">
-      <p class="text-sm font-semibold uppercase tracking-widest mb-3" style="color:#7c3aed;">Pricing</p>
-      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Simple credit-based pricing</h2>
-      <p class="mt-3 text-gray-500 max-w-xl mx-auto">Pay only for what you use. No subscriptions, no hidden fees.</p>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
-      @for (pack of creditPacks; track pack.name) {
-        <div class="relative rounded-2xl border p-6 flex flex-col items-center text-center transition-all duration-200 hover:shadow-xl"
-             [class.shadow-lg]="pack.popular"
-             [style.border-color]="pack.popular ? '#7c3aed' : '#e5e7eb'"
-             [style.background]="pack.popular ? 'linear-gradient(160deg, #7c3aed 0%, #4f46e5 100%)' : 'white'">
-          @if (pack.popular) {
-            <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold text-white shadow"
-                 style="background:#f59e0b;">
-              MOST POPULAR
+    <!-- Loading skeleton -->
+    @if (recentLoading()) {
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        @for (s of skeletons; track s) {
+          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
+            <div class="bg-gray-200 aspect-square"></div>
+            <div class="p-3 space-y-2">
+              <div class="h-3 bg-gray-200 rounded w-16"></div>
+              <div class="h-3 bg-gray-200 rounded w-full"></div>
             </div>
-          }
-          <div class="text-3xl font-black mb-1"
-               [style.color]="pack.popular ? 'white' : '#111827'">
-            {{ pack.price }}
           </div>
-          <div class="text-sm font-semibold mb-3"
-               [style.color]="pack.popular ? 'rgba(255,255,255,0.9)' : '#6b7280'">
-            {{ pack.name }}
-          </div>
-          <div class="text-4xl font-extrabold mb-1"
-               [style.color]="pack.popular ? 'white' : '#7c3aed'">
-            {{ pack.credits }}
-          </div>
-          <div class="text-xs mb-5"
-               [style.color]="pack.popular ? 'rgba(255,255,255,0.7)' : '#9ca3af'">
-            credits
-          </div>
-          <a routerLink="/auth/register"
-             class="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-150"
-             [style.background]="pack.popular ? 'rgba(255,255,255,0.2)' : '#f5f3ff'"
-             [style.color]="pack.popular ? 'white' : '#7c3aed'"
-             [style.border]="pack.popular ? '1px solid rgba(255,255,255,0.3)' : '1px solid #ddd6fe'">
-            Get Started
+        }
+      </div>
+    }
+
+    <!-- Items grid -->
+    @else if (recentItems().length > 0) {
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        @for (item of recentItems(); track item.id) {
+          <a routerLink="/explore"
+             class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group block">
+            <!-- Thumbnail -->
+            <div class="relative aspect-square bg-gray-100 overflow-hidden">
+              @if (isVideoItem(item)) {
+                <video [src]="item.outputUrl" class="w-full h-full object-cover" muted preload="metadata"
+                       (mouseenter)="$any($event.target).play()" (mouseleave)="$any($event.target).pause()"></video>
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div class="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
+                </div>
+              } @else if (isAudioItem(item)) {
+                <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100">
+                  <svg class="w-10 h-10 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                  </svg>
+                </div>
+              } @else if (isTranscriptionItem(item)) {
+                <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+                  <svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                </div>
+              } @else {
+                <img [src]="item.outputUrl" [alt]="item.prompt || 'AI output'"
+                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                     loading="lazy"/>
+              }
+            </div>
+            <!-- Caption -->
+            <div class="p-2.5">
+              <div class="flex items-center gap-1.5 mb-1">
+                <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded text-white"
+                      [style.background]="getProductColor(item.product)">
+                  {{ getProductLabel(item.product) }}
+                </span>
+              </div>
+              @if (item.prompt) {
+                <p class="text-xs text-gray-500 line-clamp-1">{{ item.prompt }}</p>
+              }
+            </div>
           </a>
-        </div>
-      }
-    </div>
+        }
+      </div>
 
-    <p class="text-center text-sm text-gray-500 mt-8">
-      New accounts get
-      <span class="font-semibold" style="color:#7c3aed;">100 free credits</span>
-      to try everything — no credit card required
-    </p>
-  </div>
-</section>
-
-<!-- ===== CTA BANNER ===== -->
-<section class="py-20"
-         style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);">
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-    <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to create?</h2>
-    <p class="text-purple-200 text-lg mb-8">Join thousands of creators using AI to make stunning media.</p>
-    <a routerLink="/auth/register"
-       class="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-base font-bold text-white border-2 border-white/30 hover:bg-white/10 transition-colors">
-      Get started free
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
-      </svg>
-    </a>
-    <p class="mt-4 text-purple-300 text-sm">100 free credits • No credit card • Cancel anytime</p>
+      <!-- Mobile see all -->
+      <div class="mt-6 text-center sm:hidden">
+        <a routerLink="/explore"
+           class="inline-flex items-center gap-1.5 text-sm font-semibold"
+           style="color:#7c3aed;">
+          See all community creations
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    }
   </div>
 </section>
 
 <!-- ===== FOOTER ===== -->
-<footer class="bg-gray-900 text-gray-400 py-12">
+<footer class="bg-gray-900 text-gray-400 py-10">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
-      <!-- Brand -->
+    <div class="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
       <div class="text-center md:text-left">
         <div class="flex items-center gap-2 justify-center md:justify-start mb-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 128 128">
@@ -301,8 +296,6 @@ import { AuthService } from '../../core/auth/auth.service';
         </div>
         <p class="text-sm text-gray-500">AI-Powered Media Creation</p>
       </div>
-
-      <!-- Links -->
       <div class="flex flex-wrap justify-center md:justify-end gap-x-8 gap-y-2 text-sm">
         <a routerLink="/explore" class="hover:text-white transition-colors">Explore</a>
         <a routerLink="/faq" class="hover:text-white transition-colors">FAQ</a>
@@ -318,64 +311,122 @@ import { AuthService } from '../../core/auth/auth.service';
 </footer>
   `
 })
-export class LandingComponent {
+export class LandingComponent implements OnInit {
   auth = inject(AuthService);
-  currentYear = new Date().getFullYear();
+  private exploreSvc = inject(ExploreService);
+  private router = inject(Router);
 
-  features = [
+  currentYear = new Date().getFullYear();
+  recentItems = signal<ExploreItemDto[]>([]);
+  recentLoading = signal(true);
+  skeletons = Array(8).fill(0);
+
+  tools = [
     {
       icon: '🖼️',
       title: 'Image Generation',
-      description: 'Turn text prompts into stunning, high-quality images using state-of-the-art diffusion models.'
+      description: 'Turn text prompts into stunning, high-quality images using state-of-the-art diffusion models.',
+      route: '/image-gen',
+      minCredits: 5,
+      color: 'linear-gradient(90deg, #7C3AED, #6D28D9)',
+      bgColor: '#f5f3ff',
+      textColor: '#7c3aed',
     },
     {
       icon: '🎬',
       title: 'Image to Video',
-      description: 'Animate any image into a dynamic, fluid video clip with a single click.'
+      description: 'Animate any image into a dynamic, fluid video clip — bring your photos to life.',
+      route: '/image-to-video',
+      minCredits: 5,
+      color: 'linear-gradient(90deg, #EF4444, #DC2626)',
+      bgColor: '#fef2f2',
+      textColor: '#dc2626',
     },
     {
       icon: '🎥',
       title: 'Text to Video',
-      description: 'Generate cinematic videos directly from text descriptions — no footage required.'
+      description: 'Generate cinematic videos directly from text descriptions — no footage required.',
+      route: '/text-to-video',
+      minCredits: 5,
+      color: 'linear-gradient(90deg, #F97316, #EA580C)',
+      bgColor: '#fff7ed',
+      textColor: '#ea580c',
     },
     {
       icon: '🎙️',
       title: 'Text to Voice',
-      description: 'Convert text to natural, expressive speech with realistic voice cloning.'
+      description: 'Convert text to natural, expressive speech with realistic AI voices.',
+      route: '/voice',
+      minCredits: 4,
+      color: 'linear-gradient(90deg, #059669, #047857)',
+      bgColor: '#f0fdf4',
+      textColor: '#059669',
     },
     {
       icon: '📝',
       title: 'Transcription',
-      description: 'Transcribe any audio or video file to accurate, formatted text instantly.'
+      description: 'Transcribe any audio or video file to accurate, formatted text instantly.',
+      route: '/transcription',
+      minCredits: 10,
+      color: 'linear-gradient(90deg, #2563EB, #1D4ED8)',
+      bgColor: '#eff6ff',
+      textColor: '#2563eb',
     },
     {
       icon: '✂️',
       title: 'Background Removal',
-      description: 'Remove backgrounds from images in one click with pixel-perfect precision.'
-    }
+      description: 'Remove backgrounds from images in one click with pixel-perfect AI precision.',
+      route: '/background-removal',
+      minCredits: 3,
+      color: 'linear-gradient(90deg, #0891B2, #0E7490)',
+      bgColor: '#ecfeff',
+      textColor: '#0891b2',
+    },
   ];
 
-  steps = [
-    {
-      number: 1,
-      title: 'Sign up free',
-      description: 'Create your account in seconds and receive 100 free credits instantly — no credit card needed.'
-    },
-    {
-      number: 2,
-      title: 'Choose your AI tool',
-      description: 'Pick from 6 powerful AI tools: image generation, video, voice, transcription, and more.'
-    },
-    {
-      number: 3,
-      title: 'Download your creation',
-      description: 'Your AI media is ready in seconds. Download it and share or use it anywhere.'
-    }
-  ];
+  ngOnInit() {
+    this.exploreSvc.getExplore(1, 8).subscribe({
+      next: result => {
+        this.recentItems.set(result.items);
+        this.recentLoading.set(false);
+      },
+      error: () => this.recentLoading.set(false)
+    });
+  }
 
-  creditPacks = [
-    { name: 'Starter', credits: '500', price: '$5', popular: false },
-    { name: 'Popular', credits: '1,200', price: '$10', popular: true },
-    { name: 'Pro', credits: '3,000', price: '$20', popular: false }
-  ];
+  tryTool(route: string) {
+    if (!this.auth.isLoggedIn()) {
+      this.router.navigate(['/auth/register']);
+    } else {
+      this.router.navigate([route]);
+    }
+  }
+
+  isVideoItem(item: ExploreItemDto): boolean {
+    return item.product === 'ImageToVideo' || item.product === 'TextToVideo';
+  }
+
+  isAudioItem(item: ExploreItemDto): boolean {
+    return item.product === 'Voice';
+  }
+
+  isTranscriptionItem(item: ExploreItemDto): boolean {
+    return item.product === 'Transcription';
+  }
+
+  getProductLabel(product: string): string {
+    const labels: Record<string, string> = {
+      ImageGen: 'Image', ImageToVideo: 'Img→Video', TextToVideo: 'Text→Video',
+      Voice: 'Voice', Transcription: 'Transcript', BackgroundRemoval: 'BG Removal',
+    };
+    return labels[product] ?? product;
+  }
+
+  getProductColor(product: string): string {
+    const colors: Record<string, string> = {
+      ImageGen: '#7C3AED', ImageToVideo: '#EF4444', TextToVideo: '#F97316',
+      Voice: '#059669', Transcription: '#2563EB', BackgroundRemoval: '#0891B2',
+    };
+    return colors[product] ?? '#6B7280';
+  }
 }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ExploreService } from '../../core/services/explore.service';
 import { AuthService } from '../../core/auth/auth.service';
+import { ExploreItemModalComponent } from '../../shared/components/explore-item-modal/explore-item-modal.component';
 import type { ExploreItemDto } from '../../core/models/models';
 
 interface FilterItem {
@@ -13,7 +14,7 @@ interface FilterItem {
 @Component({
   selector: 'app-explore',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ExploreItemModalComponent],
   template: `
 <div class="min-h-full bg-gray-50">
   <!-- Header -->
@@ -75,7 +76,8 @@ interface FilterItem {
     @else {
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         @for (item of items(); track item.id) {
-          <div class="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow group">
+          <div class="bg-white rounded-xl border border-border overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer"
+               (click)="selectedItem.set(item)">
 
             <!-- Media thumbnail -->
             <div class="relative aspect-square bg-gray-100 overflow-hidden">
@@ -110,11 +112,20 @@ interface FilterItem {
                   <p class="text-xs text-gray-500 text-center">Transcript</p>
                 </div>
               } @else {
-                <!-- Image -->
                 <img [src]="item.outputUrl" [alt]="item.prompt || 'AI generated image'"
                      class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                      loading="lazy"/>
               }
+
+              <!-- Hover expand hint -->
+              <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center pointer-events-none">
+                <div class="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg">
+                  <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+                  </svg>
+                </div>
+              </div>
             </div>
 
             <!-- Card body -->
@@ -135,7 +146,7 @@ interface FilterItem {
               }
 
               <!-- Try this button -->
-              <button (click)="tryThis(item)"
+              <button (click)="$event.stopPropagation(); tryThis(item)"
                       class="w-full flex items-center justify-center gap-1 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent/90 transition-colors">
                 Try this
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,6 +189,15 @@ interface FilterItem {
 
   </div>
 </div>
+
+<!-- Lightbox modal -->
+@if (selectedItem()) {
+  <app-explore-item-modal
+    [item]="selectedItem()!"
+    (closed)="selectedItem.set(null)"
+    (tryThis)="tryThis($event); selectedItem.set(null)">
+  </app-explore-item-modal>
+}
   `
 })
 export class ExploreComponent implements OnInit {
@@ -203,6 +223,7 @@ export class ExploreComponent implements OnInit {
   totalCount = signal(0);
   pageSize = 20;
   activeFilter = signal<string | null>(null);
+  selectedItem = signal<ExploreItemDto | null>(null);
 
   totalPages = computed(() => Math.ceil(this.totalCount() / this.pageSize));
 
@@ -265,51 +286,36 @@ export class ExploreComponent implements OnInit {
 
   productLabel(product: string): string {
     const labels: Record<string, string> = {
-      ImageGen: 'Image Gen',
-      ImageToVideo: 'Img → Video',
-      TextToVideo: 'Text → Video',
-      Voice: 'Voice',
-      Transcription: 'Transcript',
-      BackgroundRemoval: 'BG Removal',
+      ImageGen: 'Image Gen', ImageToVideo: 'Img → Video', TextToVideo: 'Text → Video',
+      Voice: 'Voice', Transcription: 'Transcript', BackgroundRemoval: 'BG Removal',
     };
     return labels[product] ?? product;
   }
 
   productColor(product: string): string {
     const colors: Record<string, string> = {
-      ImageGen: '#7C3AED',
-      ImageToVideo: '#EF4444',
-      TextToVideo: '#F97316',
-      Voice: '#059669',
-      Transcription: '#2563EB',
-      BackgroundRemoval: '#0891B2',
+      ImageGen: '#7C3AED', ImageToVideo: '#EF4444', TextToVideo: '#F97316',
+      Voice: '#059669', Transcription: '#2563EB', BackgroundRemoval: '#0891B2',
     };
     return colors[product] ?? '#6B7280';
   }
 
   noPromptLabel(product: string): string {
     const labels: Record<string, string> = {
-      Voice: 'Text-to-speech output',
-      Transcription: 'Transcription output',
-      BackgroundRemoval: 'Background removed',
-      ImageToVideo: 'Image animated to video',
+      Voice: 'Text-to-speech output', Transcription: 'Transcription output',
+      BackgroundRemoval: 'Background removed', ImageToVideo: 'Image animated to video',
     };
     return labels[product] ?? 'AI generated content';
   }
 
   tryThis(item: ExploreItemDto) {
-    // If not logged in, send to register to encourage sign-up
     if (!this.auth.isLoggedIn()) {
       this.router.navigate(['/auth/register']);
       return;
     }
     const routes: Record<string, string> = {
-      ImageGen: '/image-gen',
-      ImageToVideo: '/image-to-video',
-      TextToVideo: '/text-to-video',
-      Voice: '/voice',
-      Transcription: '/transcription',
-      BackgroundRemoval: '/background-removal',
+      ImageGen: '/image-gen', ImageToVideo: '/image-to-video', TextToVideo: '/text-to-video',
+      Voice: '/voice', Transcription: '/transcription', BackgroundRemoval: '/background-removal',
     };
     const route = routes[item.product];
     if (!route) return;
