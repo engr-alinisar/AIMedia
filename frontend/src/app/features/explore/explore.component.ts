@@ -2,6 +2,7 @@ import { Component, signal, inject, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ExploreService } from '../../core/services/explore.service';
+import { AuthService } from '../../core/auth/auth.service';
 import type { ExploreItemDto } from '../../core/models/models';
 
 interface FilterItem {
@@ -182,6 +183,7 @@ interface FilterItem {
 export class ExploreComponent implements OnInit {
   private exploreSvc = inject(ExploreService);
   private router = inject(Router);
+  private auth = inject(AuthService);
 
   filters: FilterItem[] = [
     { label: 'All', value: null },
@@ -296,6 +298,11 @@ export class ExploreComponent implements OnInit {
   }
 
   tryThis(item: ExploreItemDto) {
+    // If not logged in, send to register to encourage sign-up
+    if (!this.auth.isLoggedIn()) {
+      this.router.navigate(['/auth/register']);
+      return;
+    }
     const routes: Record<string, string> = {
       ImageGen: '/image-gen',
       ImageToVideo: '/image-to-video',
