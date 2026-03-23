@@ -22,6 +22,7 @@ export const routes: Routes = [
       { path: 'jobs',               loadComponent: () => import('./features/jobs/jobs.component').then(m => m.JobsComponent) },
       { path: 'credits',            loadComponent: () => import('./features/credits/credits.component').then(m => m.CreditsComponent) },
       { path: 'profile',            loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent) },
+      { path: 'faq',               loadComponent: () => import('./features/faq/faq.component').then(m => m.FaqComponent) },
     ]
   },
   { path: '**', redirectTo: 'dashboard' }

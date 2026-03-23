@@ -83,6 +83,14 @@ export interface JobStatusUpdate {
   errorMessage?: string;
 }
 
+export interface FaqItemDto {
+  id: number;
+  question: string;
+  answer: string;
+  category: string;
+  order: number;
+}
+
 export interface ModelDto {
   id: string;
   name: string;

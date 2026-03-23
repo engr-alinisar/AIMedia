@@ -10,6 +10,7 @@ public interface IAppDbContext
     DbSet<CreditTransaction> CreditTransactions { get; }
     DbSet<VoiceClone> VoiceClones { get; }
     DbSet<CreditPack> CreditPacks { get; }
+    DbSet<FaqItem> FaqItems { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
