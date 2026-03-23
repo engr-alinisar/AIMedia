@@ -19,8 +19,8 @@ import type { JobDto } from '../../core/models/models';
     <p class="text-sm text-gray-500 mt-1">Here's what's happening with your media.</p>
   </div>
 
-  <!-- Stats — 3 cols on all sizes but compact on mobile -->
-  <div class="grid grid-cols-3 gap-3">
+  <!-- Stats — 2 cols -->
+  <div class="grid grid-cols-2 gap-3">
     <div class="card p-3 sm:p-5">
       <p class="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">Credit Balance</p>
       <p class="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{{ credits.balance().balance }}</p>
@@ -30,11 +30,6 @@ import type { JobDto } from '../../core/models/models';
       <p class="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">Total Jobs</p>
       <p class="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{{ recentJobs().length }}</p>
       <p class="text-[10px] sm:text-xs text-gray-400 mt-1">This session</p>
-    </div>
-    <div class="card p-3 sm:p-5">
-      <p class="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">Plan</p>
-      <p class="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{{ auth.user()?.plan }}</p>
-      <a routerLink="/credits" class="text-[10px] sm:text-xs text-accent hover:underline mt-1 block">Upgrade →</a>
     </div>
   </div>
 

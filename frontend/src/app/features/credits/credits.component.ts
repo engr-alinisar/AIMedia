@@ -93,6 +93,16 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
       }
     </div>
     <p class="text-xs text-gray-400 text-center mt-3">1 credit = $0.01 USD · Secure checkout powered by PayPal</p>
+
+    <!-- No refund notice -->
+    <div class="flex items-start gap-2 mt-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+      <span class="text-sm mt-0.5">ℹ️</span>
+      <p class="text-xs text-gray-500 leading-relaxed">
+        <span class="font-semibold text-gray-600">No refund policy.</span>
+        All credit purchases are final and non-refundable. We offer
+        <span class="font-semibold">100 free credits</span> to every new account so you can try the platform before purchasing.
+      </p>
+    </div>
   </div>
 
   <!-- Transaction history -->
