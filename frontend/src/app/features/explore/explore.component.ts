@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ExploreService } from '../../core/services/explore.service';
 import { AuthService } from '../../core/auth/auth.service';
+import { LoginModalService } from '../../core/services/login-modal.service';
 import { ExploreItemModalComponent } from '../../shared/components/explore-item-modal/explore-item-modal.component';
 import type { ExploreItemDto } from '../../core/models/models';
 
@@ -204,6 +205,7 @@ export class ExploreComponent implements OnInit {
   private exploreSvc = inject(ExploreService);
   private router = inject(Router);
   private auth = inject(AuthService);
+  private loginModal = inject(LoginModalService);
 
   filters: FilterItem[] = [
     { label: 'All', value: null },
@@ -310,7 +312,7 @@ export class ExploreComponent implements OnInit {
 
   tryThis(item: ExploreItemDto) {
     if (!this.auth.isLoggedIn()) {
-      this.router.navigate(['/auth/register']);
+      this.loginModal.show();
       return;
     }
     const routes: Record<string, string> = {

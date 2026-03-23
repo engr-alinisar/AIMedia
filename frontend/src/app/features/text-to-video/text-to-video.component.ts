@@ -5,6 +5,8 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { GenerationService } from '../../core/services/generation.service';
 import { CreditsService } from '../../core/services/credits.service';
 import { SignalRService } from '../../core/services/signalr.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { LoginModalService } from '../../core/services/login-modal.service';
 import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
@@ -194,6 +196,8 @@ interface VideoModel {
 export class TextToVideoComponent implements OnInit, OnDestroy {
   private gen = inject(GenerationService);
   private credits = inject(CreditsService);
+  private auth = inject(AuthService);
+  private loginModal = inject(LoginModalService);
   private signalR = inject(SignalRService);
   private route = inject(ActivatedRoute);
 
@@ -272,6 +276,7 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   }
 
   generate() {
+    if (!this.auth.isLoggedIn()) { this.loginModal.show(); return; }
     if (!this.prompt.trim() || this.generating() || !this.selectedModel()) return;
     this.generating.set(true);
     this.jobStatus.set('Queued');

@@ -5,6 +5,8 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { GenerationService } from '../../core/services/generation.service';
 import { CreditsService } from '../../core/services/credits.service';
 import { SignalRService } from '../../core/services/signalr.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { LoginModalService } from '../../core/services/login-modal.service';
 import { VoiceCloneService, VoiceCloneDto } from '../../core/services/voice-clone.service';
 import { CloneVoiceModalComponent } from '../../shared/components/clone-voice-modal/clone-voice-modal.component';
 import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
@@ -312,6 +314,8 @@ interface VoiceModel {
 export class VoiceComponent implements OnInit, OnDestroy {
   private gen = inject(GenerationService);
   private credits = inject(CreditsService);
+  private auth = inject(AuthService);
+  private loginModal = inject(LoginModalService);
   private signalR = inject(SignalRService);
   private voiceCloneSvc = inject(VoiceCloneService);
   private route = inject(ActivatedRoute);
@@ -436,6 +440,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
   }
 
   generate() {
+    if (!this.auth.isLoggedIn()) { this.loginModal.show(); return; }
     if (!this.canGenerate()) return;
     this.generating.set(true);
     this.jobStatus.set('Queued');

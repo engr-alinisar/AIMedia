@@ -3,6 +3,7 @@ import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth/auth.service';
 import { ExploreService } from '../../core/services/explore.service';
+import { LoginModalService } from '../../core/services/login-modal.service';
 import type { ExploreItemDto } from '../../core/models/models';
 
 @Component({
@@ -71,15 +72,15 @@ import type { ExploreItemDto } from '../../core/models/models';
           </svg>
         </a>
       } @else {
-        <a routerLink="/auth/login"
-           class="hidden sm:inline-flex px-4 py-2 rounded-lg text-sm font-medium text-gray-700 border border-gray-200 hover:bg-gray-50 transition-colors">
+        <button (click)="loginModal.show()"
+                class="hidden sm:inline-flex px-4 py-2 rounded-lg text-sm font-medium text-gray-700 border border-gray-200 hover:bg-gray-50 transition-colors">
           Login
-        </a>
-        <a routerLink="/auth/register"
-           class="inline-flex px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
-           style="background:#7c3aed;">
+        </button>
+        <button (click)="loginModal.show('register')"
+                class="inline-flex px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
+                style="background:#7c3aed;">
           Sign Up Free
-        </a>
+        </button>
       }
     </div>
   </div>
@@ -106,14 +107,14 @@ import type { ExploreItemDto } from '../../core/models/models';
       Generate images, videos, voice, and more — powered by cutting-edge AI. Pick a tool and start creating.
     </p>
     <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-      <a routerLink="/auth/register"
-         class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]"
-         style="background: linear-gradient(135deg, #7c3aed, #4f46e5);">
+      <button (click)="loginModal.show('register')"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]"
+              style="background: linear-gradient(135deg, #7c3aed, #4f46e5);">
         Start for Free
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
         </svg>
-      </a>
+      </button>
       <a routerLink="/explore"
          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-gray-700 border-2 border-gray-200 bg-white hover:border-gray-300 transition-colors">
         Browse Community Work
@@ -313,6 +314,7 @@ import type { ExploreItemDto } from '../../core/models/models';
 })
 export class LandingComponent implements OnInit {
   auth = inject(AuthService);
+  loginModal = inject(LoginModalService);
   private exploreSvc = inject(ExploreService);
   private router = inject(Router);
 
@@ -396,7 +398,7 @@ export class LandingComponent implements OnInit {
 
   tryTool(route: string) {
     if (!this.auth.isLoggedIn()) {
-      this.router.navigate(['/auth/register']);
+      this.loginModal.show();
     } else {
       this.router.navigate([route]);
     }

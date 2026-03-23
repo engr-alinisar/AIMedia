@@ -1,20 +1,28 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { ShellComponent } from './layout/shell.component';
+import { PublicShellComponent } from './layout/public-shell.component';
 
 export const routes: Routes = [
   // Public routes — no auth required
   { path: '',           loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent) },
-  { path: 'explore',    loadComponent: () => import('./features/explore/explore.component').then(m => m.ExploreComponent) },
   { path: 'auth/login',    loadComponent: () => import('./features/auth/login.component').then(m => m.LoginComponent) },
   { path: 'auth/register', loadComponent: () => import('./features/auth/register.component').then(m => m.RegisterComponent) },
   { path: 'verify-email',  loadComponent: () => import('./features/auth/verify-email.component').then(m => m.VerifyEmailComponent) },
 
-  // Authenticated routes — require login, wrapped in sidebar shell
+  // Public pages with sidebar shell
+  {
+    path: '',
+    component: PublicShellComponent,
+    children: [
+      { path: 'explore', loadComponent: () => import('./features/explore/explore.component').then(m => m.ExploreComponent) },
+    ]
+  },
+
+  // Authenticated shell — no guard, shell handles unauth state gracefully
   {
     path: '',
     component: ShellComponent,
-    canActivate: [authGuard],
     children: [
       { path: '',                   redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard',          loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent) },

@@ -6,6 +6,7 @@ import { CreditsService } from '../core/services/credits.service';
 import { SignalRService } from '../core/services/signalr.service';
 import { GenerationService } from '../core/services/generation.service';
 import { NotificationService, AppNotification } from '../core/services/notification.service';
+import { LoginModalService } from '../core/services/login-modal.service';
 
 interface NavItem { label: string; icon: string; route: string; badge?: string; }
 interface NavGroup { category: string; items: NavItem[]; }
@@ -87,7 +88,8 @@ interface NavGroup { category: string; items: NavItem[]; }
       }
     </nav>
 
-    <!-- User menu -->
+    <!-- User menu (only when logged in) -->
+    @if (auth.isLoggedIn()) {
     <div class="px-3 py-3 border-t border-gray-200 relative" data-user-menu>
       <!-- Popup menu -->
       @if (showUserMenu()) {
@@ -134,6 +136,7 @@ interface NavGroup { category: string; items: NavItem[]; }
         </svg>
       </button>
     </div>
+    }
   </aside>
 
   <!-- Main -->
@@ -156,6 +159,7 @@ interface NavGroup { category: string; items: NavItem[]; }
 
       <div class="flex-1"></div>
 
+      @if (auth.isLoggedIn()) {
       <!-- Credit balance -->
       <a routerLink="/credits" class="flex items-center gap-1 lg:gap-1.5 text-sm text-gray-600 hover:text-accent transition-colors">
         <svg class="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="currentColor">
@@ -264,6 +268,14 @@ interface NavGroup { category: string; items: NavItem[]; }
           </div>
         }
       </div>
+      } @else {
+        <!-- Unauthenticated: single Login / Sign Up button -->
+        <button (click)="loginModal.show()"
+                class="px-4 py-1.5 text-sm font-semibold text-white rounded-lg transition-colors"
+                style="background:#7c3aed;">
+          Login / Sign Up
+        </button>
+      }
 
     </header>
 
@@ -279,6 +291,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
   credits = inject(CreditsService);
   notif = inject(NotificationService);
+  loginModal = inject(LoginModalService);
   private signalR = inject(SignalRService);
   private generation = inject(GenerationService);
 
@@ -369,8 +382,10 @@ export class ShellComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.signalR.start();
-    this.credits.loadBalance().subscribe();
+    if (this.auth.isLoggedIn()) {
+      this.signalR.start();
+      this.credits.loadBalance().subscribe();
+    }
 
     // Close dropdown when clicking outside
     document.addEventListener('click', this.onDocumentClick);
@@ -389,7 +404,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   };
 
   ngOnDestroy() {
-    this.signalR.stop();
+    if (this.auth.isLoggedIn()) this.signalR.stop();
     document.removeEventListener('click', this.onDocumentClick);
   }
 }
