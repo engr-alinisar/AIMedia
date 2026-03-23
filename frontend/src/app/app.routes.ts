@@ -19,6 +19,7 @@ export const routes: Routes = [
       { path: 'voice',              loadComponent: () => import('./features/voice/voice.component').then(m => m.VoiceComponent) },
       { path: 'transcription',      loadComponent: () => import('./features/transcription/transcription.component').then(m => m.TranscriptionComponent) },
       { path: 'background-removal', loadComponent: () => import('./features/background-removal/background-removal.component').then(m => m.BackgroundRemovalComponent) },
+      { path: 'explore',            loadComponent: () => import('./features/explore/explore.component').then(m => m.ExploreComponent) },
       { path: 'jobs',               loadComponent: () => import('./features/jobs/jobs.component').then(m => m.JobsComponent) },
       { path: 'credits',            loadComponent: () => import('./features/credits/credits.component').then(m => m.CreditsComponent) },
       { path: 'profile',            loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent) },

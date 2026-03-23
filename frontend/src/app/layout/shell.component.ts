@@ -305,6 +305,12 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   navGroups: NavGroup[] = [
     {
+      category: 'Discover',
+      items: [
+        { label: 'Explore', icon: '🔍', route: '/explore' },
+      ]
+    },
+    {
       category: 'Video AI',
       items: [
         { label: 'Image to Video', icon: '🎬', route: '/image-to-video', badge: 'HOT' },

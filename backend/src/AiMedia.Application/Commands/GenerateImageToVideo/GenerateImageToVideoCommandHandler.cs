@@ -54,6 +54,7 @@ public class GenerateImageToVideoCommandHandler(
             CreditsReserved = credits,
             DurationSeconds = request.DurationSeconds,
             FalInput = JsonDocument.Parse(JsonSerializer.Serialize(input)),
+            IsPublic = request.IsPublic,
             CreatedAt = DateTime.UtcNow
         });
 

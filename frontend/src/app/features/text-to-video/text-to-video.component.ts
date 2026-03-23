@@ -1,7 +1,7 @@
 import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { GenerationService } from '../../core/services/generation.service';
 import { CreditsService } from '../../core/services/credits.service';
 import { SignalRService } from '../../core/services/signalr.service';
@@ -133,6 +133,21 @@ interface VideoModel {
           <span class="text-accent">{{ costEstimate() }}</span> credits
         </span>
       </div>
+      <!-- Public visibility toggle -->
+      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+        <div>
+          <p class="text-sm font-medium text-gray-700">Public visibility</p>
+          <p class="text-xs text-gray-400">Show this output on the Explore page</p>
+        </div>
+        <button type="button" (click)="isPublic.update(v => !v)"
+                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                [class.bg-accent]="isPublic()"
+                [class.bg-gray-300]="!isPublic()">
+          <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                [class.translate-x-6]="isPublic()"
+                [class.translate-x-1]="!isPublic()"></span>
+        </button>
+      </div>
       <button class="btn-primary w-full" (click)="generate()"
               [disabled]="!prompt.trim() || generating() || !selectedModel()">
         @if (generating()) { <span class="animate-spin mr-1">⟳</span> Generating... }
@@ -180,6 +195,7 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   private gen = inject(GenerationService);
   private credits = inject(CreditsService);
   private signalR = inject(SignalRService);
+  private route = inject(ActivatedRoute);
 
   models: VideoModel[] = [
     {
@@ -220,6 +236,7 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   jobStatus = signal<JobStatus | null>(null);
   outputUrl = signal<string | undefined>(undefined);
   errorMsg = signal<string | undefined>(undefined);
+  isPublic = signal(true);
 
   costEstimate = signal(this.models[1].creditsPerSec * 5);
 
@@ -228,6 +245,12 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     document.addEventListener('click', this.onDocumentClick);
+    const qp = this.route.snapshot.queryParams;
+    if (qp['prompt']) this.prompt = qp['prompt'];
+    if (qp['model']) {
+      const m = this.models.find(x => x.id === qp['model']);
+      if (m) this.selectModel(m);
+    }
   }
 
   private onDocumentClick = (e: MouseEvent) => {
@@ -258,7 +281,8 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
       prompt: this.prompt,
       modelId: this.selectedModel()!.id,
       durationSeconds: this.duration,
-      aspectRatio: this.aspectRatio
+      aspectRatio: this.aspectRatio,
+      isPublic: this.isPublic()
     }).subscribe({
       next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.signalR.trackJob(res.jobId, 'TextToVideo'); this.startFallback(); },
       error: err => { this.generating.set(false); this.jobStatus.set('Failed'); this.errorMsg.set(err.error?.error ?? 'Failed.'); }

@@ -8,4 +8,5 @@ public record GenerateTextToVideoCommand(
     string Prompt,
     string ModelId,
     int DurationSeconds = 5,
-    string AspectRatio = "16:9") : IRequest<GenerationResponse>;
+    string AspectRatio = "16:9",
+    bool IsPublic = true) : IRequest<GenerationResponse>;

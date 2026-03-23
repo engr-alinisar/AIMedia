@@ -64,6 +64,7 @@ public class GenerateTranscriptionCommandHandler(
             Status = JobStatus.Queued,
             CreditsReserved = credits,
             FalInput = JsonDocument.Parse(JsonSerializer.Serialize(input)),
+            IsPublic = request.IsPublic,
             CreatedAt = DateTime.UtcNow
         });
 

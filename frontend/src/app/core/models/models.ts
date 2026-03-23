@@ -100,6 +100,16 @@ export interface ModelDto {
   tier: string;
 }
 
+export interface ExploreItemDto {
+  id: string;
+  product: ProductType;
+  outputUrl?: string;
+  prompt?: string;
+  modelId?: string;
+  createdAt: string;
+  userDisplayName?: string;
+}
+
 // Credit costs mirrored from CreditCalculator.cs
 export const CREDIT_COSTS: Record<ProductType, Record<ModelTier, number>> = {
   ImageGen:          { Free: 5,  Standard: 8,  Premium: 11 },

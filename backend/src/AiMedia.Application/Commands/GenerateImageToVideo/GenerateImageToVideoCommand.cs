@@ -8,4 +8,5 @@ public record GenerateImageToVideoCommand(
     string ImageUrl,
     string? Prompt,
     string ModelId,
-    int DurationSeconds = 5) : IRequest<GenerationResponse>;
+    int DurationSeconds = 5,
+    bool IsPublic = true) : IRequest<GenerationResponse>;

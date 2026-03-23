@@ -32,19 +32,19 @@ export class GenerationService {
     return this.http.post<{ url: string }>(`${environment.apiUrl}/api/upload/audio`, formData);
   }
 
-  generateImage(payload: { prompt: string; modelId: string; imageSize?: string; negativePrompt?: string }) {
+  generateImage(payload: { prompt: string; modelId: string; imageSize?: string; negativePrompt?: string; isPublic?: boolean }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image`, payload);
   }
 
-  generateImageToVideo(payload: { imageUrl: string; modelId: string; prompt?: string; durationSeconds?: number }) {
+  generateImageToVideo(payload: { imageUrl: string; modelId: string; prompt?: string; durationSeconds?: number; isPublic?: boolean }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image-to-video`, payload);
   }
 
-  generateTextToVideo(payload: { prompt: string; modelId: string; durationSeconds?: number; aspectRatio?: string }) {
+  generateTextToVideo(payload: { prompt: string; modelId: string; durationSeconds?: number; aspectRatio?: string; isPublic?: boolean }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/text-to-video`, payload);
   }
 
-  generateVoice(payload: { text: string; modelId: string; voiceId?: string; voiceCloneId?: string; refAudioUrl?: string }) {
+  generateVoice(payload: { text: string; modelId: string; voiceId?: string; voiceCloneId?: string; refAudioUrl?: string; isPublic?: boolean }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/voice`, payload);
   }
 

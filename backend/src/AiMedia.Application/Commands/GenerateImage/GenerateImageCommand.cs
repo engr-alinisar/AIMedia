@@ -8,4 +8,5 @@ public record GenerateImageCommand(
     string Prompt,
     string ModelId,
     string ImageSize = "square_hd",
-    string? NegativePrompt = null) : IRequest<GenerationResponse>;
+    string? NegativePrompt = null,
+    bool IsPublic = true) : IRequest<GenerationResponse>;
