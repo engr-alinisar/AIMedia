@@ -1,4 +1,3 @@
-using System.Text;
 using AiMedia.Application.Interfaces;
 using AiMedia.Domain.Enums;
 using AiMedia.Domain.Events;
@@ -11,6 +10,7 @@ public class ProcessWebhookCommandHandler(
     IAppDbContext db,
     IStorageService storage,
     ICreditService creditService,
+    IEmailService emailService,
     IPublisher publisher) : IRequestHandler<ProcessWebhookCommand>
 {
     public async Task Handle(ProcessWebhookCommand request, CancellationToken cancellationToken)
@@ -74,6 +74,15 @@ public class ProcessWebhookCommandHandler(
 
             await creditService.DeductAsync(job.UserId, job.Id, job.CreditsReserved, $"Job completed: {job.Product}", cancellationToken);
             await publisher.Publish(new JobCompletedEvent(job.Id, job.UserId, r2Key, job.CreditsCharged), cancellationToken);
+
+            // Low credit warning — send once when balance drops below 50
+            var (balance, _) = await creditService.GetBalanceAsync(job.UserId, cancellationToken);
+            if (balance < 50)
+            {
+                var user = await db.Users.FindAsync([job.UserId], cancellationToken);
+                if (user is not null)
+                    _ = emailService.SendLowCreditsEmailAsync(user.Email, user.FullName ?? "there", balance, cancellationToken);
+            }
         }
         else
         {
