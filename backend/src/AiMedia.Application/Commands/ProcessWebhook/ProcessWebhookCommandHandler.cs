@@ -3,6 +3,7 @@ using AiMedia.Domain.Enums;
 using AiMedia.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AiMedia.Application.Commands.ProcessWebhook;
 
@@ -11,7 +12,8 @@ public class ProcessWebhookCommandHandler(
     IStorageService storage,
     ICreditService creditService,
     IEmailService emailService,
-    IPublisher publisher) : IRequestHandler<ProcessWebhookCommand>
+    IPublisher publisher,
+    ILogger<ProcessWebhookCommandHandler> logger) : IRequestHandler<ProcessWebhookCommand>
 {
     public async Task Handle(ProcessWebhookCommand request, CancellationToken cancellationToken)
     {
@@ -75,13 +77,24 @@ public class ProcessWebhookCommandHandler(
             await creditService.DeductAsync(job.UserId, job.Id, job.CreditsReserved, $"Job completed: {job.Product}", cancellationToken);
             await publisher.Publish(new JobCompletedEvent(job.Id, job.UserId, r2Key, job.CreditsCharged), cancellationToken);
 
-            // Low credit warning — send once when balance drops below 50
+            // Low credit warning — send once when balance drops below 50 (reset when user tops up)
             var (balance, _) = await creditService.GetBalanceAsync(job.UserId, cancellationToken);
             if (balance < 50)
             {
                 var user = await db.Users.FindAsync([job.UserId], cancellationToken);
-                if (user is not null)
-                    _ = emailService.SendLowCreditsEmailAsync(user.Email, user.FullName ?? "there", balance, cancellationToken);
+                if (user is not null && user.LowCreditEmailSentAt is null)
+                {
+                    try
+                    {
+                        await emailService.SendLowCreditsEmailAsync(user.Email, user.FullName ?? "there", balance, cancellationToken);
+                        user.LowCreditEmailSentAt = DateTime.UtcNow;
+                        await db.SaveChangesAsync(cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Failed to send low credits email to {Email}", user.Email);
+                    }
+                }
             }
         }
         else

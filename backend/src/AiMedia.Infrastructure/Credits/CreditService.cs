@@ -139,7 +139,8 @@ public class CreditService(IAppDbContext db, ILogger<CreditService> logger) : IC
         await ((DbContext)(object)db).Database.ExecuteSqlRawAsync(
             """
             UPDATE users
-            SET credit_balance = credit_balance + {0}
+            SET credit_balance = credit_balance + {0},
+                low_credit_email_sent_at = NULL
             WHERE id = {1}
             """,
             credits, userId);
