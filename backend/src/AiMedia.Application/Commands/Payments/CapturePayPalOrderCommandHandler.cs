@@ -59,10 +59,18 @@ public class CapturePayPalOrderCommandHandler(
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user is not null)
         {
-            _ = email.SendReceiptEmailAsync(
-                user.Email, user.FullName ?? "there",
-                pack.Label, pack.Credits, pack.Price,
-                request.OrderId, ct);
+            try
+            {
+                await email.SendReceiptEmailAsync(
+                    user.Email, user.FullName ?? "there",
+                    pack.Label, pack.Credits, pack.Price,
+                    captureId, ct);
+                logger.LogInformation("Receipt email sent to {Email} for capture {CaptureId}", user.Email, captureId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to send receipt email to {Email} for capture {CaptureId}", user.Email, captureId);
+            }
         }
 
         return true;
