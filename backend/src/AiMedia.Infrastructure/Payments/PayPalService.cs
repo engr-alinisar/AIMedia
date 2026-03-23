@@ -83,7 +83,7 @@ public class PayPalService(HttpClient http, IConfiguration config, ILogger<PayPa
         return approvalUrl;
     }
 
-    public async Task<(bool Success, string CustomId)> CaptureOrderAsync(string orderId, CancellationToken ct = default)
+    public async Task<(bool Success, string CustomId, string CaptureId)> CaptureOrderAsync(string orderId, CancellationToken ct = default)
     {
         var token = await GetAccessTokenAsync(ct);
 
@@ -97,7 +97,7 @@ public class PayPalService(HttpClient http, IConfiguration config, ILogger<PayPa
         {
             var error = await res.Content.ReadAsStringAsync(ct);
             logger.LogError("PayPal capture failed for order {OrderId}: {Error}", orderId, error);
-            return (false, string.Empty);
+            return (false, string.Empty, string.Empty);
         }
 
         var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync(ct));
@@ -106,32 +106,75 @@ public class PayPalService(HttpClient http, IConfiguration config, ILogger<PayPa
         if (status != "COMPLETED")
         {
             logger.LogWarning("PayPal order {OrderId} status: {Status}", orderId, status);
-            return (false, string.Empty);
+            return (false, string.Empty, string.Empty);
         }
 
         var purchaseUnit = doc.RootElement.GetProperty("purchase_units")[0];
 
-        // custom_id can be at purchase_unit level or inside captures
+        // Extract custom_id — can be at purchase_unit level or inside captures
         string customId;
-        if (purchaseUnit.TryGetProperty("custom_id", out var directCustomId))
+        string captureId = string.Empty;
+
+        if (purchaseUnit.TryGetProperty("payments", out var payments) &&
+            payments.TryGetProperty("captures", out var captures) &&
+            captures.GetArrayLength() > 0)
         {
-            customId = directCustomId.GetString() ?? string.Empty;
-        }
-        else if (purchaseUnit.TryGetProperty("payments", out var payments) &&
-                 payments.TryGetProperty("captures", out var captures) &&
-                 captures.GetArrayLength() > 0 &&
-                 captures[0].TryGetProperty("custom_id", out var captureCustomId))
-        {
-            customId = captureCustomId.GetString() ?? string.Empty;
+            var capture = captures[0];
+            captureId = capture.TryGetProperty("id", out var cid) ? cid.GetString() ?? string.Empty : string.Empty;
+            customId = capture.TryGetProperty("custom_id", out var captureCustomId)
+                ? captureCustomId.GetString() ?? string.Empty
+                : string.Empty;
         }
         else
         {
-            logger.LogError("PayPal order {OrderId} response missing custom_id. Response: {Response}",
-                orderId, doc.RootElement.GetRawText());
-            return (false, string.Empty);
+            customId = string.Empty;
         }
 
-        logger.LogInformation("Captured PayPal order {OrderId}", orderId);
-        return (true, customId);
+        if (string.IsNullOrEmpty(customId) && purchaseUnit.TryGetProperty("custom_id", out var directCustomId))
+            customId = directCustomId.GetString() ?? string.Empty;
+
+        if (string.IsNullOrEmpty(customId))
+        {
+            logger.LogError("PayPal order {OrderId} response missing custom_id. Response: {Response}",
+                orderId, doc.RootElement.GetRawText());
+            return (false, string.Empty, string.Empty);
+        }
+
+        logger.LogInformation("Captured PayPal order {OrderId} capture {CaptureId}", orderId, captureId);
+        return (true, customId, captureId);
+    }
+
+    public async Task<bool> VerifyWebhookSignatureAsync(
+        string webhookId, string transmissionId, string transmissionTime,
+        string certUrl, string authAlgo, string transmissionSig,
+        string rawBody, CancellationToken ct = default)
+    {
+        var token = await GetAccessTokenAsync(ct);
+
+        JsonDocument? webhookEvent;
+        try { webhookEvent = JsonDocument.Parse(rawBody); }
+        catch { return false; }
+
+        var body = new
+        {
+            auth_algo = authAlgo,
+            cert_url = certUrl,
+            transmission_id = transmissionId,
+            transmission_sig = transmissionSig,
+            transmission_time = transmissionTime,
+            webhook_id = webhookId,
+            webhook_event = webhookEvent.RootElement
+        };
+
+        var req = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/v1/notifications/verify-webhook-signature");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        req.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
+        var res = await http.SendAsync(req, ct);
+        if (!res.IsSuccessStatusCode) return false;
+
+        var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync(ct));
+        var verificationStatus = doc.RootElement.GetProperty("verification_status").GetString();
+        return verificationStatus == "SUCCESS";
     }
 }

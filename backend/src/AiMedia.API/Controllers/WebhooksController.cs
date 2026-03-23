@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using AiMedia.Application.Commands.Payments;
 using AiMedia.Application.Commands.ProcessWebhook;
 using AiMedia.FalAi.Models;
 using Hangfire;
@@ -12,8 +13,31 @@ namespace AiMedia.API.Controllers;
 [Route("api/webhooks")]
 public class WebhooksController(
     IBackgroundJobClient jobs,
+    IConfiguration config,
     ILogger<WebhooksController> logger) : ControllerBase
 {
+    [HttpPost("paypal")]
+    public async Task<IActionResult> PayPalWebhook(CancellationToken ct)
+    {
+        Request.EnableBuffering();
+        var rawBody = await new StreamReader(Request.Body, Encoding.UTF8).ReadToEndAsync(ct);
+
+        var webhookId = config["PayPal:WebhookId"] ?? string.Empty;
+        var transmissionId = Request.Headers["PAYPAL-TRANSMISSION-ID"].ToString();
+        var transmissionTime = Request.Headers["PAYPAL-TRANSMISSION-TIME"].ToString();
+        var certUrl = Request.Headers["PAYPAL-CERT-URL"].ToString();
+        var authAlgo = Request.Headers["PAYPAL-AUTH-ALGO"].ToString();
+        var transmissionSig = Request.Headers["PAYPAL-TRANSMISSION-SIG"].ToString();
+
+        jobs.Enqueue<IMediator>(m => m.Send(
+            new ProcessPayPalWebhookCommand(webhookId, transmissionId, transmissionTime, certUrl, authAlgo, transmissionSig, rawBody),
+            CancellationToken.None));
+
+        logger.LogInformation("PayPal webhook enqueued, event from {TransmissionId}", transmissionId);
+        return Ok();
+    }
+
+
     [HttpPost("fal")]
     public async Task<IActionResult> FalWebhook(CancellationToken ct)
     {

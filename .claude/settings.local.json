@@ -73,7 +73,9 @@
       "Bash(grep -E \"\\\\.\\(cs\\)$\")",
       "Bash(cmd.exe /c \"taskkill /PID 10744 /F\")",
       "Bash(cmd.exe /c \"tasklist | findstr AiMedia\")",
-      "Bash(cmd.exe /c \"tasklist | findstr dotnet\")"
+      "Bash(cmd.exe /c \"tasklist | findstr dotnet\")",
+      "Bash(cmd.exe /c \"taskkill /PID 17812 /F\")",
+      "Bash(cmd.exe /c \"taskkill /PID 17812 /F 2>nul & dotnet build src/AiMedia.API/AiMedia.API.csproj 2>&1 | findstr /i \"\"error warning Build succeeded\"\"\")"
     ]
   }
 }

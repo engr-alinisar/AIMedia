@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { CreditsService } from '../../core/services/credits.service';
@@ -47,8 +47,20 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
     </div>
   }
 
+  <!-- Low credits warning -->
+  @if (credits.balance().balance > 0 && credits.balance().balance < 50) {
+    <div class="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+      <span class="text-lg">⚠️</span>
+      <div class="flex-1">
+        <span class="font-semibold">Low credits — </span>
+        <span>You only have {{ credits.balance().balance }} credits left. Top up to keep generating.</span>
+      </div>
+      <button class="text-xs font-semibold underline whitespace-nowrap" (click)="scrollToPacks()">Buy now</button>
+    </div>
+  }
+
   <!-- Balance card -->
-  <div class="card p-5 sm:p-6">
+  <div class="card p-5 sm:p-6" #balanceCard>
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm text-gray-500">Available Balance</p>
@@ -60,7 +72,7 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
   </div>
 
   <!-- Credit packs -->
-  <div>
+  <div #packsSection>
     <h2 class="text-sm font-semibold text-gray-700 mb-3">Buy Credits</h2>
     <div class="grid grid-cols-3 gap-3 sm:gap-4">
       @for (pack of packs; track pack.id) {
@@ -165,6 +177,12 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
 export class CreditsComponent implements OnInit {
   credits = inject(CreditsService);
   private route = inject(ActivatedRoute);
+
+  @ViewChild('packsSection') packsSection?: ElementRef;
+
+  scrollToPacks() {
+    this.packsSection?.nativeElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   readonly PAGE_SIZE = 10;
 
