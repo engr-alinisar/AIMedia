@@ -62,9 +62,10 @@ const SUBJECT_OPTIONS = [
             required
             maxlength="200"
             placeholder="you@example.com"
-            [attr.readonly]="isLoggedIn() ? true : null"
+            [disabled]="isLoggedIn()"
             [class.bg-gray-50]="isLoggedIn()"
             [class.cursor-not-allowed]="isLoggedIn()"
+            [class.opacity-60]="isLoggedIn()"
             class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition"
           />
           @if (isLoggedIn()) {
@@ -122,7 +123,7 @@ const SUBJECT_OPTIONS = [
         <div>
           <button
             type="submit"
-            [disabled]="loading() || !isFormValid()"
+            [disabled]="loading() || !isFormValid"
             class="w-full sm:w-auto px-8 py-2.5 bg-accent text-white rounded-lg text-sm font-semibold hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             @if (loading()) {
@@ -159,7 +160,7 @@ export class ContactComponent {
 
   isLoggedIn = this.auth.isLoggedIn;
 
-  isFormValid = computed(() => {
+  get isFormValid(): boolean {
     return (
       this.name.trim().length > 0 &&
       this.email.trim().length > 0 &&
@@ -167,7 +168,7 @@ export class ContactComponent {
       this.message.trim().length >= 10 &&
       this.message.length <= 2000
     );
-  });
+  }
 
   submit() {
     if (this.loading() || !this.isFormValid()) return;
