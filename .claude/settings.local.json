@@ -81,7 +81,8 @@
       "Bash(cmd.exe /c \"taskkill /PID 8636 /F\")",
       "Bash(git push:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(node -e \":*)"
     ]
   }
 }
