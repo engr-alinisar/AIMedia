@@ -183,10 +183,6 @@ export class PublicShellComponent {
   ];
 
   navigate(route: string) {
-    if (!this.auth.isLoggedIn()) {
-      this.router.navigate(['/auth/register']);
-    } else {
-      this.router.navigate([route]);
-    }
+    this.router.navigate([route]);
   }
 }
