@@ -171,7 +171,7 @@ export class ContactComponent {
   }
 
   submit() {
-    if (this.loading() || !this.isFormValid()) return;
+    if (this.loading() || !this.isFormValid) return;
 
     this.loading.set(true);
     this.error.set(null);
