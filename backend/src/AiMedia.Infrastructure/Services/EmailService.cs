@@ -150,8 +150,17 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
                 <tr>
                   <td style="background:linear-gradient(135deg,#6d28d9,#7c3aed);padding:32px 40px;text-align:center;">
-                    <div style="color:#ffffff;font-size:24px;font-weight:700;">VoicesForge</div>
-                    <div style="color:rgba(255,255,255,0.75);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;">PAYMENT RECEIPT</div>
+                    <table cellpadding="0" cellspacing="0" align="center">
+                      <tr>
+                        <td style="vertical-align:middle;padding-right:12px;">
+                          <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="VoicesForge" style="display:block;border-radius:10px;" />
+                        </td>
+                        <td style="vertical-align:middle;text-align:left;">
+                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">VoicesForge</div>
+                          <div style="color:rgba(255,255,255,0.75);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">PAYMENT RECEIPT</div>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 <tr>
@@ -213,8 +222,17 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
                 <tr>
                   <td style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:32px 40px;text-align:center;">
-                    <div style="color:#ffffff;font-size:24px;font-weight:700;">VoicesForge</div>
-                    <div style="color:rgba(255,255,255,0.85);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;">LOW CREDITS ALERT</div>
+                    <table cellpadding="0" cellspacing="0" align="center">
+                      <tr>
+                        <td style="vertical-align:middle;padding-right:12px;">
+                          <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="VoicesForge" style="display:block;border-radius:10px;" />
+                        </td>
+                        <td style="vertical-align:middle;text-align:left;">
+                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">VoicesForge</div>
+                          <div style="color:rgba(255,255,255,0.85);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">LOW CREDITS ALERT</div>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 <tr>
@@ -254,8 +272,17 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
                 <tr>
                   <td style="background:linear-gradient(135deg,#dc2626,#b91c1c);padding:32px 40px;text-align:center;">
-                    <div style="color:#ffffff;font-size:24px;font-weight:700;">VoicesForge</div>
-                    <div style="color:rgba(255,255,255,0.85);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;">PAYMENT DECLINED</div>
+                    <table cellpadding="0" cellspacing="0" align="center">
+                      <tr>
+                        <td style="vertical-align:middle;padding-right:12px;">
+                          <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="VoicesForge" style="display:block;border-radius:10px;" />
+                        </td>
+                        <td style="vertical-align:middle;text-align:left;">
+                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">VoicesForge</div>
+                          <div style="color:rgba(255,255,255,0.85);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">PAYMENT DECLINED</div>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 <tr>
@@ -297,8 +324,17 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
               <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
                 <tr>
                   <td style="background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:32px 40px;text-align:center;">
-                    <div style="color:#ffffff;font-size:24px;font-weight:700;">VoicesForge</div>
-                    <div style="color:rgba(255,255,255,0.85);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;">PAYMENT REVERSED</div>
+                    <table cellpadding="0" cellspacing="0" align="center">
+                      <tr>
+                        <td style="vertical-align:middle;padding-right:12px;">
+                          <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="VoicesForge" style="display:block;border-radius:10px;" />
+                        </td>
+                        <td style="vertical-align:middle;text-align:left;">
+                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">VoicesForge</div>
+                          <div style="color:rgba(255,255,255,0.85);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">PAYMENT REVERSED</div>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 <tr>
