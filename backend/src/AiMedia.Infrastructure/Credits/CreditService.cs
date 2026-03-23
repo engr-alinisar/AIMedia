@@ -133,4 +133,36 @@ public class CreditService(IAppDbContext db, ILogger<CreditService> logger) : IC
         var (balance, _) = await GetBalanceAsync(userId, cancellationToken);
         return balance >= required;
     }
+
+    public async Task AddCreditsAsync(Guid userId, int credits, string description, CancellationToken cancellationToken = default)
+    {
+        await ((DbContext)(object)db).Database.ExecuteSqlRawAsync(
+            """
+            UPDATE users
+            SET credit_balance = credit_balance + {0}
+            WHERE id = {1}
+            """,
+            credits, userId);
+
+        var user = await ((DbContext)(object)db).Set<User>().AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.CreditBalance })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var tx = new CreditTransaction
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Type = TransactionType.Purchase,
+            Amount = credits,
+            BalanceAfter = user?.CreditBalance ?? 0,
+            Description = description,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        ((DbContext)(object)db).Set<CreditTransaction>().Add(tx);
+        await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Added {Credits} credits to user {UserId}", credits, userId);
+    }
 }

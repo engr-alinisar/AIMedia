@@ -22,6 +22,20 @@ export class CreditsService {
     );
   }
 
+  createPayPalOrder(packId: string) {
+    return this.http.post<{ approvalUrl: string }>(
+      `${environment.apiUrl}/api/payments/paypal/create-order`,
+      { packId }
+    );
+  }
+
+  capturePayPalOrder(orderId: string) {
+    return this.http.post<{ success: boolean; message: string }>(
+      `${environment.apiUrl}/api/payments/paypal/capture/${orderId}`,
+      {}
+    );
+  }
+
   deductLocally(amount: number) {
     const b = this._balance();
     this._balance.set({ ...b, balance: b.balance - amount, reserved: b.reserved - amount });

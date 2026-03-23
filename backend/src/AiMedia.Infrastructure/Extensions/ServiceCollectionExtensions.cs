@@ -1,5 +1,6 @@
 using AiMedia.Application.Interfaces;
 using AiMedia.Infrastructure.Credits;
+using AiMedia.Infrastructure.Payments;
 using AiMedia.Infrastructure.Persistence;
 using AiMedia.Infrastructure.Services;
 using AiMedia.Infrastructure.Storage;
@@ -39,6 +40,9 @@ public static class ServiceCollectionExtensions
         // Email
         services.AddHttpClient<EmailService>();
         services.AddScoped<IEmailService, EmailService>();
+
+        // PayPal
+        services.AddHttpClient<IPayPalService, PayPalService>();
 
         return services;
     }

@@ -69,7 +69,11 @@
       "Bash(taskkill /PID 34092 /F)",
       "Bash(cmd.exe /c \"taskkill /PID 34092 /F\")",
       "Bash(npm ls:*)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4200)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:4200)",
+      "Bash(grep -E \"\\\\.\\(cs\\)$\")",
+      "Bash(cmd.exe /c \"taskkill /PID 10744 /F\")",
+      "Bash(cmd.exe /c \"tasklist | findstr AiMedia\")",
+      "Bash(cmd.exe /c \"tasklist | findstr dotnet\")"
     ]
   }
 }
