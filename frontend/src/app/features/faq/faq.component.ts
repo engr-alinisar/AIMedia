@@ -2,6 +2,7 @@ import { Component, computed, inject, signal, OnInit, DestroyRef } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FaqService } from '../../core/services/faq.service';
 import type { FaqItemDto } from '../../core/models/models';
 
@@ -40,13 +41,23 @@ interface FaqGroup {
     }
     .faq-question:hover { background: #f9fafb; }
     .faq-answer {
-      padding: 0 1.25rem 1rem;
+      padding: 0.75rem 1.25rem 1rem;
       font-size: 0.9rem;
       color: #4b5563;
       line-height: 1.65;
       background: white;
       border-top: 1px solid #f3f4f6;
     }
+    .faq-answer ul { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
+    .faq-answer ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5rem 0; }
+    .faq-answer li { margin-bottom: 0.25rem; }
+    .faq-answer strong { color: #111827; font-weight: 600; }
+    .faq-answer a { color: #7c3aed; text-decoration: underline; }
+    .faq-answer p { margin-bottom: 0.5rem; }
+    .faq-answer table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; font-size: 0.875rem; }
+    .faq-answer th { background: #f9fafb; text-align: left; padding: 0.5rem 0.75rem; border: 1px solid #e5e7eb; font-weight: 600; color: #374151; }
+    .faq-answer td { padding: 0.5rem 0.75rem; border: 1px solid #e5e7eb; }
+    .faq-answer code { background: #f3f4f6; padding: 0.1rem 0.35rem; border-radius: 0.25rem; font-size: 0.85em; }
     .chevron {
       flex-shrink: 0;
       width: 1.25rem;
@@ -130,7 +141,7 @@ interface FaqGroup {
               </svg>
             </button>
             @if (isOpen(item.id)) {
-              <div class="faq-answer">{{ item.answer }}</div>
+              <div class="faq-answer" [innerHTML]="sanitize(item.answer)"></div>
             }
           </div>
         }
@@ -143,6 +154,11 @@ interface FaqGroup {
 export class FaqComponent implements OnInit {
   private faqService = inject(FaqService);
   private destroyRef = inject(DestroyRef);
+  private sanitizer = inject(DomSanitizer);
+
+  sanitize(html: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(html);
+  }
 
   loading = signal(true);
   error = signal(false);

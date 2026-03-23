@@ -12,7 +12,7 @@ public class FaqItemConfiguration : IEntityTypeConfiguration<FaqItem>
         builder.ToTable("faq_items");
 
         builder.Property(f => f.Question).IsRequired().HasMaxLength(500);
-        builder.Property(f => f.Answer).IsRequired().HasMaxLength(2000);
+        builder.Property(f => f.Answer).IsRequired().HasMaxLength(5000);
         builder.Property(f => f.Category).IsRequired().HasMaxLength(100);
         builder.Property(f => f.IsActive).IsRequired();
         builder.Property(f => f.Order).IsRequired();
