@@ -10,11 +10,24 @@ public class GetJobsQueryHandler(IAppDbContext db, IStorageService storage) : IR
     public async Task<PagedResult<JobDto>> Handle(GetJobsQuery request, CancellationToken cancellationToken)
     {
         var query = db.GenerationJobs
-            .Where(j => j.UserId == request.UserId)
-            .OrderByDescending(j => j.CreatedAt);
+            .Where(j => j.UserId == request.UserId);
 
-        var total = await query.CountAsync(cancellationToken);
-        var jobs = await query
+        if (request.Product.HasValue)
+            query = query.Where(j => j.Product == request.Product.Value);
+
+        if (request.Status.HasValue)
+            query = query.Where(j => j.Status == request.Status.Value);
+
+        if (request.From.HasValue)
+            query = query.Where(j => j.CreatedAt >= request.From.Value);
+
+        if (request.To.HasValue)
+            query = query.Where(j => j.CreatedAt <= request.To.Value);
+
+        var orderedQuery = query.OrderByDescending(j => j.CreatedAt);
+
+        var total = await orderedQuery.CountAsync(cancellationToken);
+        var jobs = await orderedQuery
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);

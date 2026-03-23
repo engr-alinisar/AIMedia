@@ -21,6 +21,7 @@ export const routes: Routes = [
       { path: 'background-removal', loadComponent: () => import('./features/background-removal/background-removal.component').then(m => m.BackgroundRemovalComponent) },
       { path: 'jobs',               loadComponent: () => import('./features/jobs/jobs.component').then(m => m.JobsComponent) },
       { path: 'credits',            loadComponent: () => import('./features/credits/credits.component').then(m => m.CreditsComponent) },
+      { path: 'profile',            loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent) },
     ]
   },
   { path: '**', redirectTo: 'dashboard' }

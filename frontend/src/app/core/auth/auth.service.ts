@@ -51,6 +51,19 @@ export class AuthService {
     this._user.set(user);
   }
 
+  updateProfile(displayName: string | null) {
+    return this.http.put<User>(`${environment.apiUrl}/api/auth/profile`, { displayName })
+      .pipe(tap(user => this._user.set(user)));
+  }
+
+  changePassword(currentPassword: string, newPassword: string) {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/api/auth/change-password`, { currentPassword, newPassword });
+  }
+
+  deleteAccount(password: string) {
+    return this.http.delete<{ message: string }>(`${environment.apiUrl}/api/auth/account`, { body: { password } });
+  }
+
   private setSession(res: AuthResponse) {
     localStorage.setItem(this.TOKEN_KEY, res.token);
     this._user.set(res.user);

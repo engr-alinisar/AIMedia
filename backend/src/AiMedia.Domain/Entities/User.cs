@@ -17,6 +17,8 @@ public class User
     public string? EmailVerificationToken { get; set; }
     public DateTime? EmailVerificationTokenExpiry { get; set; }
     public DateTime? LowCreditEmailSentAt { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 
     public ICollection<GenerationJob> Jobs { get; set; } = [];
     public ICollection<CreditTransaction> Transactions { get; set; } = [];

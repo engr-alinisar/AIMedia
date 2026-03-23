@@ -13,7 +13,7 @@ public class LoginCommandHandler(IAppDbContext db, IJwtService jwtService, IConf
     {
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLower(), cancellationToken);
 
-        if (user == null)
+        if (user == null || user.IsDeleted)
             throw new UnauthorizedAccessException("No account found with this email. Please register first.");
 
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))

@@ -1,15 +1,18 @@
 import { Component, signal, computed, inject, OnInit, OnDestroy, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { GenerationService } from '../../core/services/generation.service';
 import { CreditsService } from '../../core/services/credits.service';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import type { JobDto, PagedResult } from '../../core/models/models';
 
+interface FilterOption { label: string; value: string; }
+
 @Component({
   selector: 'app-jobs',
   standalone: true,
-  imports: [CommonModule, JobStatusComponent, RouterLink],
+  imports: [CommonModule, FormsModule, JobStatusComponent, RouterLink],
   styles: [`
     .page-btn {
       min-width: 2rem; height: 2rem;
@@ -25,6 +28,14 @@ import type { JobDto, PagedResult } from '../../core/models/models';
       background: var(--color-accent, #7c3aed); border-color: var(--color-accent, #7c3aed);
       color: white;
     }
+    .filter-select {
+      height: 2rem; padding: 0 0.625rem; font-size: 0.8125rem;
+      border: 1px solid #e5e7eb; border-radius: 0.5rem; background: white;
+      color: #374151; cursor: pointer; outline: none;
+      transition: border-color 0.15s;
+    }
+    .filter-select:focus { border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,0.15); }
+    .filter-select.active { border-color: #7c3aed; background: #f5f3ff; color: #6d28d9; font-weight: 500; }
   `],
   template: `
 <div class="p-4 sm:p-6 max-w-5xl mx-auto space-y-4 sm:space-y-5">
@@ -38,6 +49,41 @@ import type { JobDto, PagedResult } from '../../core/models/models';
       }
     </div>
     <button class="btn-secondary text-sm" (click)="loadPage(page())">↻ Refresh</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="card px-4 py-3 flex flex-wrap items-center gap-2.5">
+    <!-- Type filter -->
+    <select class="filter-select" [class.active]="filterProduct() !== ''"
+            [ngModel]="filterProduct()" (ngModelChange)="onFilterChange('product', $event)">
+      @for (opt of productOptions; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+
+    <!-- Status filter -->
+    <select class="filter-select" [class.active]="filterStatus() !== ''"
+            [ngModel]="filterStatus()" (ngModelChange)="onFilterChange('status', $event)">
+      @for (opt of statusOptions; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+
+    <!-- Date range filter -->
+    <select class="filter-select" [class.active]="filterDate() !== ''"
+            [ngModel]="filterDate()" (ngModelChange)="onFilterChange('date', $event)">
+      @for (opt of dateOptions; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+
+    <!-- Clear filters -->
+    @if (hasActiveFilters()) {
+      <button class="text-xs px-3 py-1.5 text-accent border border-accent/30 bg-accent/5 rounded-lg hover:bg-accent/10 transition-colors"
+              (click)="clearFilters()">
+        ✕ Clear filters
+      </button>
+    }
   </div>
 
   <!-- Submitted toast -->
@@ -54,8 +100,13 @@ import type { JobDto, PagedResult } from '../../core/models/models';
   } @else if ((result()?.items?.length ?? 0) === 0) {
     <div class="card p-10 text-center text-gray-400">
       <div class="text-4xl mb-3">📋</div>
-      <p class="text-sm mb-4">No jobs yet. Start generating!</p>
-      <a routerLink="/image-to-video" class="btn-primary text-sm">Create your first video</a>
+      @if (hasActiveFilters()) {
+        <p class="text-sm mb-4">No jobs match the current filters.</p>
+        <button class="btn-secondary text-sm" (click)="clearFilters()">Clear filters</button>
+      } @else {
+        <p class="text-sm mb-4">No jobs yet. Start generating!</p>
+        <a routerLink="/image-to-video" class="btn-primary text-sm">Create your first video</a>
+      }
     </div>
   } @else {
     <div class="card divide-y divide-gray-100">
@@ -183,6 +234,40 @@ export class JobsComponent implements OnInit, OnDestroy {
   showSubmittedBanner = signal(false);
   highlightedJobId = signal<string | null>(null);
 
+  // Filter signals
+  filterProduct = signal('');
+  filterStatus = signal('');
+  filterDate = signal('');
+
+  hasActiveFilters = computed(() =>
+    this.filterProduct() !== '' || this.filterStatus() !== '' || this.filterDate() !== ''
+  );
+
+  readonly productOptions: FilterOption[] = [
+    { label: 'All Types', value: '' },
+    { label: 'Image Generation', value: 'ImageGen' },
+    { label: 'Image to Video', value: 'ImageToVideo' },
+    { label: 'Text to Video', value: 'TextToVideo' },
+    { label: 'Text to Voice', value: 'Voice' },
+    { label: 'Transcription', value: 'Transcription' },
+    { label: 'Background Removal', value: 'BackgroundRemoval' },
+  ];
+
+  readonly statusOptions: FilterOption[] = [
+    { label: 'All Statuses', value: '' },
+    { label: 'Queued', value: 'Queued' },
+    { label: 'Processing', value: 'Processing' },
+    { label: 'Completed', value: 'Completed' },
+    { label: 'Failed', value: 'Failed' },
+  ];
+
+  readonly dateOptions: FilterOption[] = [
+    { label: 'All Time', value: '' },
+    { label: 'Today', value: 'today' },
+    { label: 'Last 7 days', value: '7d' },
+    { label: 'Last 30 days', value: '30d' },
+  ];
+
   private pollTimer?: ReturnType<typeof setInterval>;
   private highlightTimer?: ReturnType<typeof setTimeout>;
 
@@ -264,6 +349,41 @@ export class JobsComponent implements OnInit, OnDestroy {
     input.blur();
   }
 
+  onFilterChange(filter: 'product' | 'status' | 'date', value: string) {
+    if (filter === 'product') this.filterProduct.set(value);
+    else if (filter === 'status') this.filterStatus.set(value);
+    else this.filterDate.set(value);
+    // Reset to page 1 when any filter changes
+    this.loadPage(1);
+  }
+
+  clearFilters() {
+    this.filterProduct.set('');
+    this.filterStatus.set('');
+    this.filterDate.set('');
+    this.loadPage(1);
+  }
+
+  private buildDateRange(): { from?: string; to?: string } {
+    const date = this.filterDate();
+    if (!date) return {};
+    const now = new Date();
+    const to = now.toISOString();
+    if (date === 'today') {
+      const from = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      return { from, to };
+    }
+    if (date === '7d') {
+      const from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      return { from, to };
+    }
+    if (date === '30d') {
+      const from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      return { from, to };
+    }
+    return {};
+  }
+
   ngOnInit() {
     this.route.queryParams.subscribe(p => {
       if (p['submitted'] === '1') this.showSubmittedBanner.set(true);
@@ -296,7 +416,16 @@ export class JobsComponent implements OnInit, OnDestroy {
     if (p < 1 || p > total) return;
     if (showLoader) this.loading.set(true);
     this.page.set(p);
-    this.gen.getJobs(p, this.PAGE_SIZE).subscribe({
+
+    const { from, to } = this.buildDateRange();
+    const filters = {
+      product: this.filterProduct() || undefined,
+      status: this.filterStatus() || undefined,
+      from,
+      to,
+    };
+
+    this.gen.getJobs(p, this.PAGE_SIZE, filters).subscribe({
       next: r => {
         this.result.set(r);
         this.loading.set(false);

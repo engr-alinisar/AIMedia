@@ -77,7 +77,8 @@
       "Bash(cmd.exe /c \"taskkill /PID 17812 /F\")",
       "Bash(cmd.exe /c \"taskkill /PID 17812 /F 2>nul & dotnet build src/AiMedia.API/AiMedia.API.csproj 2>&1 | findstr /i \"\"error warning Build succeeded\"\"\")",
       "Bash(find D:ProjectsAiMedia -type f -name *SignalR* -o -name *NotificationService*)",
-      "Bash(cmd.exe /c \"taskkill /PID 32496 /F\")"
+      "Bash(cmd.exe /c \"taskkill /PID 32496 /F\")",
+      "Bash(cmd.exe /c \"taskkill /PID 8636 /F\")"
     ]
   }
 }

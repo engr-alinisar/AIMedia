@@ -60,8 +60,13 @@ export class GenerationService {
     return this.http.get<JobDto>(`${environment.apiUrl}/api/jobs/${id}`);
   }
 
-  getJobs(page = 1, pageSize = 20) {
-    return this.http.get<PagedResult<JobDto>>(`${environment.apiUrl}/api/jobs?page=${page}&pageSize=${pageSize}`);
+  getJobs(page = 1, pageSize = 20, filters?: { product?: string; status?: string; from?: string; to?: string }) {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (filters?.product) params.set('product', filters.product);
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.from) params.set('from', filters.from);
+    if (filters?.to) params.set('to', filters.to);
+    return this.http.get<PagedResult<JobDto>>(`${environment.apiUrl}/api/jobs?${params}`);
   }
 
   addPendingJob(job: PendingJob) {

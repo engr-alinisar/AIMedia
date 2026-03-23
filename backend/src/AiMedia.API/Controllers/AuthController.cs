@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using AiMedia.Application.Commands.Auth;
-using AiMedia.Application.Interfaces;
 using AiMedia.Application.Queries.GetCurrentUser;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -50,6 +49,33 @@ public class AuthController : ControllerBase
         return Ok(user);
     }
 
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request, CancellationToken ct)
+    {
+        var userId = GetUserId();
+        var user = await _mediator.Send(new UpdateProfileCommand(userId, request.DisplayName), ct);
+        return Ok(user);
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
+    {
+        var userId = GetUserId();
+        await _mediator.Send(new ChangePasswordCommand(userId, request.CurrentPassword, request.NewPassword), ct);
+        return Ok(new { message = "Password changed successfully." });
+    }
+
+    [Authorize]
+    [HttpDelete("account")]
+    public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request, CancellationToken ct)
+    {
+        var userId = GetUserId();
+        await _mediator.Send(new DeleteAccountCommand(userId, request.Password), ct);
+        return Ok(new { message = "Account deleted successfully." });
+    }
+
     private Guid GetUserId()
     {
         var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -62,3 +88,6 @@ public class AuthController : ControllerBase
 public record RegisterRequest(string Email, string Password, string? FullName);
 public record LoginRequest(string Email, string Password);
 public record VerifyEmailRequest(string Token);
+public record UpdateProfileRequest(string? DisplayName);
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+public record DeleteAccountRequest(string Password);

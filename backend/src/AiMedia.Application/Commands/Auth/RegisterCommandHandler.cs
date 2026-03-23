@@ -12,9 +12,16 @@ public class RegisterCommandHandler(IAppDbContext db, IEmailService emailService
 {
     public async Task<RegisterResponse> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
-        var exists = await db.Users.AnyAsync(u => u.Email == request.Email.ToLower(), cancellationToken);
-        if (exists)
+        var emailLower = request.Email.ToLower();
+
+        // Check active accounts
+        var activeExists = await db.Users.AnyAsync(u => u.Email == emailLower && !u.IsDeleted, cancellationToken);
+        if (activeExists)
             throw new InvalidOperationException("An account with this email already exists.");
+
+        // Check if this email was ever used (including deleted accounts) — no free credits if so
+        var everUsed = await db.Users.AnyAsync(u => u.Email == emailLower, cancellationToken);
+        var startingCredits = everUsed ? 0 : 100;
 
         // Generate secure verification token
         var tokenBytes = RandomNumberGenerator.GetBytes(32);
@@ -24,10 +31,10 @@ public class RegisterCommandHandler(IAppDbContext db, IEmailService emailService
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = request.Email.ToLower(),
+            Email = emailLower,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             FullName = request.FullName,
-            CreditBalance = 100,
+            CreditBalance = startingCredits,
             CreatedAt = DateTime.UtcNow,
             IsEmailVerified = false,
             EmailVerificationToken = verificationToken,
