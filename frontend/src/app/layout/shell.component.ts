@@ -332,6 +332,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         { label: 'My Jobs',      icon: '📋', route: '/jobs' },
         { label: 'Credits',      icon: '💳', route: '/credits' },
         { label: 'FAQ',          icon: '❓', route: '/faq' },
+        { label: 'Contact Us',   icon: '✉️', route: '/contact' },
       ]
     }
   ];
