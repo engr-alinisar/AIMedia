@@ -86,6 +86,17 @@ interface NavGroup { category: string; items: NavItem[]; }
             }
           </a>
         }
+        <!-- Dashboard + My Jobs: logged-in users only, shown under Account -->
+        @if (group.category === 'Account' && auth.isLoggedIn()) {
+          <a class="nav-item" routerLink="/dashboard" routerLinkActive="active" (click)="sidebarOpen.set(false)">
+            <span class="text-base">🏠</span>
+            <span class="flex-1">Dashboard</span>
+          </a>
+          <a class="nav-item" routerLink="/jobs" routerLinkActive="active" (click)="sidebarOpen.set(false)">
+            <span class="text-base">📋</span>
+            <span class="flex-1">My Jobs</span>
+          </a>
+        }
       }
     </nav>
 
@@ -325,8 +336,6 @@ export class PublicShellComponent implements OnInit, OnDestroy {
     {
       category: 'Account',
       items: [
-        { label: 'Dashboard',  icon: '🏠', route: '/dashboard' },
-        { label: 'My Jobs',    icon: '📋', route: '/jobs' },
         { label: 'Credits',    icon: '💳', route: '/credits' },
         { label: 'FAQ',        icon: '❓', route: '/faq' },
         { label: 'Contact Us', icon: '✉️', route: '/contact' },
