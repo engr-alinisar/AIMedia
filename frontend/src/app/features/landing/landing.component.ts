@@ -283,7 +283,7 @@ import type { ExploreItemDto } from '../../core/models/models';
     <div class="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
       <div class="text-center md:text-left">
         <div class="flex items-center gap-2 justify-center md:justify-start mb-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 128 128">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 128 128">
             <defs>
               <linearGradient id="foot-logo-g" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stop-color="#8B5CF6"/>
@@ -291,7 +291,26 @@ import type { ExploreItemDto } from '../../core/models/models';
               </linearGradient>
             </defs>
             <rect width="128" height="128" rx="28" fill="url(#foot-logo-g)"/>
+            <rect x="18" y="18" width="8" height="92" rx="4" fill="rgba(255,255,255,0.2)"/>
+            <rect x="20" y="26" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+            <rect x="20" y="40" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+            <rect x="20" y="54" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+            <rect x="20" y="68" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+            <rect x="20" y="82" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+            <rect x="20" y="96" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+            <rect x="102" y="18" width="8" height="92" rx="4" fill="rgba(255,255,255,0.2)"/>
+            <rect x="104" y="26" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+            <rect x="104" y="40" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+            <rect x="104" y="54" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+            <rect x="104" y="68" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+            <rect x="104" y="82" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
+            <rect x="104" y="96" width="4" height="6" rx="2" fill="rgba(255,255,255,0.5)"/>
             <polygon points="50,42 50,86 88,64" fill="white" opacity="0.95"/>
+            <circle cx="90" cy="36" r="5" fill="#A78BFA"/>
+            <line x1="90" y1="28" x2="90" y2="32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <line x1="90" y1="40" x2="90" y2="44" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <line x1="82" y1="36" x2="86" y2="36" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <line x1="94" y1="36" x2="98" y2="36" stroke="white" stroke-width="2" stroke-linecap="round"/>
           </svg>
           <span style="font-size:15px;font-weight:700;color:white;">Ai<span style="color:#a78bfa;">Media</span></span>
         </div>
@@ -301,8 +320,8 @@ import type { ExploreItemDto } from '../../core/models/models';
         <a routerLink="/explore" class="hover:text-white transition-colors">Explore</a>
         <a routerLink="/faq" class="hover:text-white transition-colors">FAQ</a>
         <a routerLink="/contact" class="hover:text-white transition-colors">Contact Us</a>
-        <a routerLink="/auth/login" class="hover:text-white transition-colors">Login</a>
-        <a routerLink="/auth/register" class="hover:text-white transition-colors">Sign Up</a>
+        <button (click)="loginModal.show('login')" class="hover:text-white transition-colors">Login</button>
+        <button (click)="loginModal.show('register')" class="hover:text-white transition-colors">Sign Up</button>
       </div>
     </div>
     <div class="mt-8 pt-6 border-t border-gray-800 text-center text-xs text-gray-600">
