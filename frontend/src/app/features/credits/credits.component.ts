@@ -2,6 +2,8 @@ import { Component, signal, computed, inject, OnInit, ElementRef, ViewChild } fr
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { CreditsService } from '../../core/services/credits.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { LoginModalService } from '../../core/services/login-modal.service';
 import type { CreditTransactionDto, PagedResult } from '../../core/models/models';
 
 @Component({
@@ -186,6 +188,8 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
 })
 export class CreditsComponent implements OnInit {
   credits = inject(CreditsService);
+  private auth = inject(AuthService);
+  private loginModal = inject(LoginModalService);
   private route = inject(ActivatedRoute);
 
   @ViewChild('packsSection') packsSection?: ElementRef;
@@ -263,6 +267,7 @@ export class CreditsComponent implements OnInit {
   }
 
   buyPack(packId: string) {
+    if (!this.auth.isLoggedIn()) { this.loginModal.show(); return; }
     if (this.buying()) return;
     this.buying.set(packId);
 
