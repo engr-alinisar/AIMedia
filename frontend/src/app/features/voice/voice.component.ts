@@ -1,4 +1,4 @@
-import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute } from '@angular/router';
@@ -12,6 +12,7 @@ import { CloneVoiceModalComponent } from '../../shared/components/clone-voice-mo
 import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
+import { ModelPickerComponent, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
 
 interface VoiceModel {
   id: string;
@@ -27,7 +28,7 @@ interface VoiceModel {
 @Component({
   selector: 'app-voice',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MediaPreviewComponent, JobStatusComponent, CloneVoiceModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, MediaPreviewComponent, JobStatusComponent, CloneVoiceModalComponent, ModelPickerComponent],
   template: `
 <div class="flex flex-col lg:flex-row lg:h-full">
   <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
@@ -38,99 +39,10 @@ interface VoiceModel {
     <div class="flex-1 px-5 py-4 space-y-5">
 
       <!-- Model dropdown -->
-      <div>
-        <label class="form-label">Model</label>
-        <div class="relative">
-          <button type="button"
-                  class="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-border rounded-lg hover:border-accent transition-colors text-left"
-                  (click)="dropdownOpen.set(!dropdownOpen())">
-            <div class="flex items-center gap-2 min-w-0">
-              <svg class="w-4 h-4 text-accent flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
-              </svg>
-              <span class="text-sm font-medium text-gray-900 truncate">{{ selectedModel()?.name ?? 'Select a model' }}</span>
-              @if (selectedModel()?.badge) {
-                <span class="px-1.5 py-0.5 text-[10px] font-bold rounded flex-shrink-0"
-                      [style.background]="selectedModel()!.badgeColor ?? '#7C3AED'"
-                      style="color:white">{{ selectedModel()!.badge }}</span>
-              }
-            </div>
-            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform" [class.rotate-180]="dropdownOpen()"
-                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </button>
-
-          @if (dropdownOpen()) {
-            <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-xl z-50 overflow-hidden">
-              <!-- Standard TTS section -->
-              <div class="px-3 py-1.5 bg-gray-50 border-b border-border">
-                <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Standard Voices</span>
-              </div>
-              @for (m of standardModels; track m.id) {
-                <div (click)="selectModel(m)"
-                     class="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
-                     [class.bg-accent-light]="selectedModel()?.id === m.id">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="text-sm font-semibold text-gray-900">{{ m.name }}</span>
-                      @if (m.badge) {
-                        <span class="px-1.5 py-0.5 text-[10px] font-bold rounded"
-                              [style.background]="m.badgeColor ?? '#7C3AED'"
-                              style="color:white">{{ m.badge }}</span>
-                      }
-                    </div>
-                    <p class="text-xs text-gray-500 mt-0.5">{{ m.description }}</p>
-                    <div class="flex gap-1.5 flex-wrap mt-1.5">
-                      @for (tag of m.tags; track tag) {
-                        <span class="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded-full">{{ tag }}</span>
-                      }
-                      <span class="px-2 py-0.5 text-[10px] bg-accent-light text-accent rounded-full font-medium">{{ m.creditsPerKChars }} cr/1K chars</span>
-                    </div>
-                  </div>
-                  @if (selectedModel()?.id === m.id) {
-                    <svg class="w-4 h-4 text-accent flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                    </svg>
-                  }
-                </div>
-              }
-              <!-- Voice Cloning section -->
-              <div class="px-3 py-1.5 bg-green-50 border-t border-b border-green-100">
-                <span class="text-[10px] font-semibold text-green-700 uppercase tracking-wider">🎤 Voice Cloning</span>
-              </div>
-              @for (m of cloneModels; track m.id) {
-                <div (click)="selectModel(m)"
-                     class="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-green-50 transition-colors"
-                     [class.bg-green-50]="selectedModel()?.id === m.id">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="text-sm font-semibold text-gray-900">{{ m.name }}</span>
-                      @if (m.badge) {
-                        <span class="px-1.5 py-0.5 text-[10px] font-bold rounded"
-                              [style.background]="m.badgeColor ?? '#059669'"
-                              style="color:white">{{ m.badge }}</span>
-                      }
-                    </div>
-                    <p class="text-xs text-gray-500 mt-0.5">{{ m.description }}</p>
-                    <div class="flex gap-1.5 flex-wrap mt-1.5">
-                      @for (tag of m.tags; track tag) {
-                        <span class="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded-full">{{ tag }}</span>
-                      }
-                      <span class="px-2 py-0.5 text-[10px] bg-accent-light text-accent rounded-full font-medium">{{ m.creditsPerKChars }} cr/1K chars</span>
-                    </div>
-                  </div>
-                  @if (selectedModel()?.id === m.id) {
-                    <svg class="w-4 h-4 text-green-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                    </svg>
-                  }
-                </div>
-              }
-            </div>
-          }
-        </div>
-      </div>
+      <app-model-picker
+        [models]="pickerModels()"
+        [selectedId]="selectedModel()?.id ?? null"
+        (modelSelect)="onModelSelect($event)" />
 
       <!-- Voice clone hint when standard model selected -->
       @if (!selectedModel()?.requiresAudioSample) {
@@ -151,7 +63,7 @@ interface VoiceModel {
       <div>
         <label class="form-label">Text</label>
         <textarea class="form-textarea h-40" [(ngModel)]="text"
-          spellcheck="true"
+          [spellcheck]="true" lang="en" autocorrect="on" autocapitalize="sentences"
           placeholder="Enter the text to convert to speech..." maxlength="5000"></textarea>
         <p class="text-right text-xs text-gray-400 mt-1">{{ text.length }}/5000</p>
       </div>
@@ -377,8 +289,19 @@ export class VoiceComponent implements OnInit, OnDestroy {
   get standardModels() { return this.models.filter(m => !m.requiresAudioSample); }
   get cloneModels() { return this.models.filter(m => m.requiresAudioSample); }
 
+  pickerModels = computed<PickerModel[]>(() =>
+    this.models.map(m => ({
+      id: m.id,
+      name: m.name,
+      description: m.description,
+      creditsDisplay: `${m.creditsPerKChars} cr/1K chars`,
+      badge: m.badge,
+      badgeColor: m.badgeColor,
+      tags: m.tags,
+    } satisfies PickerModel))
+  );
+
   selectedModel = signal<VoiceModel | null>(this.models[0]);
-  dropdownOpen = signal(false);
 
   text = '';
   voiceId = 'af_heart';
@@ -408,7 +331,6 @@ export class VoiceComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    document.addEventListener('click', this.onDocumentClick);
     const qp = this.route.snapshot.queryParams;
     if (qp['prompt']) this.text = qp['prompt'];
     if (qp['model']) {
@@ -417,14 +339,13 @@ export class VoiceComponent implements OnInit, OnDestroy {
     }
   }
 
-  private onDocumentClick = (e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (!target.closest('.relative')) this.dropdownOpen.set(false);
-  };
+  onModelSelect(id: string) {
+    const m = this.models.find(x => x.id === id);
+    if (m) this.selectModel(m);
+  }
 
   selectModel(m: VoiceModel) {
     this.selectedModel.set(m);
-    this.dropdownOpen.set(false);
     this.costEstimate.set(m.creditsPerKChars);
     if (m.requiresAudioSample) this.loadClones();
   }
@@ -508,7 +429,6 @@ export class VoiceComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    document.removeEventListener('click', this.onDocumentClick);
     clearInterval(this.pollInterval);
   }
 }

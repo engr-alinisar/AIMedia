@@ -38,7 +38,8 @@ public class GenerationController : ControllerBase
         var result = await _mediator.Send(new GenerateImageToVideoCommand(
             GetUserId(), request.ImageUrl, request.Prompt,
             request.ModelId, request.DurationSeconds, request.IsPublic,
-            request.Resolution, request.MultiShot, request.Zone), ct);
+            request.Resolution, request.MultiShot, request.GenerateAudio,
+            request.AspectRatio, request.Zone, request.EndImageUrl), ct);
         return Accepted(result);
     }
 
@@ -121,7 +122,10 @@ public record GenerateImageToVideoRequest(
     bool IsPublic = true,
     string Resolution = "720p",
     bool MultiShot = false,
-    string? Zone = null);
+    bool GenerateAudio = true,
+    string AspectRatio = "16:9",
+    string? Zone = null,
+    string? EndImageUrl = null);
 
 public record GenerateTextToVideoRequest(
     string Prompt,

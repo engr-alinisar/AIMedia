@@ -50,7 +50,7 @@ interface FilterItem {
     <!-- Loading skeleton -->
     @if (loading()) {
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        @for (s of skeletons; track s) {
+        @for (s of skeletons; track $index) {
           <div class="bg-white rounded-xl border border-border overflow-hidden animate-pulse">
             <div class="bg-gray-200 aspect-square"></div>
             <div class="p-3 space-y-2">
@@ -84,7 +84,7 @@ interface FilterItem {
             <div class="relative aspect-square bg-gray-100 overflow-hidden">
               @if (isVideo(item)) {
                 <video [src]="item.outputUrl" class="w-full h-full object-cover" muted preload="metadata"
-                       (mouseenter)="$any($event.target).play()" (mouseleave)="$any($event.target).pause()"></video>
+                       (mouseenter)="safePlay($event)" (mouseleave)="$any($event.target).pause()"></video>
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div class="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center group-hover:opacity-0 transition-opacity">
                     <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
@@ -312,6 +312,10 @@ export class ExploreComponent implements OnInit {
       BackgroundRemoval: 'Background removed', ImageToVideo: 'Image animated to video',
     };
     return labels[product] ?? 'AI generated content';
+  }
+
+  safePlay(event: Event) {
+    (event.target as HTMLVideoElement).play().catch(() => {});
   }
 
   tryThis(item: ExploreItemDto) {

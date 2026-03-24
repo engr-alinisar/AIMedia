@@ -43,6 +43,8 @@
 
   .form-textarea {
     @apply form-input resize-none;
+    /* Ensure browser spell-check underlines are never suppressed */
+    -webkit-user-modify: read-write-plaintext-only;
   }
 
   .form-select {

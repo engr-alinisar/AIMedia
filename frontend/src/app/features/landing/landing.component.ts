@@ -196,7 +196,7 @@ import type { ExploreItemDto } from '../../core/models/models';
     <!-- Loading skeleton -->
     @if (recentLoading()) {
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        @for (s of skeletons; track s) {
+        @for (s of skeletons; track $index) {
           <div class="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
             <div class="bg-gray-200 aspect-square"></div>
             <div class="p-3 space-y-2">
@@ -218,7 +218,7 @@ import type { ExploreItemDto } from '../../core/models/models';
             <div class="relative aspect-square bg-gray-100 overflow-hidden">
               @if (isVideoItem(item)) {
                 <video [src]="item.outputUrl" class="w-full h-full object-cover" muted preload="metadata"
-                       (mouseenter)="$any($event.target).play()" (mouseleave)="$any($event.target).pause()"></video>
+                       (mouseenter)="safePlay($event)" (mouseleave)="$any($event.target).pause()"></video>
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div class="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center">
                     <svg class="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
@@ -449,5 +449,9 @@ export class LandingComponent implements OnInit {
       Voice: '#059669', Transcription: '#2563EB', BackgroundRemoval: '#0891B2',
     };
     return colors[product] ?? '#6B7280';
+  }
+
+  safePlay(event: Event) {
+    (event.target as HTMLVideoElement).play().catch(() => {});
   }
 }

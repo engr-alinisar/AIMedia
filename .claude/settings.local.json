@@ -86,7 +86,26 @@
       "Bash(tasklist)",
       "Bash(taskkill /F /PID 1288)",
       "Bash(cmd.exe /c \"taskkill /F /PID 1288\")",
-      "Bash(__NEW_LINE_331524ecd67965a4__ sed:*)"
+      "Bash(__NEW_LINE_331524ecd67965a4__ sed:*)",
+      "Bash(cmd.exe /c \"cd D:\\\\Projects\\\\AiMedia\\\\backend && dotnet build AiMedia.sln -q 2>&1\")",
+      "Bash(cmd.exe /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\backend && dotnet build AiMedia.sln -q 2>&1\")",
+      "Bash(powershell.exe -Command \"cd ''D:\\\\Projects\\\\AiMedia\\\\backend''; dotnet build AiMedia.sln -q 2>&1 | Select-Object -Last 20\")",
+      "Bash(powershell.exe -Command \"cd ''D:\\\\Projects\\\\AiMedia\\\\backend''; dotnet build AiMedia.sln --no-incremental 2>&1 | Select-Object -Last 30\")",
+      "Bash(powershell.exe -Command \"cd ''D:\\\\Projects\\\\AiMedia\\\\backend''; dotnet ef database update --project src/AiMedia.Infrastructure --startup-project src/AiMedia.API 2>&1\")",
+      "Read(//mnt/**)",
+      "Read(//d//**)",
+      "Bash(psql \"Host=localhost;Database=aimediadb;Username=aimedia;Password=aimedia_dev\" -c \"\\\\dt\")",
+      "Bash(PGPASSWORD=aimedia_dev psql -h localhost -U aimedia -d aimediadb -c \"\\\\dt\")",
+      "Bash(aws --version)",
+      "Bash(rclone --version)",
+      "Bash(pip --version)",
+      "Bash(pip install:*)",
+      "Bash(python cleanup_r2.py)",
+      "Bash(python -c \":*)",
+      "WebSearch",
+      "Bash(grep -v \"interface\\\\|//\")",
+      "Bash(cmd.exe /c \"cd D:\\\\Projects\\\\AiMedia\\\\frontend && npx ng build --configuration development 2>&1\")",
+      "Bash(find /d/Projects/AiMedia/backend -name GetJob*Handler* -o -name GetJobs*Handler*)"
     ]
   }
 }

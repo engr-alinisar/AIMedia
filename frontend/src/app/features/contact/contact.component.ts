@@ -104,6 +104,7 @@ const SUBJECT_OPTIONS = [
             minlength="10"
             maxlength="2000"
             rows="7"
+            [spellcheck]="true" lang="en" autocorrect="on" autocapitalize="sentences"
             placeholder="Describe your question or issue in detail..."
             class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition resize-y"
           ></textarea>

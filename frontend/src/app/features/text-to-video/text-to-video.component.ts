@@ -10,8 +10,10 @@ import { LoginModalService } from '../../core/services/login-modal.service';
 import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
-
-interface AspectRatio { value: string; w: number; h: number; }
+import { AspectRatioPickerComponent, type AspectRatio,
+         ASPECT_RATIOS_169_916_11, ASPECT_RATIOS_169_916, ASPECT_RATIOS_ALL } from '../../shared/components/aspect-ratio-picker/aspect-ratio-picker.component';
+import { DurationPickerComponent } from '../../shared/components/duration-picker/duration-picker.component';
+import { ModelPickerComponent, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
 
 interface VideoModel {
   id: string;
@@ -31,7 +33,7 @@ interface VideoModel {
 @Component({
   selector: 'app-text-to-video',
   standalone: true,
-  imports: [CommonModule, FormsModule, MediaPreviewComponent, JobStatusComponent],
+  imports: [CommonModule, FormsModule, MediaPreviewComponent, JobStatusComponent, AspectRatioPickerComponent, DurationPickerComponent, ModelPickerComponent],
   template: `
 <div class="flex flex-col lg:flex-row lg:h-full">
   <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
@@ -42,125 +44,30 @@ interface VideoModel {
     <div class="flex-1 px-5 py-4 space-y-5 overflow-y-auto">
 
       <!-- Model dropdown -->
-      <div>
-        <label class="form-label">Model</label>
-        <div class="relative">
-          <button type="button"
-                  class="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-border rounded-lg hover:border-accent transition-colors text-left"
-                  (click)="dropdownOpen.set(!dropdownOpen())">
-            <div class="flex items-center gap-2 min-w-0">
-              <svg class="w-4 h-4 text-accent flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-              </svg>
-              <span class="text-sm font-medium text-gray-900 truncate">{{ selectedModel()?.name ?? 'Select a model' }}</span>
-              @if (selectedModel()?.badge) {
-                <span class="px-1.5 py-0.5 text-[10px] font-bold rounded flex-shrink-0"
-                      [style.background]="selectedModel()!.badgeColor ?? '#7C3AED'"
-                      style="color:white">{{ selectedModel()!.badge }}</span>
-              }
-              @if (selectedModel()?.hasAudio) {
-                <span class="px-1.5 py-0.5 text-[10px] font-bold rounded flex-shrink-0 bg-green-100 text-green-700">🔊 Audio</span>
-              }
-            </div>
-            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform" [class.rotate-180]="dropdownOpen()"
-                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </button>
-
-          @if (dropdownOpen()) {
-            <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
-              @for (m of models; track m.id) {
-                <div (click)="selectModel(m)"
-                     class="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
-                     [class.bg-accent-light]="selectedModel()?.id === m.id">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="text-sm font-semibold text-gray-900">{{ m.name }}</span>
-                      @if (m.badge) {
-                        <span class="px-1.5 py-0.5 text-[10px] font-bold rounded"
-                              [style.background]="m.badgeColor ?? '#7C3AED'"
-                              style="color:white">{{ m.badge }}</span>
-                      }
-                      @if (m.hasAudio) {
-                        <span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-700">🔊 Audio</span>
-                      }
-                    </div>
-                    <p class="text-xs text-gray-500 mt-0.5">{{ m.description }}</p>
-                    <div class="flex gap-1.5 flex-wrap mt-1.5">
-                      @for (tag of m.tags; track tag) {
-                        <span class="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded-full">{{ tag }}</span>
-                      }
-                      <span class="px-2 py-0.5 text-[10px] bg-accent-light text-accent rounded-full font-medium">{{ m.creditsPerSec }} cr/s</span>
-                    </div>
-                  </div>
-                  @if (selectedModel()?.id === m.id) {
-                    <svg class="w-4 h-4 text-accent flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                    </svg>
-                  }
-                </div>
-              }
-            </div>
-          }
-        </div>
-      </div>
+      <app-model-picker
+        [models]="pickerModels()"
+        [selectedId]="selectedModel()?.id ?? null"
+        (modelSelect)="onModelSelect($event)" />
 
       <!-- Prompt -->
       <div>
         <label class="form-label">Prompt</label>
         <textarea class="form-textarea h-32" [(ngModel)]="prompt"
-          spellcheck="true"
+          [spellcheck]="true" lang="en" autocorrect="on" autocapitalize="sentences"
           placeholder="Describe your video scene in detail..." maxlength="2500"></textarea>
         <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2500</p>
       </div>
 
       <!-- Aspect Ratio -->
-      <div>
-        <label class="form-label">Aspect Ratio</label>
-        <div class="flex gap-2">
-          @for (ar of selectedModel()?.aspectRatios ?? []; track ar.value) {
-            <button type="button"
-                    class="flex-1 flex flex-col items-center gap-1 py-2 px-1.5 rounded-lg border transition-colors"
-                    [class.border-accent]="aspectRatio === ar.value"
-                    [class.bg-accent-light]="aspectRatio === ar.value"
-                    [class.border-border]="aspectRatio !== ar.value"
-                    [class.bg-white]="aspectRatio !== ar.value"
-                    (click)="aspectRatio = ar.value">
-              <!-- Proportional rectangle preview -->
-              <div class="flex items-center justify-center" style="width:24px;height:24px">
-                <div class="rounded border transition-colors"
-                     [class.border-accent]="aspectRatio === ar.value"
-                     [class.border-gray-400]="aspectRatio !== ar.value"
-                     [style.width.px]="ar.w"
-                     [style.height.px]="ar.h"></div>
-              </div>
-              <span class="text-[10px] font-medium leading-none"
-                    [class.text-accent]="aspectRatio === ar.value"
-                    [class.text-gray-500]="aspectRatio !== ar.value">{{ ar.value }}</span>
-            </button>
-          }
-        </div>
-      </div>
+      <app-aspect-ratio-picker
+        [ratios]="selectedModel()?.aspectRatios ?? []"
+        [(value)]="aspectRatio" />
 
       <!-- Duration -->
-      <div>
-        <label class="form-label">Duration</label>
-        <div class="flex gap-2">
-          @for (d of selectedModel()?.durations ?? [5, 10]; track d) {
-            <button type="button"
-                    class="flex-1 py-2 text-sm font-medium rounded-lg border transition-colors"
-                    [class.border-accent]="duration() === d"
-                    [class.bg-accent-light]="duration() === d"
-                    [class.text-accent]="duration() === d"
-                    [class.border-border]="duration() !== d"
-                    [class.text-gray-600]="duration() !== d"
-                    (click)="duration.set(d)">
-              {{ d }}s
-            </button>
-          }
-        </div>
-      </div>
+      <app-duration-picker
+        [durations]="selectedModel()?.durations ?? []"
+        [value]="duration()"
+        (valueChange)="duration.set($event)" />
 
       <!-- Resolution (Kling only) -->
       @if (selectedModel()?.supportsResolution) {
@@ -202,16 +109,6 @@ interface VideoModel {
         </div>
       }
 
-      <!-- Audio included badge (Veo 3 only) -->
-      @if (selectedModel()?.hasAudio) {
-        <div class="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
-          <span class="text-xl">🔊</span>
-          <div>
-            <p class="text-sm font-medium text-green-800">Audio included</p>
-            <p class="text-xs text-green-600">Veo 3 automatically generates synchronized music & sound effects</p>
-          </div>
-        </div>
-      }
 
       @if (errorMsg()) {
         <div class="p-3 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700">{{ errorMsg() }}</div>
@@ -320,11 +217,7 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
       badgeColor: '#EF4444',
       tags: ['Multi-Shot', 'Cinematic'],
       durations: [5, 10],
-      aspectRatios: [
-        { value: '16:9', w: 22, h: 13 },
-        { value: '9:16', w: 13, h: 22 },
-        { value: '1:1',  w: 18, h: 18 },
-      ],
+      aspectRatios: ASPECT_RATIOS_169_916_11,
       supportsResolution: false,
       supportsMultiShot: true,
       hasAudio: false,
@@ -336,10 +229,7 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
       creditsPerSec: 30,
       tags: ['Ultra Quality'],
       durations: [4, 6, 8],
-      aspectRatios: [
-        { value: '16:9', w: 22, h: 13 },
-        { value: '9:16', w: 13, h: 22 },
-      ],
+      aspectRatios: ASPECT_RATIOS_169_916,
       supportsResolution: true,
       supportsMultiShot: false,
       hasAudio: true,
@@ -351,20 +241,27 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
       creditsPerSec: 5,
       tags: ['Open Source', 'Fast'],
       durations: [5],
-      aspectRatios: [
-        { value: '16:9', w: 22, h: 13 },
-        { value: '9:16', w: 13, h: 22 },
-        { value: '1:1',  w: 18, h: 18 },
-        { value: '4:3',  w: 20, h: 15 },
-      ],
+      aspectRatios: ASPECT_RATIOS_ALL,
       supportsResolution: false,
       supportsMultiShot: false,
       hasAudio: false,
     },
   ];
 
+  pickerModels = computed<PickerModel[]>(() =>
+    this.models.map(m => ({
+      id: m.id,
+      name: m.name,
+      description: m.description,
+      creditsDisplay: `${m.creditsPerSec} cr/s`,
+      badge: m.badge,
+      badgeColor: m.badgeColor,
+      tags: m.tags,
+      audioBadge: m.hasAudio,
+    } satisfies PickerModel))
+  );
+
   selectedModel = signal<VideoModel | null>(this.models[0]);
-  dropdownOpen = signal(false);
 
   prompt = '';
   aspectRatio = '16:9';
@@ -390,7 +287,6 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   private pollInterval?: ReturnType<typeof setInterval>;
 
   ngOnInit() {
-    document.addEventListener('click', this.onDocumentClick);
     const qp = this.route.snapshot.queryParams;
     if (qp['prompt']) this.prompt = qp['prompt'];
     if (qp['model']) {
@@ -399,14 +295,13 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
     }
   }
 
-  private onDocumentClick = (e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (!target.closest('.relative')) this.dropdownOpen.set(false);
-  };
+  onModelSelect(id: string) {
+    const m = this.models.find(x => x.id === id);
+    if (m) this.selectModel(m);
+  }
 
   selectModel(m: VideoModel) {
     this.selectedModel.set(m);
-    this.dropdownOpen.set(false);
     this.duration.set(m.durations[0]);
     // Reset aspect ratio to first valid option for this model
     this.aspectRatio = m.aspectRatios[0]?.value ?? '16:9';
@@ -469,7 +364,6 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    document.removeEventListener('click', this.onDocumentClick);
     clearInterval(this.pollInterval);
   }
 }

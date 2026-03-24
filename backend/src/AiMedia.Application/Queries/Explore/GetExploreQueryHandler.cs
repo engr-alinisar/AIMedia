@@ -7,13 +7,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AiMedia.Application.Queries.Explore;
 
-public class GetExploreQueryHandler(IAppDbContext db) : IRequestHandler<GetExploreQuery, PagedResult<ExploreItemDto>>
+public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) : IRequestHandler<GetExploreQuery, PagedResult<ExploreItemDto>>
 {
     public async Task<PagedResult<ExploreItemDto>> Handle(GetExploreQuery request, CancellationToken cancellationToken)
     {
         var query = db.GenerationJobs
             .Include(j => j.User)
-            .Where(j => j.IsPublic && j.Status == JobStatus.Completed && j.OutputUrl != null);
+            .Where(j => j.IsPublic && j.Status == JobStatus.Completed && j.OutputR2Key != null);
 
         if (!string.IsNullOrWhiteSpace(request.Zone))
         {
@@ -54,10 +54,12 @@ public class GetExploreQueryHandler(IAppDbContext db) : IRequestHandler<GetExplo
                 displayName = parts.Length > 0 ? parts[0] : "User";
             }
 
+            var outputUrl = j.OutputR2Key != null ? storage.GetPublicUrl(j.OutputR2Key) : null;
+
             return new ExploreItemDto(
                 j.Id,
                 j.Product.ToString(),
-                j.OutputUrl,
+                outputUrl,
                 prompt,
                 j.FalEndpoint,
                 j.CreatedAt,

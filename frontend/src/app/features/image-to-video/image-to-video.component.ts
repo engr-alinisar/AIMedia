@@ -10,6 +10,11 @@ import { LoginModalService } from '../../core/services/login-modal.service';
 import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
+import { AspectRatioPickerComponent, type AspectRatio,
+         ASPECT_RATIOS_169_916_11, ASPECT_RATIOS_169_916,
+         ASPECT_RATIOS_AUTO_169_916 } from '../../shared/components/aspect-ratio-picker/aspect-ratio-picker.component';
+import { DurationPickerComponent } from '../../shared/components/duration-picker/duration-picker.component';
+import { ModelPickerComponent, type PickerGroup, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
 
 interface VideoModel {
   id: string;
@@ -19,16 +24,31 @@ interface VideoModel {
   badge?: string;
   badgeColor?: string;
   tags: string[];
-  durations: number[];          // available durations in seconds
-  supportsResolution: boolean;  // 720p / 1080p toggle
-  supportsMultiShot: boolean;   // Kling v3 multi-shot mode
-  hasAudio: boolean;            // model generates audio (Veo 3)
+  durations: number[];
+  resolutions: string[];
+  supportsMultiShot: boolean;
+  supportsAudio: boolean;
+  hasAudio: boolean;
+  aspectRatios: AspectRatio[];
+  endFrameRequired?: boolean;  // needs first_frame_url + last_frame_url (Veo 3.1 Fast)
+}
+
+interface ModelGroup {
+  id: string;
+  name: string;
+  tagline: string;
+  icon: string;       // letter shown in colored circle
+  iconBg: string;     // background color of circle
+  tags: string[];     // feature tags shown in group row
+  badge?: string;
+  badgeColor?: string;
+  subModels: VideoModel[];
 }
 
 @Component({
   selector: 'app-image-to-video',
   standalone: true,
-  imports: [CommonModule, FormsModule, MediaPreviewComponent, JobStatusComponent],
+  imports: [CommonModule, FormsModule, MediaPreviewComponent, JobStatusComponent, AspectRatioPickerComponent, DurationPickerComponent, ModelPickerComponent],
   template: `
 <div class="flex flex-col lg:flex-row lg:h-full">
   <!-- Left panel -->
@@ -40,66 +60,10 @@ interface VideoModel {
     <div class="flex-1 px-5 py-4 space-y-5 overflow-y-auto">
 
       <!-- Model dropdown -->
-      <div>
-        <label class="form-label">Model</label>
-        <div class="relative">
-          <button type="button"
-                  class="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-border rounded-lg hover:border-accent transition-colors text-left"
-                  (click)="dropdownOpen.set(!dropdownOpen())">
-            <div class="flex items-center gap-2 min-w-0">
-              <svg class="w-4 h-4 text-accent flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-              </svg>
-              <span class="text-sm font-medium text-gray-900 truncate">{{ selectedModel()?.name ?? 'Select a model' }}</span>
-              @if (selectedModel()?.badge) {
-                <span class="px-1.5 py-0.5 text-[10px] font-bold rounded flex-shrink-0"
-                      [style.background]="selectedModel()!.badgeColor ?? '#7C3AED'"
-                      style="color:white">{{ selectedModel()!.badge }}</span>
-              }
-            </div>
-            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform" [class.rotate-180]="dropdownOpen()"
-                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </button>
-
-          @if (dropdownOpen()) {
-            <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
-              @for (m of models; track m.id) {
-                <div (click)="selectModel(m)"
-                     class="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
-                     [class.bg-accent-light]="selectedModel()?.id === m.id">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="text-sm font-semibold text-gray-900">{{ m.name }}</span>
-                      @if (m.badge) {
-                        <span class="px-1.5 py-0.5 text-[10px] font-bold rounded"
-                              [style.background]="m.badgeColor ?? '#7C3AED'"
-                              style="color:white">{{ m.badge }}</span>
-                      }
-                      @if (m.hasAudio) {
-                        <span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-700">🔊 Audio</span>
-                      }
-                    </div>
-                    <p class="text-xs text-gray-500 mt-0.5">{{ m.description }}</p>
-                    <div class="flex gap-1.5 flex-wrap mt-1.5">
-                      @for (tag of m.tags; track tag) {
-                        <span class="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded-full">{{ tag }}</span>
-                      }
-                      <span class="px-2 py-0.5 text-[10px] bg-accent-light text-accent rounded-full font-medium">{{ m.creditsPerSec }} cr/s</span>
-                    </div>
-                  </div>
-                  @if (selectedModel()?.id === m.id) {
-                    <svg class="w-4 h-4 text-accent flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                    </svg>
-                  }
-                </div>
-              }
-            </div>
-          }
-        </div>
-      </div>
+      <app-model-picker
+        [groups]="pickerGroups()"
+        [selectedId]="selectedModel()?.id ?? null"
+        (modelSelect)="onModelSelect($event)" />
 
       <!-- Image upload -->
       <div>
@@ -123,41 +87,59 @@ interface VideoModel {
         </div>
       </div>
 
+      <!-- End Frame (Veo 3.1 Fast only) -->
+      @if (selectedModel()?.endFrameRequired) {
+        <div>
+          <label class="form-label">End Frame <span class="text-red-500">*</span></label>
+          <p class="text-xs text-gray-400 mb-2">Upload the last frame — the video will animate between start and end.</p>
+          <div class="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer
+                      hover:border-accent hover:bg-accent-light/30 transition-colors"
+               (click)="endFileInput.click()"
+               (dragover)="$event.preventDefault()"
+               (drop)="onEndDrop($event)">
+            @if (endPreviewSrc()) {
+              <img [src]="endPreviewSrc()" class="mx-auto max-h-32 rounded object-contain mb-1"/>
+              <p class="text-xs text-gray-400">Click to change</p>
+            } @else {
+              <div class="text-gray-400">
+                <div class="text-2xl mb-1">🎬</div>
+                <p class="text-sm">Upload end frame</p>
+                <p class="text-xs text-gray-400 mt-0.5">JPG, PNG, WEBP</p>
+              </div>
+            }
+            <input #endFileInput type="file" accept="image/*" class="hidden" (change)="onEndFile($event)"/>
+          </div>
+        </div>
+      }
+
       <!-- Prompt -->
       <div>
         <label class="form-label">Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
         <textarea class="form-textarea h-24" [(ngModel)]="prompt"
-          spellcheck="true"
+          [spellcheck]="true" lang="en" autocorrect="on" autocapitalize="sentences"
           placeholder="Describe the motion or scene...&#10;Longer, multi-shot prompts work best."
           maxlength="2500"></textarea>
         <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2500</p>
       </div>
 
-      <!-- Duration -->
-      <div>
-        <label class="form-label">Duration</label>
-        <div class="flex gap-2">
-          @for (d of selectedModel()?.durations ?? [5, 10]; track d) {
-            <button type="button"
-                    class="flex-1 py-2 text-sm font-medium rounded-lg border transition-colors"
-                    [class.border-accent]="duration() === d"
-                    [class.bg-accent-light]="duration() === d"
-                    [class.text-accent]="duration() === d"
-                    [class.border-border]="duration() !== d"
-                    [class.text-gray-600]="duration() !== d"
-                    (click)="duration.set(d)">
-              {{ d }}s
-            </button>
-          }
-        </div>
-      </div>
+      <!-- Aspect Ratio -->
+      <app-aspect-ratio-picker
+        [ratios]="selectedModel()?.aspectRatios ?? []"
+        [value]="aspectRatio()"
+        (valueChange)="aspectRatio.set($event)" />
 
-      <!-- Resolution (Kling only) -->
-      @if (selectedModel()?.supportsResolution) {
+      <!-- Duration -->
+      <app-duration-picker
+        [durations]="selectedModel()?.durations ?? []"
+        [value]="duration()"
+        (valueChange)="duration.set($event)" />
+
+      <!-- Resolution -->
+      @if ((selectedModel()?.resolutions?.length ?? 0) > 0) {
         <div>
           <label class="form-label">Resolution</label>
           <div class="flex gap-2">
-            @for (r of ['720p', '1080p']; track r) {
+            @for (r of selectedModel()!.resolutions; track r) {
               <button type="button"
                       class="flex-1 py-2 text-sm font-medium rounded-lg border transition-colors"
                       [class.border-accent]="resolution() === r"
@@ -167,14 +149,16 @@ interface VideoModel {
                       [class.text-gray-600]="resolution() !== r"
                       (click)="resolution.set(r)">
                 {{ r.toUpperCase() }}
-                @if (r === '1080p') { <span class="ml-1 text-[10px] text-gray-400">+credits</span> }
+                @if (r === '1080p' || r === '768P' || r === '4k') {
+                  <span class="ml-1 text-[10px] text-gray-400">+credits</span>
+                }
               </button>
             }
           </div>
         </div>
       }
 
-      <!-- Multi-Shot toggle (Kling v3 only) -->
+      <!-- Multi-Shot toggle -->
       @if (selectedModel()?.supportsMultiShot) {
         <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
           <div>
@@ -192,14 +176,21 @@ interface VideoModel {
         </div>
       }
 
-      <!-- Audio included badge (Veo 3 only) -->
-      @if (selectedModel()?.hasAudio) {
-        <div class="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
-          <span class="text-xl">🔊</span>
+      <!-- Generate Audio toggle -->
+      @if (selectedModel()?.supportsAudio) {
+        <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
           <div>
-            <p class="text-sm font-medium text-green-800">Audio included</p>
-            <p class="text-xs text-green-600">Veo 3 automatically generates synchronized music & sound effects</p>
+            <p class="text-sm font-medium text-gray-700">Generate Audio</p>
+            <p class="text-xs text-gray-400 mt-0.5">Native audio with voice & sound effects</p>
           </div>
+          <button type="button" (click)="generateAudio.update(v => !v)"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 mt-0.5"
+                  [class.bg-accent]="generateAudio()"
+                  [class.bg-gray-300]="!generateAudio()">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                  [class.translate-x-6]="generateAudio()"
+                  [class.translate-x-1]="!generateAudio()"></span>
+          </button>
         </div>
       }
 
@@ -306,88 +297,245 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   private signalR = inject(SignalRService);
   private route = inject(ActivatedRoute);
 
-  models: VideoModel[] = [
+  modelGroups: ModelGroup[] = [
     {
-      id: 'fal-ai/kling-video/v3/pro/image-to-video',
-      name: 'Kling v3 Pro',
-      description: 'Longer, consistent, cinematic AI video generation.',
-      creditsPerSec: 18,
+      id: 'kling',
+      name: 'Kling',
+      tagline: 'Motion quality leader',
+      icon: 'K', iconBg: '#F97316', tags: ['Multi-Shot', 'Audio', 'End Frame'],
       badge: 'HOT',
       badgeColor: '#EF4444',
-      tags: ['Multi-Shot', 'Cinematic'],
-      durations: [5, 10],
-      supportsResolution: false,
-      supportsMultiShot: true,
-      hasAudio: false,
+      subModels: [
+        {
+          id: 'fal-ai/kling-video/v3/pro/image-to-video',
+          name: 'Kling v3 Pro',
+          description: 'Multi-shot, audio, end frame, up to 15s.',
+          creditsPerSec: 18,
+          badge: 'HOT',
+          badgeColor: '#EF4444',
+          tags: ['Multi-Shot', 'Audio', 'End Frame', 'Up to 15s'],
+          durations: [5, 10, 15],
+          resolutions: [],
+          supportsMultiShot: true,
+          supportsAudio: true,
+          hasAudio: false,
+          aspectRatios: ASPECT_RATIOS_169_916_11,
+        },
+        {
+          id: 'fal-ai/kling-video/o3/standard/image-to-video',
+          name: 'Kling o3',
+          description: 'New architecture — multi-shot, audio, up to 15s.',
+          creditsPerSec: 15,
+          badge: 'NEW',
+          badgeColor: '#7C3AED',
+          tags: ['Multi-Shot', 'Audio', 'End Frame', 'Up to 15s'],
+          durations: [5, 10, 15],
+          resolutions: [],
+          supportsMultiShot: true,
+          supportsAudio: true,
+          hasAudio: false,
+          aspectRatios: ASPECT_RATIOS_169_916_11,
+        },
+        {
+          id: 'fal-ai/kling-video/v2.6/pro/image-to-video',
+          name: 'Kling v2.6 Pro',
+          description: 'Improved realism with audio and end frame.',
+          creditsPerSec: 14,
+          tags: ['Audio', 'End Frame'],
+          durations: [5, 10],
+          resolutions: [],
+          supportsMultiShot: false,
+          supportsAudio: true,
+          hasAudio: false,
+          aspectRatios: ASPECT_RATIOS_169_916_11,
+        },
+        {
+          id: 'fal-ai/kling-video/v2.5-turbo/pro/image-to-video',
+          name: 'Kling v2.5 Turbo',
+          description: 'Fastest Kling with strong visual fidelity.',
+          creditsPerSec: 10,
+          badge: 'FAST',
+          badgeColor: '#2563EB',
+          tags: ['Fast', 'End Frame'],
+          durations: [5, 10],
+          resolutions: [],
+          supportsMultiShot: false,
+          supportsAudio: false,
+          hasAudio: false,
+          aspectRatios: ASPECT_RATIOS_169_916_11,
+        },
+      ],
     },
     {
-      id: 'fal-ai/kling-video/v2.1/pro/image-to-video',
-      name: 'Kling v2.1 Pro',
-      description: 'Balanced realism and speed with End Frame support.',
-      creditsPerSec: 14,
-      tags: ['End Frame', 'Realistic'],
-      durations: [5, 10],
-      supportsResolution: false,
-      supportsMultiShot: false,
-      hasAudio: false,
-    },
-    {
-      id: 'fal-ai/kling-video/v1.6/pro/image-to-video',
-      name: 'Kling v1.6 Pro',
-      description: 'Reliable motion with strong prompt adherence.',
-      creditsPerSec: 10,
-      tags: ['End Frame'],
-      durations: [5, 10],
-      supportsResolution: false,
-      supportsMultiShot: false,
-      hasAudio: false,
-    },
-    {
-      id: 'fal-ai/minimax/video-01/image-to-video',
-      name: 'Hailuo AI (MiniMax)',
-      description: 'Master precise motion control with consistent characters.',
-      creditsPerSec: 16,
+      id: 'hailuo',
+      name: 'Hailuo',
+      tagline: 'Character consistency expert',
+      icon: 'H', iconBg: '#10B981', tags: ['Character AI', 'Pro Quality'],
       badge: 'NEW',
-      badgeColor: '#7C3AED',
-      tags: ['Character Consistency'],
-      durations: [5],
-      supportsResolution: false,
-      supportsMultiShot: false,
-      hasAudio: false,
+      badgeColor: '#059669',
+      subModels: [
+        {
+          id: 'fal-ai/minimax/hailuo-2.3/pro/image-to-video',
+          name: 'Hailuo 2.3 Pro',
+          description: 'Latest MiniMax Pro — highest quality character consistency.',
+          creditsPerSec: 20,
+          badge: 'NEW',
+          badgeColor: '#059669',
+          tags: ['Pro', 'Character Consistency'],
+          durations: [],
+          resolutions: [],
+          supportsMultiShot: false,
+          supportsAudio: false,
+          hasAudio: false,
+          aspectRatios: [],
+        },
+        {
+          id: 'fal-ai/minimax/hailuo-02/standard/image-to-video',
+          name: 'Hailuo 2.0',
+          description: 'Dual-resolution image-to-video with end frame.',
+          creditsPerSec: 9,
+          tags: ['End Frame', '512P / 768P'],
+          durations: [6, 10],
+          resolutions: ['512P', '768P'],
+          supportsMultiShot: false,
+          supportsAudio: false,
+          hasAudio: false,
+          aspectRatios: [],
+        },
+      ],
     },
     {
-      id: 'fal-ai/veo3/image-to-video',
-      name: 'Google Veo 3',
-      description: 'Cinematic realism with synchronized audio generation.',
-      creditsPerSec: 30,
-      tags: ['Ultra Quality'],
-      durations: [4, 6, 8],
-      supportsResolution: false,
-      supportsMultiShot: false,
-      hasAudio: true,
+      id: 'veo',
+      name: 'Google Veo',
+      tagline: 'Cinematic realism with audio',
+      icon: 'G', iconBg: '#4285F4', tags: ['Audio', 'Ultra Quality', '4K'],
+      subModels: [
+        {
+          id: 'fal-ai/veo3.1/image-to-video',
+          name: 'Veo 3.1',
+          description: 'Latest Google Veo — audio + up to 4K resolution.',
+          creditsPerSec: 35,
+          badge: 'NEW',
+          badgeColor: '#1a73e8',
+          tags: ['Audio', 'Up to 4K'],
+          durations: [4, 6, 8],
+          resolutions: ['720p', '1080p', '4k'],
+          supportsMultiShot: false,
+          supportsAudio: true,
+          hasAudio: false,
+          aspectRatios: ASPECT_RATIOS_AUTO_169_916,
+        },
+        {
+          id: 'fal-ai/veo3.1/fast/first-last-frame-to-video',
+          name: 'Veo 3.1 Fast',
+          description: 'Animate between a first & last frame with audio.',
+          creditsPerSec: 20,
+          badge: 'FAST',
+          badgeColor: '#2563EB',
+          tags: ['First+Last Frame', 'Audio', 'Up to 4K'],
+          durations: [4, 6, 8],
+          resolutions: ['720p', '1080p', '4k'],
+          supportsMultiShot: false,
+          supportsAudio: true,
+          hasAudio: false,
+          aspectRatios: ASPECT_RATIOS_AUTO_169_916,
+          endFrameRequired: true,
+        },
+        {
+          id: 'fal-ai/veo3/fast',
+          name: 'Veo 3 Fast',
+          description: 'Speed-optimised Veo 3 with audio — lower cost.',
+          creditsPerSec: 20,
+          badge: 'FAST',
+          badgeColor: '#2563EB',
+          tags: ['Audio', 'Fast', '720p / 1080p'],
+          durations: [4, 6, 8],
+          resolutions: ['720p', '1080p'],
+          supportsMultiShot: false,
+          supportsAudio: true,
+          hasAudio: false,
+          aspectRatios: ASPECT_RATIOS_AUTO_169_916,
+        },
+        {
+          id: 'fal-ai/veo3/image-to-video',
+          name: 'Veo 3',
+          description: 'Cinematic realism with synchronized audio.',
+          creditsPerSec: 30,
+          tags: ['Audio', '720p / 1080p'],
+          durations: [4, 6, 8],
+          resolutions: ['720p', '1080p'],
+          supportsMultiShot: false,
+          supportsAudio: true,
+          hasAudio: false,
+          aspectRatios: ASPECT_RATIOS_AUTO_169_916,
+        },
+      ],
     },
     {
-      id: 'fal-ai/wan/v2.2-a14b/image-to-video',
-      name: 'WAN 2.2',
-      description: 'Fast open-source model, great for quick previews.',
-      creditsPerSec: 5,
-      tags: ['Open Source', 'Fast'],
-      durations: [5],
-      supportsResolution: false,
-      supportsMultiShot: false,
-      hasAudio: false,
-    }
+      id: 'wan',
+      name: 'WAN',
+      tagline: 'Fast open-source generation',
+      icon: 'W', iconBg: '#8B5CF6', tags: ['Open Source', 'Fast'],
+      subModels: [
+        {
+          id: 'fal-ai/wan/v2.2-a14b/image-to-video',
+          name: 'WAN 2.2',
+          description: 'Fast open-source model, great for quick previews.',
+          creditsPerSec: 5,
+          tags: ['Open Source', 'Fast'],
+          durations: [5],
+          resolutions: [],
+          supportsMultiShot: false,
+          supportsAudio: false,
+          hasAudio: false,
+          aspectRatios: ASPECT_RATIOS_169_916_11,
+        },
+      ],
+    },
   ];
 
-  selectedModel = signal<VideoModel | null>(this.models[0]);
-  dropdownOpen = signal(false);
+  get allModels(): VideoModel[] {
+    return this.modelGroups.flatMap(g => g.subModels);
+  }
+
+  pickerGroups = computed<PickerGroup[]>(() =>
+    this.modelGroups.map(g => ({
+      id: g.id,
+      name: g.name,
+      tagline: g.tagline,
+      icon: g.icon,
+      iconBg: g.iconBg,
+      groupTags: g.tags,
+      badge: g.badge,
+      badgeColor: g.badgeColor,
+      models: g.subModels.map(m => ({
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        creditsDisplay: `${m.creditsPerSec} cr/s`,
+        badge: m.badge,
+        badgeColor: m.badgeColor,
+        tags: m.tags,
+        audioBadge: m.supportsAudio || m.hasAudio,
+      } satisfies PickerModel)),
+    } satisfies PickerGroup))
+  );
+
+  selectedModel = signal<VideoModel | null>(this.modelGroups[0].subModels[0]);
 
   imageUrl = signal<string>('');
   previewSrc = signal<string>('');
+  // End frame (for Veo 3.1 Fast)
+  endImageUrl = signal<string>('');
+  endPreviewSrc = signal<string>('');
+  selectedEndFile = signal<File | null>(null);
+
   prompt = '';
   duration = signal(5);
   resolution = signal<string>('720p');
   multiShot = signal(false);
+  generateAudio = signal(true);
+  aspectRatio = signal('16:9');
 
   generating = signal(false);
   jobStatus = signal<JobStatus | null>(null);
@@ -400,36 +548,43 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   costEstimate = computed(() => {
     const m = this.selectedModel();
     if (!m) return 0;
-    const resMultiplier = m.supportsResolution && this.resolution() === '1080p' ? 1.5 : 1;
-    return Math.ceil(m.creditsPerSec * this.duration() * resMultiplier);
+    const dur = m.durations.length > 0 ? this.duration() : 6;
+    const res = this.resolution();
+    const resMultiplier = m.resolutions.length > 0
+      ? (res === '4k' ? 2 : (res === '1080p' || res === '768P') ? 1.5 : 1)
+      : 1;
+    return Math.ceil(m.creditsPerSec * dur * resMultiplier);
   });
 
   private currentJobId: string | null = null;
   private pollInterval?: ReturnType<typeof setInterval>;
 
   ngOnInit() {
-    document.addEventListener('click', this.onDocumentClick);
     const qp = this.route.snapshot.queryParams;
     if (qp['prompt']) this.prompt = qp['prompt'];
     if (qp['model']) {
-      const m = this.models.find(x => x.id === qp['model']);
+      const m = this.allModels.find(x => x.id === qp['model']);
       if (m) this.selectModel(m);
     }
   }
 
-  private onDocumentClick = (e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (!target.closest('.relative')) this.dropdownOpen.set(false);
-  };
+  onModelSelect(id: string) {
+    const m = this.allModels.find(x => x.id === id);
+    if (m) this.selectModel(m);
+  }
 
   selectModel(m: VideoModel) {
     this.selectedModel.set(m);
-    this.dropdownOpen.set(false);
-    // Reset to first available duration when switching models
-    this.duration.set(m.durations[0]);
-    // Reset resolution if model doesn't support it
-    if (!m.supportsResolution) this.resolution.set('720p');
+    this.duration.set(m.durations[0] ?? 6);
+    this.resolution.set(m.resolutions[0] ?? '720p');
     if (!m.supportsMultiShot) this.multiShot.set(false);
+    if (!m.supportsAudio) this.generateAudio.set(true);
+    this.aspectRatio.set(m.aspectRatios[0]?.value ?? '16:9');
+    if (!m.endFrameRequired) {
+      this.endImageUrl.set('');
+      this.endPreviewSrc.set('');
+      this.selectedEndFile.set(null);
+    }
   }
 
   setDuration(d: number) {
@@ -455,24 +610,52 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
     this.imageUrl.set('');
   }
 
+  onEndFile(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) this.loadEndFile(file);
+  }
+
+  onEndDrop(event: DragEvent) {
+    event.preventDefault();
+    const file = event.dataTransfer?.files?.[0];
+    if (file) this.loadEndFile(file);
+  }
+
+  private loadEndFile(file: File) {
+    this.selectedEndFile.set(file);
+    const reader = new FileReader();
+    reader.onload = e => this.endPreviewSrc.set(e.target?.result as string);
+    reader.readAsDataURL(file);
+    this.endImageUrl.set('');
+  }
+
   generate() {
     if (!this.auth.isLoggedIn()) { this.loginModal.show(); return; }
     if ((!this.imageUrl() && !this.selectedFile()) || this.generating() || !this.selectedModel()) return;
+    const m = this.selectedModel()!;
+    if (m.endFrameRequired && !this.endImageUrl() && !this.selectedEndFile()) {
+      this.errorMsg.set('Please upload an end frame image for this model.');
+      return;
+    }
+
     this.generating.set(true);
     this.jobStatus.set('Queued');
     this.outputUrl.set(undefined);
     this.errorMsg.set(undefined);
 
-    const m = this.selectedModel()!;
-    const submit = (imageUrl: string) => {
+    const submitWithUrls = (imageUrl: string, endImageUrl?: string) => {
       this.gen.generateImageToVideo({
         imageUrl,
+        endImageUrl: m.endFrameRequired ? endImageUrl : undefined,
         modelId: m.id,
         prompt: this.prompt || undefined,
-        durationSeconds: this.duration(),
-        resolution: m.supportsResolution ? this.resolution() : undefined,
+        durationSeconds: m.durations.length > 0 ? this.duration() : 6,
+        resolution: m.resolutions.length > 0 ? this.resolution() : undefined,
         multiShot: m.supportsMultiShot ? this.multiShot() : undefined,
-        isPublic: this.isPublic(), zone: this.zone || undefined
+        generateAudio: m.supportsAudio ? this.generateAudio() : undefined,
+        aspectRatio: m.aspectRatios.length ? this.aspectRatio() : undefined,
+        isPublic: this.isPublic(),
+        zone: this.zone || undefined,
       }).subscribe({
         next: res => {
           this.currentJobId = res.jobId;
@@ -488,9 +671,24 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
       });
     };
 
+    const submitWithMainImage = (imageUrl: string) => {
+      if (m.endFrameRequired && this.selectedEndFile()) {
+        this.gen.uploadFile(this.selectedEndFile()!).subscribe({
+          next: res => submitWithUrls(imageUrl, res.url),
+          error: err => {
+            this.generating.set(false);
+            this.jobStatus.set('Failed');
+            this.errorMsg.set(err.error?.error ?? 'End frame upload failed.');
+          }
+        });
+      } else {
+        submitWithUrls(imageUrl, this.endImageUrl() || undefined);
+      }
+    };
+
     if (this.selectedFile()) {
       this.gen.uploadFile(this.selectedFile()!).subscribe({
-        next: res => { this.imageUrl.set(res.url); submit(res.url); },
+        next: res => { this.imageUrl.set(res.url); submitWithMainImage(res.url); },
         error: err => {
           this.generating.set(false);
           this.jobStatus.set('Failed');
@@ -498,7 +696,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
         }
       });
     } else {
-      submit(this.imageUrl());
+      submitWithMainImage(this.imageUrl());
     }
   }
 
@@ -539,7 +737,6 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    document.removeEventListener('click', this.onDocumentClick);
     clearInterval(this.pollInterval);
   }
 }

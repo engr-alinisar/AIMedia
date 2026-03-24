@@ -27,7 +27,8 @@ import type { ExploreItemDto } from '../../../core/models/models';
     <!-- Media area -->
     <div class="bg-gray-100 flex-shrink-0" style="max-height: 55vh; overflow: hidden;">
       @if (isVideo()) {
-        <video [src]="item!.outputUrl" class="w-full h-full object-contain" controls autoplay muted
+        <video [src]="item!.outputUrl" class="w-full h-full object-contain" controls muted playsinline
+               (loadeddata)="safePlay($event)"
                style="max-height: 55vh; display: block;"></video>
       } @else if (isAudio()) {
         <div class="flex flex-col items-center justify-center py-16 bg-gradient-to-br from-purple-50 to-purple-100">
@@ -144,5 +145,9 @@ export class ExploreItemModalComponent implements OnInit, OnDestroy {
       BackgroundRemoval: 'Background removed', ImageToVideo: 'Image animated to video',
     };
     return labels[this.item?.product] ?? 'AI generated content';
+  }
+
+  safePlay(event: Event) {
+    (event.target as HTMLVideoElement).play().catch(() => {});
   }
 }

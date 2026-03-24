@@ -24,43 +24,122 @@ public class GenerateImageToVideoCommandHandler(
             throw new InvalidOperationException("Insufficient credits.");
 
         var jobId = Guid.NewGuid();
-        var isKlingV3  = request.ModelId.Contains("kling-video/v3");
-        var isKling    = request.ModelId.Contains("kling-video");
-        var isVeo      = request.ModelId.Contains("veo3");
-        var isWan      = request.ModelId.Contains("wan");
-        // MiniMax/Hailuo — everything else
+        // Identify model family
+        var isKlingV3    = request.ModelId.Contains("/v3/");       // start_image_url + shot_type, dur 3-15
+        var isKlingV26   = request.ModelId.Contains("/v2.6/");     // start_image_url, generate_audio, dur 5/10
+        var isKlingO3    = request.ModelId.Contains("/o3/");       // image_url + shot_type, dur 3-15
+        var isKling      = request.ModelId.Contains("kling-video");// v2.5-turbo catch-all
+        var isVeo31Fast  = request.ModelId.Contains("veo3.1") && request.ModelId.Contains("fast");
+        var isVeo31      = request.ModelId.Contains("veo3.1") && !request.ModelId.Contains("fast");
+        var isVeo3Fast   = request.ModelId.Contains("veo3/fast");                                   // Veo 3 Fast (same input as Veo 3)
+        var isVeo3       = request.ModelId.Contains("veo3") && !request.ModelId.Contains("veo3.1") && !request.ModelId.Contains("veo3/fast");
+        var isWan        = request.ModelId.Contains("wan");
+        var isHailuo2    = request.ModelId.Contains("hailuo-02");  // Hailuo 2.0: duration + resolution
+        var isHailuo23   = request.ModelId.Contains("hailuo-2.3"); // Hailuo 2.3: prompt + image_url only
 
         object input = isKlingV3
-            ? (object)new                                   // v3: start_image_url, shot_type for multi-shot
+            ? (object)new                                    // v3: start_image_url, shot_type, audio, aspect_ratio
             {
                 start_image_url = request.ImageUrl,
                 prompt          = request.Prompt,
                 duration        = request.DurationSeconds.ToString(),
-                shot_type       = request.MultiShot ? "intelligent" : "customize"
+                shot_type       = request.MultiShot ? "intelligent" : "customize",
+                generate_audio  = request.GenerateAudio,
+                aspect_ratio    = request.AspectRatio
+            }
+            : isKlingV26
+            ? (object)new                                    // v2.6: start_image_url, audio, aspect_ratio
+            {
+                start_image_url = request.ImageUrl,
+                prompt          = request.Prompt,
+                duration        = request.DurationSeconds.ToString(),
+                generate_audio  = request.GenerateAudio,
+                aspect_ratio    = request.AspectRatio
+            }
+            : isKlingO3
+            ? (object)new                                    // o3: image_url, shot_type, audio, aspect_ratio
+            {
+                image_url      = request.ImageUrl,
+                prompt         = request.Prompt,
+                duration       = request.DurationSeconds.ToString(),
+                shot_type      = request.MultiShot ? "intelligent" : "customize",
+                generate_audio = request.GenerateAudio,
+                aspect_ratio   = request.AspectRatio
             }
             : isKling
-            ? (object)new                                   // v2.1 / v1.6: image_url, duration only
+            ? (object)new                                    // v2.5-turbo: image_url, aspect_ratio
             {
-                image_url = request.ImageUrl,
-                prompt    = request.Prompt,
-                duration  = request.DurationSeconds.ToString()
+                image_url    = request.ImageUrl,
+                prompt       = request.Prompt,
+                duration     = request.DurationSeconds.ToString(),
+                aspect_ratio = request.AspectRatio
             }
-            : isVeo
-            ? (object)new                                   // Veo 3: duration as "Xs", resolution supported
+            : isVeo31Fast
+            ? (object)new                                    // Veo 3.1 Fast: first_frame_url + last_frame_url
             {
-                image_url  = request.ImageUrl,
-                prompt     = request.Prompt,
-                duration   = $"{request.DurationSeconds}s",
-                resolution = request.Resolution
+                first_frame_url = request.ImageUrl,
+                last_frame_url  = request.EndImageUrl,
+                prompt          = request.Prompt,
+                duration        = $"{request.DurationSeconds}s",
+                resolution      = request.Resolution,
+                aspect_ratio    = request.AspectRatio,
+                generate_audio  = request.GenerateAudio
+            }
+            : isVeo31
+            ? (object)new                                    // Veo 3.1: image_url, duration "Xs", resolution, aspect_ratio, audio
+            {
+                image_url      = request.ImageUrl,
+                prompt         = request.Prompt,
+                duration       = $"{request.DurationSeconds}s",
+                resolution     = request.Resolution,
+                aspect_ratio   = request.AspectRatio,
+                generate_audio = request.GenerateAudio
+            }
+            : isVeo3Fast
+            ? (object)new                                    // Veo 3 Fast: same shape as Veo 3, faster/cheaper
+            {
+                image_url      = request.ImageUrl,
+                prompt         = request.Prompt,
+                duration       = $"{request.DurationSeconds}s",
+                resolution     = request.Resolution,
+                aspect_ratio   = request.AspectRatio,
+                generate_audio = request.GenerateAudio
+            }
+            : isVeo3
+            ? (object)new                                    // Veo 3: duration "Xs", resolution, aspect_ratio, audio
+            {
+                image_url      = request.ImageUrl,
+                prompt         = request.Prompt,
+                duration       = $"{request.DurationSeconds}s",
+                resolution     = request.Resolution,
+                aspect_ratio   = request.AspectRatio,
+                generate_audio = request.GenerateAudio
             }
             : isWan
-            ? (object)new                                   // WAN: num_frames instead of duration
+            ? (object)new                                    // WAN: num_frames, aspect_ratio
             {
-                image_url  = request.ImageUrl,
-                prompt     = request.Prompt,
-                num_frames = Math.Clamp(request.DurationSeconds * 16, 17, 161)
+                image_url    = request.ImageUrl,
+                prompt       = request.Prompt,
+                num_frames   = Math.Clamp(request.DurationSeconds * 16, 17, 161),
+                aspect_ratio = request.AspectRatio
             }
-            : (object)new                                   // MiniMax/Hailuo: prompt + image_url only
+            : isHailuo2
+            ? (object)new                                    // Hailuo 2.0: duration, resolution, prompt_optimizer
+            {
+                image_url        = request.ImageUrl,
+                prompt           = request.Prompt,
+                duration         = request.DurationSeconds.ToString(),
+                resolution       = request.Resolution ?? "768P",
+                prompt_optimizer = true
+            }
+            : isHailuo23
+            ? (object)new                                    // Hailuo 2.3 Pro: prompt + image_url + optimizer
+            {
+                image_url        = request.ImageUrl,
+                prompt           = request.Prompt,
+                prompt_optimizer = true
+            }
+            : (object)new                                    // legacy MiniMax v01 fallback
             {
                 image_url = request.ImageUrl,
                 prompt    = request.Prompt

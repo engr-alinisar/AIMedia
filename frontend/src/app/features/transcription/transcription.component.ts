@@ -1,4 +1,4 @@
-import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -9,6 +9,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { LoginModalService } from '../../core/services/login-modal.service';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
+import { ModelPickerComponent, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
 
 interface TranscriptionModel {
   id: string;
@@ -23,7 +24,7 @@ interface TranscriptionModel {
 @Component({
   selector: 'app-transcription',
   standalone: true,
-  imports: [CommonModule, FormsModule, JobStatusComponent],
+  imports: [CommonModule, FormsModule, JobStatusComponent, ModelPickerComponent],
   template: `
 <div class="flex flex-col lg:flex-row lg:h-full">
   <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
@@ -34,63 +35,10 @@ interface TranscriptionModel {
     <div class="flex-1 px-5 py-4 space-y-5">
 
       <!-- Model dropdown -->
-      <div>
-        <label class="form-label">Model</label>
-        <div class="relative">
-          <button type="button"
-                  class="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-border rounded-lg hover:border-accent transition-colors text-left"
-                  (click)="dropdownOpen.set(!dropdownOpen())">
-            <div class="flex items-center gap-2 min-w-0">
-              <svg class="w-4 h-4 text-accent flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-              </svg>
-              <span class="text-sm font-medium text-gray-900 truncate">{{ selectedModel()?.name ?? 'Select a model' }}</span>
-              @if (selectedModel()?.badge) {
-                <span class="px-1.5 py-0.5 text-[10px] font-bold rounded flex-shrink-0"
-                      [style.background]="selectedModel()!.badgeColor ?? '#7C3AED'"
-                      style="color:white">{{ selectedModel()!.badge }}</span>
-              }
-            </div>
-            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform" [class.rotate-180]="dropdownOpen()"
-                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </button>
-
-          @if (dropdownOpen()) {
-            <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-xl z-50 overflow-hidden">
-              @for (m of models; track m.id) {
-                <div (click)="selectModel(m)"
-                     class="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
-                     [class.bg-accent-light]="selectedModel()?.id === m.id">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="text-sm font-semibold text-gray-900">{{ m.name }}</span>
-                      @if (m.badge) {
-                        <span class="px-1.5 py-0.5 text-[10px] font-bold rounded"
-                              [style.background]="m.badgeColor ?? '#7C3AED'"
-                              style="color:white">{{ m.badge }}</span>
-                      }
-                    </div>
-                    <p class="text-xs text-gray-500 mt-0.5">{{ m.description }}</p>
-                    <div class="flex gap-1.5 flex-wrap mt-1.5">
-                      @for (tag of m.tags; track tag) {
-                        <span class="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded-full">{{ tag }}</span>
-                      }
-                      <span class="px-2 py-0.5 text-[10px] bg-accent-light text-accent rounded-full font-medium">{{ m.creditsPerMin }} cr/min</span>
-                    </div>
-                  </div>
-                  @if (selectedModel()?.id === m.id) {
-                    <svg class="w-4 h-4 text-accent flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                    </svg>
-                  }
-                </div>
-              }
-            </div>
-          }
-        </div>
-      </div>
+      <app-model-picker
+        [models]="pickerModels()"
+        [selectedId]="selectedModel()?.id ?? null"
+        (modelSelect)="onModelSelect($event)" />
 
       <!-- File upload -->
       <div>
@@ -220,8 +168,19 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
     }
   ];
 
+  pickerModels = computed<PickerModel[]>(() =>
+    this.models.map(m => ({
+      id: m.id,
+      name: m.name,
+      description: m.description,
+      creditsDisplay: `${m.creditsPerMin} cr/min`,
+      badge: m.badge,
+      badgeColor: m.badgeColor,
+      tags: m.tags,
+    } satisfies PickerModel))
+  );
+
   selectedModel = signal<TranscriptionModel | null>(this.models[0]);
-  dropdownOpen = signal(false);
 
   audioUrl = '';
   audioFile: File | null = null;
@@ -240,7 +199,6 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
   private pollInterval?: ReturnType<typeof setInterval>;
 
   ngOnInit() {
-    document.addEventListener('click', this.onDocumentClick);
     const qp = this.route.snapshot.queryParams;
     if (qp['model']) {
       const m = this.models.find(x => x.id === qp['model']);
@@ -248,14 +206,13 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
     }
   }
 
-  private onDocumentClick = (e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (!target.closest('.relative')) this.dropdownOpen.set(false);
-  };
+  onModelSelect(id: string) {
+    const m = this.models.find(x => x.id === id);
+    if (m) this.selectModel(m);
+  }
 
   selectModel(m: TranscriptionModel) {
     this.selectedModel.set(m);
-    this.dropdownOpen.set(false);
     this.costEstimate.set(m.creditsPerMin);
   }
 
@@ -316,7 +273,6 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    document.removeEventListener('click', this.onDocumentClick);
     clearInterval(this.pollInterval);
   }
 }
