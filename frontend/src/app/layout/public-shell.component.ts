@@ -76,17 +76,7 @@ interface NavGroup { category: string; items: NavItem[]; }
     <nav class="flex-1 px-2 pb-4 overflow-y-auto">
       @for (group of navGroups; track group.category) {
         <p class="nav-category">{{ group.category }}</p>
-        @for (item of group.items; track item.route) {
-          <a class="nav-item" [routerLink]="item.route" routerLinkActive="active" (click)="sidebarOpen.set(false)">
-            <span class="text-base">{{ item.icon }}</span>
-            <span class="flex-1">{{ item.label }}</span>
-            @if (item.badge) {
-              <span class="px-1.5 py-0.5 text-[10px] font-bold rounded text-white flex-shrink-0"
-                    [style.background]="item.badgeColor ?? '#ef4444'">{{ item.badge }}</span>
-            }
-          </a>
-        }
-        <!-- Dashboard + My Jobs: visible always, locked for guests -->
+        <!-- Dashboard + My Jobs first in Account group -->
         @if (group.category === 'Account') {
           @if (auth.isLoggedIn()) {
             <a class="nav-item" routerLink="/dashboard" routerLinkActive="active" (click)="sidebarOpen.set(false)">
@@ -115,6 +105,16 @@ interface NavGroup { category: string; items: NavItem[]; }
               </svg>
             </button>
           }
+        }
+        @for (item of group.items; track item.route) {
+          <a class="nav-item" [routerLink]="item.route" routerLinkActive="active" (click)="sidebarOpen.set(false)">
+            <span class="text-base">{{ item.icon }}</span>
+            <span class="flex-1">{{ item.label }}</span>
+            @if (item.badge) {
+              <span class="px-1.5 py-0.5 text-[10px] font-bold rounded text-white flex-shrink-0"
+                    [style.background]="item.badgeColor ?? '#ef4444'">{{ item.badge }}</span>
+            }
+          </a>
         }
       }
     </nav>
@@ -358,7 +358,7 @@ export class PublicShellComponent implements OnInit, OnDestroy {
         { label: 'Credits',    icon: '💳', route: '/credits' },
         { label: 'FAQ',        icon: '❓', route: '/faq' },
         { label: 'Contact Us', icon: '✉️', route: '/contact' },
-      ]
+      ],
     }
   ];
 
