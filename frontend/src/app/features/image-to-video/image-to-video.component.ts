@@ -361,7 +361,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
       description: 'Cinematic realism with synchronized audio generation.',
       creditsPerSec: 30,
       tags: ['Ultra Quality'],
-      durations: [8],
+      durations: [4, 6, 8],
       supportsResolution: false,
       supportsMultiShot: false,
       hasAudio: true,

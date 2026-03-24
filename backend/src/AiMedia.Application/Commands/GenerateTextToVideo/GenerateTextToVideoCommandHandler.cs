@@ -25,6 +25,7 @@ public class GenerateTextToVideoCommandHandler(
 
         var jobId = Guid.NewGuid();
         var isKling = request.ModelId.Contains("kling-video");
+        var isVeo = request.ModelId.Contains("veo3");
         object input = isKling
             ? new
             {
@@ -34,7 +35,15 @@ public class GenerateTextToVideoCommandHandler(
                 resolution = request.Resolution,
                 mode = request.MultiShot ? "pro" : "std"
             }
-            : new { prompt = request.Prompt, duration = request.DurationSeconds, aspect_ratio = request.AspectRatio };
+            : isVeo
+            ? new
+            {
+                prompt = request.Prompt,
+                duration = $"{request.DurationSeconds}s",   // Veo 3 requires "8s" format
+                aspect_ratio = request.AspectRatio,
+                resolution = request.Resolution
+            }
+            : (object)new { prompt = request.Prompt, duration = request.DurationSeconds, aspect_ratio = request.AspectRatio };
 
         await creditService.ReserveAsync(request.UserId, jobId, credits, $"Text-to-video ({model.Name})", cancellationToken);
 

@@ -26,6 +26,7 @@ public class GenerateImageToVideoCommandHandler(
         var jobId = Guid.NewGuid();
         // Build model-specific input payload
         var isKling = request.ModelId.Contains("kling-video");
+        var isVeo = request.ModelId.Contains("veo3");
         object input = isKling
             ? new
             {
@@ -35,6 +36,14 @@ public class GenerateImageToVideoCommandHandler(
                 resolution = request.Resolution,
                 // Kling v3 Pro multi-shot mode: "std" = single shot, "pro" = multi-shot
                 mode = (request.MultiShot && request.ModelId.Contains("/v3/")) ? "pro" : "std"
+            }
+            : isVeo
+            ? new
+            {
+                image_url = request.ImageUrl,
+                prompt = request.Prompt,
+                duration = $"{request.DurationSeconds}s",   // Veo 3 requires "8s" format
+                resolution = request.Resolution
             }
             : (object)new { image_url = request.ImageUrl, prompt = request.Prompt, duration = request.DurationSeconds.ToString() };
 

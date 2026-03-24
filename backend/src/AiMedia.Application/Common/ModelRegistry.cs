@@ -24,7 +24,7 @@ public static class ModelRegistry
         // Text to Video
         new("fal-ai/wan/v2.2-a14b/text-to-video",         "WAN 2.2",         "Fast text-to-video, great for quick previews",         0, 5,  ProductType.TextToVideo, ModelTier.Free),
         new("fal-ai/kling-video/v3/pro/text-to-video",    "Kling v3 Pro",    "Cinematic text-to-video with high prompt adherence",   0, 18, ProductType.TextToVideo, ModelTier.Standard),
-        new("fal-ai/veo3/text-to-video",                  "Veo 3",           "Google's Veo 3, highest quality text-to-video",        0, 30, ProductType.TextToVideo, ModelTier.Premium),
+        new("fal-ai/veo3",                                "Veo 3",           "Google's Veo 3, highest quality text-to-video",        0, 30, ProductType.TextToVideo, ModelTier.Premium),
 
         // Image Generation
         new("fal-ai/flux/dev",                            "FLUX Dev",        "Open-source FLUX, fast and free",                      5,  0, ProductType.ImageGen, ModelTier.Free),
