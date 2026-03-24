@@ -25,25 +25,38 @@ public class GenerateTextToVideoCommandHandler(
 
         var jobId = Guid.NewGuid();
         var isKling = request.ModelId.Contains("kling-video");
-        var isVeo = request.ModelId.Contains("veo3");
+        var isVeo   = request.ModelId.Contains("veo3");
+        var isWan   = request.ModelId.Contains("wan");
+
         object input = isKling
-            ? new
+            ? (object)new                                   // Kling: shot_type for multi-shot, no resolution
             {
-                prompt = request.Prompt,
-                duration = request.DurationSeconds.ToString(),
+                prompt       = request.Prompt,
+                duration     = request.DurationSeconds.ToString(),
                 aspect_ratio = request.AspectRatio,
-                resolution = request.Resolution,
-                mode = request.MultiShot ? "pro" : "std"
+                shot_type    = request.MultiShot ? "intelligent" : "customize"
             }
             : isVeo
-            ? new
+            ? (object)new                                   // Veo 3: duration as "Xs", resolution supported
             {
-                prompt = request.Prompt,
-                duration = $"{request.DurationSeconds}s",   // Veo 3 requires "8s" format
+                prompt       = request.Prompt,
+                duration     = $"{request.DurationSeconds}s",
                 aspect_ratio = request.AspectRatio,
-                resolution = request.Resolution
+                resolution   = request.Resolution
             }
-            : (object)new { prompt = request.Prompt, duration = request.DurationSeconds, aspect_ratio = request.AspectRatio };
+            : isWan
+            ? (object)new                                   // WAN: num_frames instead of duration
+            {
+                prompt       = request.Prompt,
+                num_frames   = Math.Clamp(request.DurationSeconds * 16, 17, 161),
+                aspect_ratio = request.AspectRatio
+            }
+            : (object)new
+            {
+                prompt       = request.Prompt,
+                duration     = request.DurationSeconds,
+                aspect_ratio = request.AspectRatio
+            };
 
         await creditService.ReserveAsync(request.UserId, jobId, credits, $"Text-to-video ({model.Name})", cancellationToken);
 

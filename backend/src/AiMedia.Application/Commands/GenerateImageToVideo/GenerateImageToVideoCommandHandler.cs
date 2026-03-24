@@ -24,28 +24,47 @@ public class GenerateImageToVideoCommandHandler(
             throw new InvalidOperationException("Insufficient credits.");
 
         var jobId = Guid.NewGuid();
-        // Build model-specific input payload
-        var isKling = request.ModelId.Contains("kling-video");
-        var isVeo = request.ModelId.Contains("veo3");
-        object input = isKling
-            ? new
+        var isKlingV3  = request.ModelId.Contains("kling-video/v3");
+        var isKling    = request.ModelId.Contains("kling-video");
+        var isVeo      = request.ModelId.Contains("veo3");
+        var isWan      = request.ModelId.Contains("wan");
+        // MiniMax/Hailuo — everything else
+
+        object input = isKlingV3
+            ? (object)new                                   // v3: start_image_url, shot_type for multi-shot
+            {
+                start_image_url = request.ImageUrl,
+                prompt          = request.Prompt,
+                duration        = request.DurationSeconds.ToString(),
+                shot_type       = request.MultiShot ? "intelligent" : "customize"
+            }
+            : isKling
+            ? (object)new                                   // v2.1 / v1.6: image_url, duration only
             {
                 image_url = request.ImageUrl,
-                prompt = request.Prompt,
-                duration = request.DurationSeconds.ToString(),
-                resolution = request.Resolution,
-                // Kling v3 Pro multi-shot mode: "std" = single shot, "pro" = multi-shot
-                mode = (request.MultiShot && request.ModelId.Contains("/v3/")) ? "pro" : "std"
+                prompt    = request.Prompt,
+                duration  = request.DurationSeconds.ToString()
             }
             : isVeo
-            ? new
+            ? (object)new                                   // Veo 3: duration as "Xs", resolution supported
             {
-                image_url = request.ImageUrl,
-                prompt = request.Prompt,
-                duration = $"{request.DurationSeconds}s",   // Veo 3 requires "8s" format
+                image_url  = request.ImageUrl,
+                prompt     = request.Prompt,
+                duration   = $"{request.DurationSeconds}s",
                 resolution = request.Resolution
             }
-            : (object)new { image_url = request.ImageUrl, prompt = request.Prompt, duration = request.DurationSeconds.ToString() };
+            : isWan
+            ? (object)new                                   // WAN: num_frames instead of duration
+            {
+                image_url  = request.ImageUrl,
+                prompt     = request.Prompt,
+                num_frames = Math.Clamp(request.DurationSeconds * 16, 17, 161)
+            }
+            : (object)new                                   // MiniMax/Hailuo: prompt + image_url only
+            {
+                image_url = request.ImageUrl,
+                prompt    = request.Prompt
+            };
 
         await creditService.ReserveAsync(request.UserId, jobId, credits, $"Image-to-video ({model.Name})", cancellationToken);
 
