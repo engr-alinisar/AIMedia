@@ -85,7 +85,8 @@
       "Bash(node -e \":*)",
       "Bash(tasklist)",
       "Bash(taskkill /F /PID 1288)",
-      "Bash(cmd.exe /c \"taskkill /F /PID 1288\")"
+      "Bash(cmd.exe /c \"taskkill /F /PID 1288\")",
+      "Bash(__NEW_LINE_331524ecd67965a4__ sed:*)"
     ]
   }
 }

@@ -312,9 +312,9 @@ import type { ExploreItemDto } from '../../core/models/models';
             <line x1="82" y1="36" x2="86" y2="36" stroke="white" stroke-width="2" stroke-linecap="round"/>
             <line x1="94" y1="36" x2="98" y2="36" stroke="white" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          <span style="font-size:15px;font-weight:700;color:white;">Ai<span style="color:#a78bfa;">Media</span></span>
+          <span style="font-size:15px;font-weight:700;color:white;">Ai<span style="color:#7C3AED;">Media</span></span>
         </div>
-        <p class="text-sm text-gray-500">AI-Powered Media Creation</p>
+        <p style="font-size:9px;color:#6b7280;letter-spacing:0.06em;text-transform:uppercase;">AI-Powered Media</p>
       </div>
       <div class="flex flex-wrap justify-center md:justify-end gap-x-8 gap-y-2 text-sm">
         <a routerLink="/explore" class="hover:text-white transition-colors">Explore</a>

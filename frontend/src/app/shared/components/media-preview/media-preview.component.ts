@@ -7,7 +7,7 @@ import type { ProductType } from '../../../core/models/models';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="w-full h-full flex items-center justify-center bg-gray-50 rounded-xl overflow-hidden">
+    <div class="w-full h-full flex items-center justify-center bg-white rounded-xl overflow-hidden">
       @if (!url) {
         <div class="text-center text-gray-400">
           <div class="text-4xl mb-2">{{ placeholder }}</div>
