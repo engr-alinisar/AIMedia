@@ -189,7 +189,7 @@ interface VideoModel {
             Download
           </a>
         }
-        <a routerLink="/jobs" class="text-xs text-accent hover:underline">My Jobs →</a>
+
       </div>
     </div>
 
