@@ -144,6 +144,24 @@ interface BgModel {
                 [class.translate-x-1]="!isPublic()"></span>
         </button>
       </div>
+      @if (isPublic()) {
+        <div>
+          <select [(ngModel)]="zone"
+                  class="w-full px-3 py-2 text-sm border border-border rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
+            <option value="">Zone (optional)</option>
+            <option value="Cinematic">🎬 Cinematic</option>
+            <option value="Character">🧑 Character</option>
+            <option value="Viral">🔥 Viral</option>
+            <option value="Pet">🐾 Pet</option>
+            <option value="Dramatic">🎭 Dramatic</option>
+            <option value="Cool">😎 Cool</option>
+            <option value="Playful">🎮 Playful</option>
+            <option value="Fantasy">🧙 Fantasy</option>
+            <option value="Dark">🌑 Dark</option>
+            <option value="Anime">🌸 Anime</option>
+          </select>
+        </div>
+      }
       <button class="btn-primary w-full" (click)="generate()"
               [disabled]="(!imageFile && !imageUrl.trim()) || generating() || !selectedModel()">
         @if (generating()) { <span class="animate-spin mr-1">⟳</span> Processing... }
@@ -234,6 +252,7 @@ export class BackgroundRemovalComponent implements OnInit, OnDestroy {
   outputUrl = signal<string | undefined>(undefined);
   errorMsg = signal<string | undefined>(undefined);
   isPublic = signal(true);
+  zone = '';
 
   private currentJobId: string | null = null;
   private pollInterval?: ReturnType<typeof setInterval>;
@@ -287,6 +306,7 @@ export class BackgroundRemovalComponent implements OnInit, OnDestroy {
     else fd.append('imageUrl', this.imageUrl);
     fd.append('modelId', this.selectedModel()!.id);
     fd.append('isPublic', String(this.isPublic()));
+    if (this.zone) fd.append('zone', this.zone);
 
     this.gen.generateBackgroundRemoval(fd).subscribe({
       next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.signalR.trackJob(res.jobId, 'BackgroundRemoval'); this.startFallback(); },

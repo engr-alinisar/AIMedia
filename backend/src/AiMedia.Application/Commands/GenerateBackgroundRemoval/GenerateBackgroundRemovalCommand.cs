@@ -9,4 +9,5 @@ public record GenerateBackgroundRemovalCommand(
     Stream? ImageStream = null,
     string? FileName = null,
     string ModelId = "fal-ai/pixelcut/remove-background",
-    bool IsPublic = true) : IRequest<GenerationResponse>;
+    bool IsPublic = true,
+    string? Zone = null) : IRequest<GenerationResponse>;

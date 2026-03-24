@@ -15,10 +15,9 @@ public class GetExploreQueryHandler(IAppDbContext db) : IRequestHandler<GetExplo
             .Include(j => j.User)
             .Where(j => j.IsPublic && j.Status == JobStatus.Completed && j.OutputUrl != null);
 
-        if (!string.IsNullOrWhiteSpace(request.Product) &&
-            Enum.TryParse<ProductType>(request.Product, ignoreCase: true, out var productType))
+        if (!string.IsNullOrWhiteSpace(request.Zone))
         {
-            query = query.Where(j => j.Product == productType);
+            query = query.Where(j => j.Zone == request.Zone);
         }
 
         var orderedQuery = query.OrderByDescending(j => j.CreatedAt);
@@ -32,7 +31,6 @@ public class GetExploreQueryHandler(IAppDbContext db) : IRequestHandler<GetExplo
         var items = jobs.Select(j =>
         {
             string? prompt = null;
-            string? modelId = null;
 
             if (j.FalInput != null)
             {
@@ -49,8 +47,6 @@ public class GetExploreQueryHandler(IAppDbContext db) : IRequestHandler<GetExplo
                 catch (JsonException) { }
             }
 
-            modelId = j.FalEndpoint;
-
             var displayName = "User";
             if (!string.IsNullOrWhiteSpace(j.User?.FullName))
             {
@@ -63,9 +59,10 @@ public class GetExploreQueryHandler(IAppDbContext db) : IRequestHandler<GetExplo
                 j.Product.ToString(),
                 j.OutputUrl,
                 prompt,
-                modelId,
+                j.FalEndpoint,
                 j.CreatedAt,
-                displayName
+                displayName,
+                j.Zone
             );
         }).ToList();
 

@@ -24,7 +24,17 @@ public class GenerateTextToVideoCommandHandler(
             throw new InvalidOperationException("Insufficient credits.");
 
         var jobId = Guid.NewGuid();
-        var input = new { prompt = request.Prompt, duration = request.DurationSeconds, aspect_ratio = request.AspectRatio };
+        var isKling = request.ModelId.Contains("kling-video");
+        object input = isKling
+            ? new
+            {
+                prompt = request.Prompt,
+                duration = request.DurationSeconds.ToString(),
+                aspect_ratio = request.AspectRatio,
+                resolution = request.Resolution,
+                mode = request.MultiShot ? "pro" : "std"
+            }
+            : new { prompt = request.Prompt, duration = request.DurationSeconds, aspect_ratio = request.AspectRatio };
 
         await creditService.ReserveAsync(request.UserId, jobId, credits, $"Text-to-video ({model.Name})", cancellationToken);
 
@@ -54,6 +64,7 @@ public class GenerateTextToVideoCommandHandler(
             DurationSeconds = request.DurationSeconds,
             FalInput = JsonDocument.Parse(JsonSerializer.Serialize(input)),
             IsPublic = request.IsPublic,
+            Zone = request.Zone,
             CreatedAt = DateTime.UtcNow
         });
 

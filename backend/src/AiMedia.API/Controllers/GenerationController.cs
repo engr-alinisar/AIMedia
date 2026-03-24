@@ -28,7 +28,7 @@ public class GenerationController : ControllerBase
     {
         var result = await _mediator.Send(new GenerateImageCommand(
             GetUserId(), request.Prompt, request.ModelId,
-            request.ImageSize, request.NegativePrompt, request.IsPublic), ct);
+            request.ImageSize, request.NegativePrompt, request.IsPublic, request.Zone), ct);
         return Accepted(result);
     }
 
@@ -37,7 +37,8 @@ public class GenerationController : ControllerBase
     {
         var result = await _mediator.Send(new GenerateImageToVideoCommand(
             GetUserId(), request.ImageUrl, request.Prompt,
-            request.ModelId, request.DurationSeconds, request.IsPublic), ct);
+            request.ModelId, request.DurationSeconds, request.IsPublic,
+            request.Resolution, request.MultiShot, request.Zone), ct);
         return Accepted(result);
     }
 
@@ -46,7 +47,8 @@ public class GenerationController : ControllerBase
     {
         var result = await _mediator.Send(new GenerateTextToVideoCommand(
             GetUserId(), request.Prompt, request.ModelId,
-            request.DurationSeconds, request.AspectRatio, request.IsPublic), ct);
+            request.DurationSeconds, request.AspectRatio, request.IsPublic,
+            request.Resolution, request.MultiShot, request.Zone), ct);
         return Accepted(result);
     }
 
@@ -59,7 +61,7 @@ public class GenerationController : ControllerBase
 
         var result = await _mediator.Send(new GenerateVoiceCommand(
             GetUserId(), request.Text, request.ModelId,
-            request.VoiceId, cloneId, request.RefAudioUrl, request.IsPublic), ct);
+            request.VoiceId, cloneId, request.RefAudioUrl, request.IsPublic, request.Zone), ct);
         return Accepted(result);
     }
 
@@ -74,7 +76,7 @@ public class GenerationController : ControllerBase
             request.AudioUrl,
             file?.OpenReadStream(),
             file?.FileName,
-            request.IsPublic), ct);
+            request.IsPublic, request.Zone), ct);
         return Accepted(result);
     }
 
@@ -90,7 +92,7 @@ public class GenerationController : ControllerBase
             file?.OpenReadStream(),
             file?.FileName,
             request.ModelId,
-            request.IsPublic), ct);
+            request.IsPublic, request.Zone), ct);
         return Accepted(result);
     }
 
@@ -108,21 +110,28 @@ public record GenerateImageRequest(
     string ModelId = "fal-ai/flux-pro/v1.1",
     string ImageSize = "square_hd",
     string? NegativePrompt = null,
-    bool IsPublic = true);
+    bool IsPublic = true,
+    string? Zone = null);
 
 public record GenerateImageToVideoRequest(
     string ImageUrl,
     string ModelId = "fal-ai/kling-video/v3/pro/image-to-video",
     string? Prompt = null,
     int DurationSeconds = 5,
-    bool IsPublic = true);
+    bool IsPublic = true,
+    string Resolution = "720p",
+    bool MultiShot = false,
+    string? Zone = null);
 
 public record GenerateTextToVideoRequest(
     string Prompt,
     string ModelId = "fal-ai/kling-video/v3/pro/text-to-video",
     int DurationSeconds = 5,
     string AspectRatio = "16:9",
-    bool IsPublic = true);
+    bool IsPublic = true,
+    string Resolution = "720p",
+    bool MultiShot = false,
+    string? Zone = null);
 
 public record GenerateVoiceRequest(
     string Text,
@@ -131,14 +140,17 @@ public record GenerateVoiceRequest(
     Guid? VoiceCloneId = null,
     string? VoiceCloneIdStr = null,
     string? RefAudioUrl = null,
-    bool IsPublic = true);
+    bool IsPublic = true,
+    string? Zone = null);
 
 public record TranscriptionRequest(
     string ModelId = "fal-ai/whisper",
     string? AudioUrl = null,
-    bool IsPublic = true);
+    bool IsPublic = true,
+    string? Zone = null);
 
 public record BackgroundRemovalRequest(
     string? ImageUrl = null,
     string ModelId = "fal-ai/pixelcut/remove-background",
-    bool IsPublic = true);
+    bool IsPublic = true,
+    string? Zone = null);

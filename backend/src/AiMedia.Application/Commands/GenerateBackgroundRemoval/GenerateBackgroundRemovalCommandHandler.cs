@@ -63,6 +63,7 @@ public class GenerateBackgroundRemovalCommandHandler(
             CreditsReserved = credits,
             FalInput = JsonDocument.Parse(JsonSerializer.Serialize(input)),
             IsPublic = request.IsPublic,
+            Zone = request.Zone,
             CreatedAt = DateTime.UtcNow
         });
 

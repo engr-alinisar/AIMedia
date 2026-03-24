@@ -208,13 +208,17 @@ export class ExploreComponent implements OnInit {
   private loginModal = inject(LoginModalService);
 
   filters: FilterItem[] = [
-    { label: 'All', value: null },
-    { label: 'Image Gen', value: 'ImageGen' },
-    { label: 'Image to Video', value: 'ImageToVideo' },
-    { label: 'Text to Video', value: 'TextToVideo' },
-    { label: 'Voice', value: 'Voice' },
-    { label: 'Transcription', value: 'Transcription' },
-    { label: 'Background Removal', value: 'BackgroundRemoval' },
+    { label: 'All',        value: null },
+    { label: 'Cinematic',  value: 'Cinematic' },
+    { label: 'Character',  value: 'Character' },
+    { label: 'Viral',      value: 'Viral' },
+    { label: 'Pet',        value: 'Pet' },
+    { label: 'Dramatic',   value: 'Dramatic' },
+    { label: 'Cool',       value: 'Cool' },
+    { label: 'Playful',    value: 'Playful' },
+    { label: 'Fantasy',    value: 'Fantasy' },
+    { label: 'Dark',       value: 'Dark' },
+    { label: 'Anime',      value: 'Anime' },
   ];
 
   skeletons = Array(12).fill(0);

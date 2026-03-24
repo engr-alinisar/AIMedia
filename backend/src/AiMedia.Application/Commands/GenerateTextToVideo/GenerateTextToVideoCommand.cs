@@ -9,4 +9,7 @@ public record GenerateTextToVideoCommand(
     string ModelId,
     int DurationSeconds = 5,
     string AspectRatio = "16:9",
-    bool IsPublic = true) : IRequest<GenerationResponse>;
+    bool IsPublic = true,
+    string Resolution = "720p",
+    bool MultiShot = false,
+    string? Zone = null) : IRequest<GenerationResponse>;

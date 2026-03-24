@@ -7,9 +7,9 @@ import type { ExploreItemDto, PagedResult } from '../models/models';
 export class ExploreService {
   constructor(private http: HttpClient) {}
 
-  getExplore(page = 1, pageSize = 20, product?: string) {
+  getExplore(page = 1, pageSize = 20, zone?: string) {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-    if (product) params.set('product', product);
+    if (zone) params.set('zone', zone);
     return this.http.get<PagedResult<ExploreItemDto>>(`${environment.apiUrl}/api/explore?${params}`);
   }
 }

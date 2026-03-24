@@ -7,5 +7,6 @@ public record ExploreItemDto(
     string? Prompt,
     string? ModelId,
     DateTime CreatedAt,
-    string? UserDisplayName
+    string? UserDisplayName,
+    string? Zone
 );

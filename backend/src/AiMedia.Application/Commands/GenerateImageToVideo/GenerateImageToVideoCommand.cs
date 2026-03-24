@@ -9,4 +9,7 @@ public record GenerateImageToVideoCommand(
     string? Prompt,
     string ModelId,
     int DurationSeconds = 5,
-    bool IsPublic = true) : IRequest<GenerationResponse>;
+    bool IsPublic = true,
+    string Resolution = "720p",
+    bool MultiShot = false,
+    string? Zone = null) : IRequest<GenerationResponse>;

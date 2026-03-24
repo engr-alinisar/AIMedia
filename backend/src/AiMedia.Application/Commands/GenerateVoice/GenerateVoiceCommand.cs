@@ -10,4 +10,5 @@ public record GenerateVoiceCommand(
     string? VoiceId = null,
     Guid? VoiceCloneId = null,
     string? RefAudioUrl = null,
-    bool IsPublic = true) : IRequest<GenerationResponse>;
+    bool IsPublic = true,
+    string? Zone = null) : IRequest<GenerationResponse>;

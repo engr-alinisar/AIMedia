@@ -108,6 +108,7 @@ export interface ExploreItemDto {
   modelId?: string;
   createdAt: string;
   userDisplayName?: string;
+  zone?: string;
 }
 
 // Credit costs mirrored from CreditCalculator.cs

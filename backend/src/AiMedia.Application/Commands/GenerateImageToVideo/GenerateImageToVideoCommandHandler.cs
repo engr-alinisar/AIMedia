@@ -24,8 +24,19 @@ public class GenerateImageToVideoCommandHandler(
             throw new InvalidOperationException("Insufficient credits.");
 
         var jobId = Guid.NewGuid();
-        // kling-video expects duration as string ("5" | "10"), wan/i2v accepts int — use string for all
-        var input = new { image_url = request.ImageUrl, prompt = request.Prompt, duration = request.DurationSeconds.ToString() };
+        // Build model-specific input payload
+        var isKling = request.ModelId.Contains("kling-video");
+        object input = isKling
+            ? new
+            {
+                image_url = request.ImageUrl,
+                prompt = request.Prompt,
+                duration = request.DurationSeconds.ToString(),
+                resolution = request.Resolution,
+                // Kling v3 Pro multi-shot mode: "std" = single shot, "pro" = multi-shot
+                mode = (request.MultiShot && request.ModelId.Contains("/v3/")) ? "pro" : "std"
+            }
+            : (object)new { image_url = request.ImageUrl, prompt = request.Prompt, duration = request.DurationSeconds.ToString() };
 
         await creditService.ReserveAsync(request.UserId, jobId, credits, $"Image-to-video ({model.Name})", cancellationToken);
 
@@ -55,6 +66,7 @@ public class GenerateImageToVideoCommandHandler(
             DurationSeconds = request.DurationSeconds,
             FalInput = JsonDocument.Parse(JsonSerializer.Serialize(input)),
             IsPublic = request.IsPublic,
+            Zone = request.Zone,
             CreatedAt = DateTime.UtcNow
         });
 

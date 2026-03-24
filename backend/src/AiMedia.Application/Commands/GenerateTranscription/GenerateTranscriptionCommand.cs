@@ -9,4 +9,5 @@ public record GenerateTranscriptionCommand(
     string? AudioUrl = null,
     Stream? AudioStream = null,
     string? FileName = null,
-    bool IsPublic = true) : IRequest<GenerationResponse>;
+    bool IsPublic = true,
+    string? Zone = null) : IRequest<GenerationResponse>;

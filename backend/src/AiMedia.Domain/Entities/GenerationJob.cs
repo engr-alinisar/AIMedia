@@ -23,6 +23,7 @@ public class GenerationJob
     public string? ErrorMessage { get; set; }
     public int DurationSeconds { get; set; }
     public bool IsPublic { get; set; } = true;
+    public string? Zone { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
 

@@ -262,6 +262,24 @@ interface VoiceModel {
                 [class.translate-x-1]="!isPublic()"></span>
         </button>
       </div>
+      @if (isPublic()) {
+        <div>
+          <select [(ngModel)]="zone"
+                  class="w-full px-3 py-2 text-sm border border-border rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
+            <option value="">Zone (optional)</option>
+            <option value="Cinematic">🎬 Cinematic</option>
+            <option value="Character">🧑 Character</option>
+            <option value="Viral">🔥 Viral</option>
+            <option value="Pet">🐾 Pet</option>
+            <option value="Dramatic">🎭 Dramatic</option>
+            <option value="Cool">😎 Cool</option>
+            <option value="Playful">🎮 Playful</option>
+            <option value="Fantasy">🧙 Fantasy</option>
+            <option value="Dark">🌑 Dark</option>
+            <option value="Anime">🌸 Anime</option>
+          </select>
+        </div>
+      }
       <button class="btn-primary w-full" (click)="generate()"
               [disabled]="!canGenerate()">
         @if (generating()) { <span class="animate-spin mr-1">⟳</span> Generating... }
@@ -376,6 +394,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
   loadingClones = signal(false);
   selectedCloneId = signal<string | null>(null);
   isPublic = signal(true);
+  zone = '';
 
   costEstimate = signal(this.models[0].creditsPerKChars);
 
@@ -451,7 +470,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
       modelId: this.selectedModel()!.id,
       voiceId: this.selectedModel()?.requiresAudioSample ? undefined : this.voiceId,
       voiceCloneId: this.selectedCloneId() ?? undefined,
-      isPublic: this.isPublic()
+      isPublic: this.isPublic(), zone: this.zone || undefined
     }).subscribe({
       next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.signalR.trackJob(res.jobId, 'Voice'); this.startFallback(); },
       error: err => { this.generating.set(false); this.jobStatus.set('Failed'); this.errorMsg.set(err.error?.error ?? 'Failed.'); }

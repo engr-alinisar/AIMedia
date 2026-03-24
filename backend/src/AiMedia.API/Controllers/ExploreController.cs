@@ -19,10 +19,10 @@ public class ExploreController : ControllerBase
     public async Task<IActionResult> GetExplore(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
-        [FromQuery] string? product = null,
+        [FromQuery] string? zone = null,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetExploreQuery(page, pageSize, product), ct);
+        var result = await _mediator.Send(new GetExploreQuery(page, pageSize, zone), ct);
         return Ok(result);
     }
 }
