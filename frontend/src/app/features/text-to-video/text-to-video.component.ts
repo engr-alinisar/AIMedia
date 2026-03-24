@@ -188,7 +188,7 @@ interface VideoModel {
         </div>
       </div>
     }
-    <div class="h-[55vw] sm:h-[420px] lg:h-auto lg:flex-1 lg:min-h-0"><app-media-preview [url]="outputUrl()" product="TextToVideo"/></div>
+    <div class="h-[55vw] sm:h-[420px] lg:h-auto lg:flex-1 lg:min-h-0 card overflow-hidden"><app-media-preview [url]="outputUrl()" product="TextToVideo"/></div>
   </div>
 </div>
   `

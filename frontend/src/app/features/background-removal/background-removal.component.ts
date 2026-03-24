@@ -185,7 +185,7 @@ interface BgModel {
     }
 
     <!-- Checkerboard background to show transparency -->
-    <div class="h-[55vw] sm:h-[420px] lg:h-auto lg:flex-1 lg:min-h-0 rounded-xl overflow-hidden border border-border"
+    <div class="h-[55vw] sm:h-[420px] lg:h-auto lg:flex-1 lg:min-h-0 card overflow-hidden"
          style="background-image: url('data:image/svg+xml,%3Csvg width%3D%2220%22 height%3D%2220%22 xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Crect width%3D%2210%22 height%3D%2210%22 fill%3D%22%23f3f4f6%22/%3E%3Crect x%3D%2210%22 y%3D%2210%22 width%3D%2210%22 height%3D%2210%22 fill%3D%22%23f3f4f6%22/%3E%3Crect x%3D%2210%22 width%3D%2210%22 height%3D%2210%22 fill%3D%22%23e5e7eb%22/%3E%3Crect y%3D%2210%22 width%3D%2210%22 height%3D%2210%22 fill%3D%22%23e5e7eb%22/%3E%3C/svg%3E')">
       <app-media-preview [url]="outputUrl()" product="BackgroundRemoval"/>
     </div>

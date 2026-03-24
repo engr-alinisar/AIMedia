@@ -300,7 +300,7 @@ interface VoiceModel {
         </div>
       </div>
     }
-    <div class="h-[200px] sm:h-[280px] lg:h-auto lg:flex-1 lg:min-h-0"><app-media-preview [url]="outputUrl()" product="Voice"/></div>
+    <div class="h-[200px] sm:h-[280px] lg:h-auto lg:flex-1 lg:min-h-0 card overflow-hidden"><app-media-preview [url]="outputUrl()" product="Voice"/></div>
   </div>
 </div>
 
