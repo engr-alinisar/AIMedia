@@ -11,6 +11,8 @@ import { MediaPreviewComponent } from '../../shared/components/media-preview/med
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
 
+interface AspectRatio { value: string; w: number; h: number; }
+
 interface VideoModel {
   id: string;
   name: string;
@@ -20,6 +22,7 @@ interface VideoModel {
   badgeColor?: string;
   tags: string[];
   durations: number[];
+  aspectRatios: AspectRatio[];
   supportsResolution: boolean;
   supportsMultiShot: boolean;
   hasAudio: boolean;
@@ -116,7 +119,7 @@ interface VideoModel {
       <div>
         <label class="form-label">Aspect Ratio</label>
         <div class="flex gap-2">
-          @for (ar of aspectRatios; track ar.value) {
+          @for (ar of selectedModel()?.aspectRatios ?? []; track ar.value) {
             <button type="button"
                     class="flex-1 flex flex-col items-center gap-1 py-2 px-1.5 rounded-lg border transition-colors"
                     [class.border-accent]="aspectRatio === ar.value"
@@ -317,6 +320,12 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
       badgeColor: '#EF4444',
       tags: ['Multi-Shot', 'Cinematic'],
       durations: [5, 10],
+      aspectRatios: [
+        { value: '16:9', w: 22, h: 13 },
+        { value: '9:16', w: 13, h: 22 },
+        { value: '1:1',  w: 18, h: 18 },
+        { value: '4:3',  w: 20, h: 15 },
+      ],
       supportsResolution: true,
       supportsMultiShot: true,
       hasAudio: false,
@@ -328,7 +337,11 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
       creditsPerSec: 30,
       tags: ['Ultra Quality'],
       durations: [4, 6, 8],
-      supportsResolution: false,
+      aspectRatios: [
+        { value: '16:9', w: 22, h: 13 },
+        { value: '9:16', w: 13, h: 22 },
+      ],
+      supportsResolution: true,
       supportsMultiShot: false,
       hasAudio: true,
     },
@@ -339,17 +352,16 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
       creditsPerSec: 5,
       tags: ['Open Source', 'Fast'],
       durations: [5],
+      aspectRatios: [
+        { value: '16:9', w: 22, h: 13 },
+        { value: '9:16', w: 13, h: 22 },
+        { value: '1:1',  w: 18, h: 18 },
+        { value: '4:3',  w: 20, h: 15 },
+      ],
       supportsResolution: false,
       supportsMultiShot: false,
       hasAudio: false,
     },
-  ];
-
-  aspectRatios = [
-    { value: '16:9', w: 22, h: 13 },
-    { value: '9:16', w: 13, h: 22 },
-    { value: '1:1',  w: 18, h: 18 },
-    { value: '4:3',  w: 20, h: 15 },
   ];
 
   selectedModel = signal<VideoModel | null>(this.models[0]);
@@ -397,6 +409,8 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
     this.selectedModel.set(m);
     this.dropdownOpen.set(false);
     this.duration.set(m.durations[0]);
+    // Reset aspect ratio to first valid option for this model
+    this.aspectRatio = m.aspectRatios[0]?.value ?? '16:9';
     if (!m.supportsResolution) this.resolution.set('720p');
     if (!m.supportsMultiShot) this.multiShot.set(false);
   }
