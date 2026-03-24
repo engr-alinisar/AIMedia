@@ -49,6 +49,22 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
     </div>
   }
 
+  <!-- Guest prompt -->
+  @if (!auth.isLoggedIn()) {
+    <div class="flex items-center gap-4 p-5 bg-accent-light border border-accent/20 rounded-xl">
+      <div class="text-3xl">💳</div>
+      <div class="flex-1">
+        <p class="text-sm font-semibold text-gray-900">Sign in to view your balance</p>
+        <p class="text-xs text-gray-500 mt-0.5">Create a free account and get 100 credits instantly — no credit card required.</p>
+      </div>
+      <button (click)="loginModal.show('register')"
+              class="flex-shrink-0 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors"
+              style="background:#7c3aed;">
+        Sign Up Free
+      </button>
+    </div>
+  }
+
   <!-- Low credits warning -->
   @if (credits.balance().balance > 0 && credits.balance().balance < 50) {
     <div class="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
@@ -61,7 +77,8 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
     </div>
   }
 
-  <!-- Balance card -->
+  <!-- Balance card (logged in only) -->
+  @if (auth.isLoggedIn()) {
   <div class="card p-5 sm:p-6" #balanceCard>
     <div class="flex items-center justify-between">
       <div>
@@ -72,6 +89,7 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
       <div class="text-4xl sm:text-5xl">💳</div>
     </div>
   </div>
+  }
 
   <!-- Credit packs -->
   <div #packsSection>
@@ -107,7 +125,8 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
     </div>
   </div>
 
-  <!-- Transaction history -->
+  <!-- Transaction history (logged in only) -->
+  @if (auth.isLoggedIn()) {
   <div>
     <div class="flex items-center justify-between mb-3">
       <div>
@@ -183,13 +202,14 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
       }
     }
   </div>
+  }
 </div>
   `
 })
 export class CreditsComponent implements OnInit {
   credits = inject(CreditsService);
-  private auth = inject(AuthService);
-  private loginModal = inject(LoginModalService);
+  auth = inject(AuthService);
+  loginModal = inject(LoginModalService);
   private route = inject(ActivatedRoute);
 
   @ViewChild('packsSection') packsSection?: ElementRef;
@@ -239,8 +259,12 @@ export class CreditsComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.credits.loadBalance().subscribe();
-    this.loadPage(1);
+    if (this.auth.isLoggedIn()) {
+      this.credits.loadBalance().subscribe();
+      this.loadPage(1);
+    } else {
+      this.loading.set(false);
+    }
     this.handlePayPalReturn();
   }
 
