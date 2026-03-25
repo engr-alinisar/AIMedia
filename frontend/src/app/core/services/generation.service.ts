@@ -32,7 +32,7 @@ export class GenerationService {
     return this.http.post<{ url: string }>(`${environment.apiUrl}/api/upload/audio`, formData);
   }
 
-  generateImage(payload: { prompt: string; modelId: string; imageSize?: string; negativePrompt?: string; isPublic?: boolean; zone?: string }) {
+  generateImage(payload: { prompt: string; modelId: string; imageSize?: string; negativePrompt?: string; isPublic?: boolean; zone?: string; aspectRatio?: string; style?: string; quality?: string; background?: string; resolution?: string }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image`, payload);
   }
 

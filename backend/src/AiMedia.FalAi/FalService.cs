@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AiMedia.Application.Interfaces;
 using AiMedia.FalAi.Models;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,8 @@ public class FalService : IFalClient
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
     public string WebhookBaseUrl { get; }

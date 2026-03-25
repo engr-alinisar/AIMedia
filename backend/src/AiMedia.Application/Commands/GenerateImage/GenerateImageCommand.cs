@@ -10,4 +10,9 @@ public record GenerateImageCommand(
     string ImageSize = "square_hd",
     string? NegativePrompt = null,
     bool IsPublic = true,
-    string? Zone = null) : IRequest<GenerationResponse>;
+    string? Zone = null,
+    string? AspectRatio = null,
+    string? Style = null,
+    string? Quality = null,
+    string? Background = null,
+    string? Resolution = null) : IRequest<GenerationResponse>;

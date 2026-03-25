@@ -28,7 +28,8 @@ public class GenerationController : ControllerBase
     {
         var result = await _mediator.Send(new GenerateImageCommand(
             GetUserId(), request.Prompt, request.ModelId,
-            request.ImageSize, request.NegativePrompt, request.IsPublic, request.Zone), ct);
+            request.ImageSize, request.NegativePrompt, request.IsPublic, request.Zone,
+            request.AspectRatio, request.Style, request.Quality, request.Background, request.Resolution), ct);
         return Accepted(result);
     }
 
@@ -112,7 +113,12 @@ public record GenerateImageRequest(
     string ImageSize = "square_hd",
     string? NegativePrompt = null,
     bool IsPublic = true,
-    string? Zone = null);
+    string? Zone = null,
+    string? AspectRatio = null,
+    string? Style = null,
+    string? Quality = null,
+    string? Background = null,
+    string? Resolution = null);
 
 public record GenerateImageToVideoRequest(
     string ImageUrl,

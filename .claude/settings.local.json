@@ -112,7 +112,20 @@
       "Bash(curl -sL \"https://images.media.io/media-ai/icon/Icon20_Veo3.png\" -o veo.png)",
       "Bash(curl -sL \"https://images.media.io/media-ai/icon/16_wan.png\" -o wan.png)",
       "Bash(grep -n \"safePlay\\\\|mouseenter.*play\\\\|$any.*play\" /d/Projects/AiMedia/frontend/src/app/features/landing/landing.component.ts)",
-      "Bash(ng build:*)"
+      "Bash(ng build:*)",
+      "Bash(curl -sL \"https://images.media.io/media-ai/icon/nano.png\" -o nano.png)",
+      "Bash(curl -sL \"https://images.media.io/media-ai/icon/seedream.png\" -o seedream.png)",
+      "Bash(curl -sL \"https://ideogram.ai/favicon.svg\" -o ideogram.svg)",
+      "Bash(curl -sL \"https://recraft.ai/favicon.ico\" -o recraft.ico)",
+      "Bash(curl -sL \"https://openai.com/favicon.ico\" -o openai.ico)",
+      "Bash(curl -sL \"https://blackforestlabs.ai/favicon.ico\" -o flux.ico)",
+      "Bash(ls -lh *.ico *.png *.svg)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:www.together.ai)",
+      "Bash(curl -sL \"https://cdn.prod.website-files.com/69654e88dce9154b5f12070c/69a1891659331bb345c4b250_Ideogram.svg\" -o ideogram.svg)",
+      "Bash(curl -sL \"https://s.llamagen.ai/u/clr8t07zt0000l208uya2628n/covers/2c9a9790-80c1-4d67-9e22-203f28ad96cd-image.png\" -o recraft.png)",
+      "Bash(curl -sL \"https://cdn2.futurepedia.io/2bafc36affb1539a01f7e32f7cf19b6ba000aa51-128x128.png?w=256\" -o flux.png)",
+      "Bash(curl -sL \"https://cdn.iconscout.com/icon/free/png-256/free-chatgpt-icon-svg-download-png-7576880.png?f=webp\" -o openai.png)"
     ]
   }
 }

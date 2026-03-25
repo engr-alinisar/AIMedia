@@ -41,10 +41,42 @@ public static class ModelRegistry
         new("fal-ai/veo3.1/fast",                              "Veo 3.1 Fast",       "Fast Veo 3.1 — 4K and audio at lower cost",           0, 20, ProductType.TextToVideo, ModelTier.Premium),
         new("fal-ai/wan/v2.2-a14b/text-to-video",              "WAN 2.2",            "Fast open-source text-to-video",                       0,  5, ProductType.TextToVideo, ModelTier.Free),
 
-        // Image Generation
-        new("fal-ai/flux/dev",                            "FLUX Dev",        "Open-source FLUX, fast and free",                      5,  0, ProductType.ImageGen, ModelTier.Free),
-        new("fal-ai/flux-pro/v1.1",                       "FLUX Pro 1.1",    "Professional image generation, photorealistic",        8,  0, ProductType.ImageGen, ModelTier.Standard),
-        new("fal-ai/flux-pro/v1.1-ultra",                 "FLUX Pro Ultra",  "Highest quality, 4MP images with fine details",        11, 0, ProductType.ImageGen, ModelTier.Premium),
+        // Image Generation — FLUX (Black Forest Labs)
+        new("fal-ai/flux/schnell",                             "FLUX Schnell",         "Ultra-fast 1-4 step generation",                    2,  0, ProductType.ImageGen, ModelTier.Free),
+        new("fal-ai/flux/dev",                                 "FLUX Dev",             "Open-source 12B model, great for experiments",      5,  0, ProductType.ImageGen, ModelTier.Standard),
+        new("fal-ai/flux-pro/v1.1",                            "FLUX Pro 1.1",         "High quality with improved photorealism",           8,  0, ProductType.ImageGen, ModelTier.Premium),
+        new("fal-ai/flux-pro/v1.1-ultra",                      "FLUX Pro 1.1 Ultra",   "Maximum detail and resolution up to 2K",           11, 0, ProductType.ImageGen, ModelTier.Premium),
+        new("fal-ai/flux-2-pro",                               "FLUX 2 Pro",           "Latest FLUX with improved typography",             10, 0, ProductType.ImageGen, ModelTier.Premium),
+
+        // Image Generation — Google (Nano Banana)
+        new("fal-ai/nano-banana",                              "Nano Banana",          "Google's fast generation model",                   5,  0, ProductType.ImageGen, ModelTier.Standard),
+        new("fal-ai/nano-banana-2",                            "Nano Banana 2",        "Google gen with web search and up to 4K",          8,  0, ProductType.ImageGen, ModelTier.Premium),
+        new("fal-ai/nano-banana-pro",                          "Nano Banana Pro",      "Google's pro model with 4K resolution",            10, 0, ProductType.ImageGen, ModelTier.Premium),
+
+        // Image Generation — Google (Imagen)
+        new("fal-ai/imagen3/fast",                             "Imagen 3 Fast",        "Fast version of Google Imagen 3",                  6,  0, ProductType.ImageGen, ModelTier.Standard),
+        new("fal-ai/imagen3",                                  "Imagen 3",             "Google Imagen 3 — high-quality photorealistic",    10, 0, ProductType.ImageGen, ModelTier.Premium),
+        new("fal-ai/imagen4/preview/fast",                     "Imagen 4 Fast",        "Fast Imagen 4 preview generation",                 12, 0, ProductType.ImageGen, ModelTier.Premium),
+        new("fal-ai/imagen4/preview",                          "Imagen 4 Preview",     "Google Imagen 4 preview with up to 2K",            15, 0, ProductType.ImageGen, ModelTier.Premium),
+        new("fal-ai/imagen4/preview/ultra",                    "Imagen 4 Ultra",       "Google Imagen 4 Ultra — highest quality",          20, 0, ProductType.ImageGen, ModelTier.Premium),
+
+        // Image Generation — ByteDance (Seedream)
+        new("fal-ai/bytedance/seedream/v4/text-to-image",      "Seedream v4",          "ByteDance high-quality generation",                6,  0, ProductType.ImageGen, ModelTier.Standard),
+        new("fal-ai/bytedance/seedream/v5/lite/text-to-image", "Seedream v5 Lite",     "ByteDance v5 with 2K–3K resolution",               8,  0, ProductType.ImageGen, ModelTier.Premium),
+
+        // Image Generation — Ideogram
+        new("fal-ai/ideogram/v2",                              "Ideogram v2",          "Style-rich generation with text rendering",        8,  0, ProductType.ImageGen, ModelTier.Standard),
+        new("fal-ai/ideogram/v3",                              "Ideogram v3",          "Latest Ideogram with style presets",               12, 0, ProductType.ImageGen, ModelTier.Premium),
+
+        // Image Generation — Recraft
+        new("fal-ai/recraft/v3/text-to-image",                 "Recraft v3",           "80+ style options for professional imagery",       6,  0, ProductType.ImageGen, ModelTier.Standard),
+        new("fal-ai/recraft/v4/text-to-image",                 "Recraft v4",           "Latest Recraft with enhanced quality",             8,  0, ProductType.ImageGen, ModelTier.Premium),
+        new("fal-ai/recraft/v4/pro/text-to-image",             "Recraft v4 Pro",       "Recraft v4 Pro — highest quality design",          12, 0, ProductType.ImageGen, ModelTier.Premium),
+
+        // Image Generation — OpenAI
+        new("fal-ai/gpt-image-1-mini",                         "GPT Image 1 Mini",     "OpenAI GPT Image 1 Mini — fast generation",        8,  0, ProductType.ImageGen, ModelTier.Premium),
+        new("fal-ai/gpt-image-1/text-to-image",                "GPT Image 1",          "OpenAI GPT Image 1 — high quality",                12, 0, ProductType.ImageGen, ModelTier.Premium),
+        new("fal-ai/gpt-image-1.5",                            "GPT Image 1.5",        "OpenAI GPT Image 1.5 — latest model",              15, 0, ProductType.ImageGen, ModelTier.Premium),
 
         // Background Removal
         new("fal-ai/birefnet",                            "BiRefNet",        "High accuracy background removal",                     3,  0, ProductType.BackgroundRemoval, ModelTier.Free),
@@ -72,5 +104,31 @@ public static class ModelRegistry
         return model.CreditsPerSecond > 0
             ? model.CreditsPerSecond * durationSeconds
             : model.CreditsBase;
+    }
+
+    /// <summary>Dynamic credit calculation for image generation — GPT Image quality tiers and Nano Banana resolution multipliers.</summary>
+    public static int CalculateImageGenCredits(string modelId, string? quality, string? imageSize, string? resolution)
+    {
+        var model = Get(modelId) ?? throw new InvalidOperationException($"Unknown model: {modelId}");
+
+        // GPT Image: dynamic by quality + size
+        if (modelId.Contains("gpt-image"))
+        {
+            var isLarge = imageSize is "1536x1024" or "1024x1536";
+            if (modelId.Contains("1-mini"))
+                return (quality ?? "high") switch { "low" => 2, "medium" => 5, _ => isLarge ? 11 : 8 };
+            if (modelId.Contains("1.5"))
+                return (quality ?? "high") switch { "low" => 2, "medium" => 8, _ => isLarge ? 22 : 15 };
+            // gpt-image-1
+            return (quality ?? "high") switch { "low" => 3, "medium" => 7, _ => isLarge ? 16 : 12 };
+        }
+
+        // Nano Banana 2 + Pro: resolution multipliers
+        if (modelId == "fal-ai/nano-banana-2")
+            return (resolution ?? "1K") switch { "0.5K" => 6, "2K" => 12, "4K" => 16, _ => 8 };
+        if (modelId == "fal-ai/nano-banana-pro")
+            return (resolution ?? "1K") switch { "2K" => 15, "4K" => 20, _ => 10 };
+
+        return model.CreditsBase;
     }
 }

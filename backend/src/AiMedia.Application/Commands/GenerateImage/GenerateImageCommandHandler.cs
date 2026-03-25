@@ -18,20 +18,87 @@ public class GenerateImageCommandHandler(
         var model = ModelRegistry.Get(request.ModelId)
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
-        var credits = ModelRegistry.CalculateCredits(request.ModelId);
+        var credits = ModelRegistry.CalculateImageGenCredits(request.ModelId, request.Quality, request.ImageSize, request.Resolution);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
 
         var jobId = Guid.NewGuid();
-        var input = new
-        {
-            prompt = request.Prompt,
-            image_size = request.ImageSize,
-            negative_prompt = request.NegativePrompt
-        };
 
-        // Reserve credits before submission
+        var isNanoBanana  = request.ModelId.Contains("nano-banana");
+        var isImagen      = request.ModelId.Contains("imagen");
+        var isSeedream    = request.ModelId.Contains("seedream");
+        var isIdeogram    = request.ModelId.Contains("ideogram");
+        var isRecraftV3   = request.ModelId.Contains("recraft/v3");
+        var isRecraft     = request.ModelId.Contains("recraft");
+        var isGptImage    = request.ModelId.Contains("gpt-image");
+
+        object input = isNanoBanana
+            ? (object)new
+            {
+                prompt          = request.Prompt,
+                aspect_ratio    = request.AspectRatio ?? "1:1",
+                resolution      = string.IsNullOrEmpty(request.Resolution) ? null : request.Resolution,
+            }
+            : isImagen && request.ModelId.Contains("imagen4")
+            ? (object)new
+            {
+                prompt           = request.Prompt,
+                aspect_ratio     = request.AspectRatio ?? "1:1",
+                resolution       = request.Resolution ?? "1K",
+                safety_tolerance = "4"
+            }
+            : isImagen
+            ? (object)new
+            {
+                prompt          = request.Prompt,
+                aspect_ratio    = request.AspectRatio ?? "1:1",
+                negative_prompt = request.NegativePrompt
+            }
+            : isSeedream
+            ? (object)new
+            {
+                prompt     = request.Prompt,
+                image_size = request.ImageSize
+            }
+            : isIdeogram
+            ? (object)new
+            {
+                prompt           = request.Prompt,
+                image_size       = request.ImageSize,
+                style            = request.Style ?? "AUTO",
+                rendering_speed  = "BALANCED",
+                negative_prompt  = request.NegativePrompt,
+                expand_prompt    = true
+            }
+            : isRecraftV3
+            ? (object)new
+            {
+                prompt     = request.Prompt,
+                image_size = request.ImageSize,
+                style      = request.Style ?? "realistic_image"
+            }
+            : isRecraft
+            ? (object)new
+            {
+                prompt     = request.Prompt,
+                image_size = request.ImageSize
+            }
+            : isGptImage
+            ? (object)new
+            {
+                prompt     = request.Prompt,
+                image_size = (request.ImageSize is null or "auto" or "square_hd") ? "1024x1024" : request.ImageSize,
+                quality    = request.Quality ?? "high",
+                background = request.Background ?? "auto"
+            }
+            : (object)new    // FLUX (default)
+            {
+                prompt          = request.Prompt,
+                image_size      = request.ImageSize,
+                negative_prompt = request.NegativePrompt
+            };
+
         await creditService.ReserveAsync(request.UserId, jobId, credits, $"Image generation ({model.Name})", cancellationToken);
 
         FalSubmitResult falSubmit;

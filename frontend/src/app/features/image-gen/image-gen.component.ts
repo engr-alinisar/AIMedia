@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute } from '@angular/router';
@@ -10,7 +10,7 @@ import { LoginModalService } from '../../core/services/login-modal.service';
 import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
-import { ModelPickerComponent, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
+import { ModelPickerComponent, type PickerGroup, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
 
 interface ImageModel {
   id: string;
@@ -20,7 +20,42 @@ interface ImageModel {
   badge?: string;
   badgeColor?: string;
   tags: string[];
+  // sizing
+  paramMode: 'imageSize' | 'aspectRatio';
+  imageSizes: string[];
+  aspectRatios: string[];
+  // optional extras
+  styles?: string[];
+  resolutions?: string[];
+  qualities?: string[];
+  backgrounds?: string[];
+  supportsNegativePrompt: boolean;
 }
+
+interface ImageGroup {
+  id: string;
+  name: string;
+  tagline: string;
+  icon: string;
+  iconBg: string;
+  iconUrl?: string;
+  tags: string[];
+  badge?: string;
+  subModels: ImageModel[];
+}
+
+const IMAGE_SIZES = ['square_hd', 'square', 'portrait_4_3', 'portrait_16_9', 'landscape_4_3', 'landscape_16_9'];
+const ASPECT_RATIOS_STANDARD = ['1:1', '16:9', '9:16', '4:3', '3:4'];
+const ASPECT_RATIOS_NANO = ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'];
+const GPT_SIZES = ['1024x1024', '1536x1024', '1024x1536'];
+
+const IDEOGRAM_STYLES_V2 = ['auto', 'general', 'realistic', 'design', 'render_3D', 'anime'];
+const IDEOGRAM_STYLES_V3 = ['AUTO', 'GENERAL', 'REALISTIC', 'DESIGN'];
+const RECRAFT_V3_STYLES = [
+  'realistic_image', 'digital_illustration', 'vector_illustration',
+  'b_and_w', 'hard_flash', 'hdr', 'natural_light', 'studio_portrait',
+  'pixel_art', 'hand_drawn', 'watercolor', 'pop_art', 'noir'
+];
 
 @Component({
   selector: 'app-image-gen',
@@ -33,11 +68,11 @@ interface ImageModel {
       <h1 class="text-base font-semibold text-gray-900">Image Generation</h1>
     </div>
 
-    <div class="flex-1 px-5 py-4 space-y-5">
+    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
       <!-- Model dropdown -->
       <app-model-picker
-        [models]="pickerModels()"
+        [groups]="pickerGroups()"
         [selectedId]="selectedModel()?.id ?? null"
         (modelSelect)="onModelSelect($event)" />
 
@@ -46,37 +81,124 @@ interface ImageModel {
         <label class="form-label">Prompt</label>
         <textarea class="form-textarea h-28" [(ngModel)]="prompt"
           spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
-          placeholder="Describe the image you want to generate..." maxlength="2000"></textarea>
-        <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2000</p>
+          placeholder="Describe the image you want to generate..." maxlength="2500"></textarea>
+        <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2500</p>
       </div>
 
-      <!-- Negative Prompt -->
-      <div>
-        <label class="form-label">Negative Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
-        <textarea class="form-textarea h-16" [(ngModel)]="negativePrompt"
-          spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
-          placeholder="What to avoid in the image..."></textarea>
-      </div>
+      <!-- Negative Prompt (models that support it) -->
+      @if (selectedModel()?.supportsNegativePrompt) {
+        <div>
+          <label class="form-label">Negative Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
+          <textarea class="form-textarea h-16" [(ngModel)]="negativePrompt"
+            spellcheck="true" lang="en"
+            placeholder="What to avoid in the image..."></textarea>
+        </div>
+      }
 
-      <!-- Image Size -->
+      <!-- Image Size / Aspect Ratio (unified UI) -->
       <div>
-        <label class="form-label">Image Size</label>
-        <div class="grid grid-cols-3 gap-2">
-          @for (s of imageSizes; track s.value) {
-            <button type="button"
-                    (click)="imageSize = s.value"
-                    class="flex flex-col items-center justify-center py-2.5 px-1 border rounded-lg text-center transition-colors"
-                    [class.border-accent]="imageSize === s.value"
-                    [class.bg-accent-light]="imageSize === s.value"
-                    [class.border-border]="imageSize !== s.value"
-                    [class.hover:border-accent]="imageSize !== s.value">
-              <span class="text-base leading-none mb-1">{{ s.icon }}</span>
-              <span class="text-[11px] font-medium text-gray-800">{{ s.label }}</span>
-              <span class="text-[10px] text-gray-400">{{ s.dims }}</span>
-            </button>
+        <label class="form-label">{{ selectedModel()?.paramMode === 'aspectRatio' ? 'Aspect Ratio' : 'Image Size' }}</label>
+        <div class="flex flex-wrap gap-2">
+          @if (selectedModel()?.paramMode === 'aspectRatio') {
+            @for (r of selectedModel()!.aspectRatios; track r) {
+              <button type="button" (click)="aspectRatio.set(r)"
+                class="flex flex-col items-center justify-center px-3 py-2 min-w-[58px] border rounded-lg text-center transition-colors"
+                [class.border-accent]="aspectRatio() === r"
+                [class.bg-accent-light]="aspectRatio() === r"
+                [class.text-accent]="aspectRatio() === r"
+                [class.border-border]="aspectRatio() !== r"
+                [class.text-gray-600]="aspectRatio() !== r">
+                <span class="text-xs font-medium">{{ r }}</span>
+              </button>
+            }
+          } @else {
+            @for (s of allSizeOptions(); track s.value) {
+              <button type="button" (click)="imageSize.set(s.value)"
+                class="flex flex-col items-center justify-center px-3 py-2 min-w-[58px] border rounded-lg text-center transition-colors"
+                [class.border-accent]="imageSize() === s.value"
+                [class.bg-accent-light]="imageSize() === s.value"
+                [class.text-accent]="imageSize() === s.value"
+                [class.border-border]="imageSize() !== s.value"
+                [class.text-gray-600]="imageSize() !== s.value">
+                <span class="text-xs font-medium">{{ s.label }}</span>
+                <span class="text-[10px] text-gray-400 mt-0.5">{{ s.dims }}</span>
+              </button>
+            }
           }
         </div>
       </div>
+
+      <!-- Resolution (Nano Banana 2/Pro, Imagen 4) -->
+      @if (selectedModel()?.resolutions?.length) {
+        <div>
+          <label class="form-label">Resolution</label>
+          <div class="flex gap-2 flex-wrap">
+            @for (r of selectedModel()!.resolutions!; track r) {
+              <button type="button" (click)="resolution.set(r)"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+                [class.border-accent]="resolution() === r"
+                [class.bg-accent-light]="resolution() === r"
+                [class.text-accent]="resolution() === r"
+                [class.border-border]="resolution() !== r"
+                [class.text-gray-600]="resolution() !== r">{{ r }}</button>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Style (Ideogram, Recraft v3) -->
+      @if (selectedModel()?.styles?.length) {
+        <div>
+          <label class="form-label">Style</label>
+          <div class="flex flex-wrap gap-2">
+            @for (s of selectedModel()!.styles!; track s) {
+              <button type="button" (click)="style.set(s)"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize"
+                [class.border-accent]="style() === s"
+                [class.bg-accent-light]="style() === s"
+                [class.text-accent]="style() === s"
+                [class.border-border]="style() !== s"
+                [class.text-gray-600]="style() !== s">{{ s.replace('_', ' ').toLowerCase() }}</button>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Quality (GPT Image) -->
+      @if (selectedModel()?.qualities?.length) {
+        <div>
+          <label class="form-label">Quality</label>
+          <div class="flex gap-2">
+            @for (q of selectedModel()!.qualities!; track q) {
+              <button type="button" (click)="quality.set(q)"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize"
+                [class.border-accent]="quality() === q"
+                [class.bg-accent-light]="quality() === q"
+                [class.text-accent]="quality() === q"
+                [class.border-border]="quality() !== q"
+                [class.text-gray-600]="quality() !== q">{{ q }}</button>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Background (GPT Image) -->
+      @if (selectedModel()?.backgrounds?.length) {
+        <div>
+          <label class="form-label">Background</label>
+          <div class="flex gap-2">
+            @for (b of selectedModel()!.backgrounds!; track b) {
+              <button type="button" (click)="background.set(b)"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize"
+                [class.border-accent]="background() === b"
+                [class.bg-accent-light]="background() === b"
+                [class.text-accent]="background() === b"
+                [class.border-border]="background() !== b"
+                [class.text-gray-600]="background() !== b">{{ b }}</button>
+            }
+          </div>
+        </div>
+      }
 
       @if (errorMsg()) {
         <div class="p-3 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700">{{ errorMsg() }}</div>
@@ -147,7 +269,6 @@ interface ImageModel {
             Download
           </a>
         }
-
       </div>
     </div>
     @if (generating() && !outputUrl()) {
@@ -158,7 +279,7 @@ interface ImageModel {
         </svg>
         <div>
           <p class="text-sm font-medium text-accent">Generating your image...</p>
-          <p class="text-xs text-accent/70">Usually takes 15–45 seconds. You can navigate away — results will be in <a routerLink="/jobs" class="underline">My Jobs</a>.</p>
+          <p class="text-xs text-accent/70">Usually takes 15–60 seconds. You can navigate away — results will be in <a routerLink="/jobs" class="underline">My Jobs</a>.</p>
         </div>
       </div>
     }
@@ -177,58 +298,159 @@ export class ImageGenComponent implements OnInit, OnDestroy {
   private loginModal = inject(LoginModalService);
   private route = inject(ActivatedRoute);
 
-  models: ImageModel[] = [
+  // ── model groups ──────────────────────────────────────────────────
+  groups: ImageGroup[] = [
     {
-      id: 'fal-ai/flux/dev',
-      name: 'FLUX Dev',
-      description: 'Fast open-source model, great for quick experiments.',
-      credits: 5,
-      tags: ['Open Source', 'Fast']
+      id: 'flux', name: 'FLUX', tagline: 'Black Forest Labs',
+      icon: 'F', iconBg: '#000000', iconUrl: '/assets/icons/flux.png',
+      tags: ['Open Source', 'Fast'],
+      subModels: [
+        { id: 'fal-ai/flux/schnell', name: 'FLUX Schnell', description: 'Ultra-fast 1-4 step generation', credits: 2, tags: ['Fastest', 'Free'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
+        { id: 'fal-ai/flux/dev', name: 'FLUX Dev', description: 'Open-source 12B model, great for experiments', credits: 5, tags: ['Open Source'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: true },
+        { id: 'fal-ai/flux-pro/v1.1', name: 'FLUX Pro 1.1', description: 'High quality with improved photorealism', credits: 8, tags: ['High Quality'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: true },
+        { id: 'fal-ai/flux-pro/v1.1-ultra', name: 'FLUX Pro 1.1 Ultra', description: 'Maximum detail and resolution up to 2K', credits: 11, badge: 'BEST', badgeColor: '#7C3AED', tags: ['Ultra Quality', '2K'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: true },
+        { id: 'fal-ai/flux-2-pro', name: 'FLUX 2 Pro', description: 'Latest FLUX with improved typography', credits: 10, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'Typography'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
+      ]
     },
     {
-      id: 'fal-ai/flux-pro/v1.1',
-      name: 'FLUX Pro 1.1',
-      description: 'High quality with improved photorealism and detail.',
-      credits: 8,
-      tags: ['High Quality', 'Photorealistic']
+      id: 'google-nano', name: 'Nano Banana', tagline: 'Google DeepMind',
+      icon: 'G', iconBg: '#4285F4', iconUrl: '/assets/icons/nano.png',
+      tags: ['Google', 'Fast'],
+      subModels: [
+        { id: 'fal-ai/nano-banana', name: 'Nano Banana', description: "Google's fast generation model", credits: 5, tags: ['Fast'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_NANO, supportsNegativePrompt: false },
+        { id: 'fal-ai/nano-banana-2', name: 'Nano Banana 2', description: 'Web search + up to 4K resolution', credits: 8, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['4K', 'Web Search'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ['auto', ...ASPECT_RATIOS_NANO], resolutions: ['0.5K', '1K', '2K', '4K'], supportsNegativePrompt: false },
+        { id: 'fal-ai/nano-banana-pro', name: 'Nano Banana Pro', description: "Google's pro model with 4K resolution", credits: 10, tags: ['Pro', '4K'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ['auto', ...ASPECT_RATIOS_STANDARD], resolutions: ['1K', '2K', '4K'], supportsNegativePrompt: false },
+      ]
     },
     {
-      id: 'fal-ai/flux-pro/v1.1-ultra',
-      name: 'FLUX Pro 1.1 Ultra',
-      description: 'Maximum detail and resolution up to 2K.',
-      credits: 11,
-      badge: 'BEST',
-      badgeColor: '#7C3AED',
-      tags: ['Ultra Quality', '2K Resolution']
-    }
+      id: 'google-imagen', name: 'Imagen', tagline: 'Google DeepMind',
+      icon: 'G', iconBg: '#4285F4', iconUrl: '/assets/icons/veo.png',
+      tags: ['Google', 'Photorealistic'],
+      subModels: [
+        { id: 'fal-ai/imagen3/fast', name: 'Imagen 3 Fast', description: 'Fast version of Google Imagen 3', credits: 6, tags: ['Fast'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, supportsNegativePrompt: true },
+        { id: 'fal-ai/imagen3', name: 'Imagen 3', description: 'High-quality photorealistic generation', credits: 10, tags: ['High Quality'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, supportsNegativePrompt: true },
+        { id: 'fal-ai/imagen4/preview/fast', name: 'Imagen 4 Fast', description: 'Fast Imagen 4 preview generation', credits: 12, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Fast', 'Preview'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, resolutions: ['1K', '2K'], supportsNegativePrompt: false },
+        { id: 'fal-ai/imagen4/preview', name: 'Imagen 4 Preview', description: 'Google Imagen 4 preview with up to 2K', credits: 15, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['2K', 'Preview'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, resolutions: ['1K', '2K'], supportsNegativePrompt: false },
+        { id: 'fal-ai/imagen4/preview/ultra', name: 'Imagen 4 Ultra', description: 'Google Imagen 4 Ultra — highest quality', credits: 20, badge: 'BEST', badgeColor: '#7C3AED', tags: ['Ultra Quality', '2K'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, resolutions: ['1K', '2K'], supportsNegativePrompt: false },
+      ]
+    },
+    {
+      id: 'seedream', name: 'Seedream', tagline: 'ByteDance',
+      icon: 'S', iconBg: '#1D4ED8', iconUrl: '/assets/icons/seedream.png',
+      tags: ['ByteDance', 'High Quality'],
+      subModels: [
+        { id: 'fal-ai/bytedance/seedream/v4/text-to-image', name: 'Seedream v4', description: 'ByteDance high-quality generation', credits: 6, tags: ['High Quality'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
+        { id: 'fal-ai/bytedance/seedream/v5/lite/text-to-image', name: 'Seedream v5 Lite', description: 'ByteDance v5 with 2K–3K resolution', credits: 8, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['2K', 'Latest'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
+      ]
+    },
+    {
+      id: 'ideogram', name: 'Ideogram', tagline: 'Ideogram AI',
+      icon: 'I', iconBg: '#6366F1', iconUrl: '/assets/icons/ideogram.svg',
+      tags: ['Style Control', 'Text Rendering'],
+      subModels: [
+        { id: 'fal-ai/ideogram/v2', name: 'Ideogram v2', description: 'Style-rich generation with text rendering', credits: 8, tags: ['Styles', 'Text'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], styles: IDEOGRAM_STYLES_V2, supportsNegativePrompt: true },
+        { id: 'fal-ai/ideogram/v3', name: 'Ideogram v3', description: 'Latest with style presets and text rendering', credits: 12, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'Styles'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], styles: IDEOGRAM_STYLES_V3, supportsNegativePrompt: true },
+      ]
+    },
+    {
+      id: 'recraft', name: 'Recraft', tagline: 'Recraft AI',
+      icon: 'R', iconBg: '#DC2626', iconUrl: '/assets/icons/recraft.png',
+      tags: ['Design', 'Styles'],
+      subModels: [
+        { id: 'fal-ai/recraft/v3/text-to-image', name: 'Recraft v3', description: '80+ style options for professional imagery', credits: 6, tags: ['80+ Styles', 'Design'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], styles: RECRAFT_V3_STYLES, supportsNegativePrompt: false },
+        { id: 'fal-ai/recraft/v4/text-to-image', name: 'Recraft v4', description: 'Latest Recraft with enhanced quality', credits: 8, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
+        { id: 'fal-ai/recraft/v4/pro/text-to-image', name: 'Recraft v4 Pro', description: 'Recraft v4 Pro — highest quality design', credits: 12, badge: 'PRO', badgeColor: '#7C3AED', tags: ['Pro', 'Highest Quality'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
+      ]
+    },
+    {
+      id: 'openai', name: 'GPT Image', tagline: 'OpenAI',
+      icon: 'O', iconBg: '#10A37F', iconUrl: '/assets/icons/openai.png',
+      tags: ['OpenAI', 'High Quality'],
+      subModels: [
+        { id: 'fal-ai/gpt-image-1-mini', name: 'GPT Image 1 Mini', description: 'OpenAI GPT Image 1 Mini — fast generation', credits: 8, tags: ['Fast', 'OpenAI'], paramMode: 'imageSize', imageSizes: GPT_SIZES, aspectRatios: [], qualities: ['auto', 'low', 'medium', 'high'], backgrounds: ['auto', 'transparent', 'opaque'], supportsNegativePrompt: false },
+        { id: 'fal-ai/gpt-image-1/text-to-image', name: 'GPT Image 1', description: 'OpenAI GPT Image 1 — high quality', credits: 12, tags: ['High Quality', 'OpenAI'], paramMode: 'imageSize', imageSizes: GPT_SIZES, aspectRatios: [], qualities: ['auto', 'low', 'medium', 'high'], backgrounds: ['auto', 'transparent', 'opaque'], supportsNegativePrompt: false },
+        { id: 'fal-ai/gpt-image-1.5', name: 'GPT Image 1.5', description: 'OpenAI GPT Image 1.5 — latest model', credits: 15, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'OpenAI'], paramMode: 'imageSize', imageSizes: GPT_SIZES, aspectRatios: [], qualities: ['low', 'medium', 'high'], backgrounds: ['auto', 'transparent', 'opaque'], supportsNegativePrompt: false },
+      ]
+    },
   ];
 
-  imageSizes = [
-    { value: 'square_hd',      label: 'Square HD',   dims: '1024×1024', icon: '⬛' },
-    { value: 'square',         label: 'Square',      dims: '512×512',   icon: '▪️' },
-    { value: 'portrait_4_3',   label: 'Portrait 4:3',dims: '768×1024',  icon: '🖼️' },
-    { value: 'portrait_16_9',  label: 'Portrait 9:16',dims: '576×1024', icon: '📱' },
-    { value: 'landscape_4_3',  label: 'Landscape 4:3',dims:'1024×768',  icon: '🌄' },
-    { value: 'landscape_16_9', label: 'Wide 16:9',   dims: '1024×576',  icon: '🖥️' },
-  ];
-
-  pickerModels = computed<PickerModel[]>(() =>
-    this.models.map(m => ({
-      id: m.id,
-      name: m.name,
-      description: m.description,
-      creditsDisplay: `${m.credits} credits`,
-      badge: m.badge,
-      badgeColor: m.badgeColor,
-      tags: m.tags,
-    } satisfies PickerModel))
+  pickerGroups = computed<PickerGroup[]>(() =>
+    this.groups.map(g => ({
+      id: g.id,
+      name: g.name,
+      tagline: g.tagline,
+      icon: g.icon,
+      iconBg: g.iconBg,
+      iconUrl: g.iconUrl,
+      groupTags: g.tags,
+      badge: g.badge,
+      models: g.subModels.map(m => ({
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        creditsDisplay: `${m.credits} credits`,
+        badge: m.badge,
+        badgeColor: m.badgeColor,
+        tags: m.tags,
+      } satisfies PickerModel))
+    } satisfies PickerGroup))
   );
 
-  selectedModel = signal<ImageModel | null>(this.models[1]);
+  readonly sizeOptionMap: { value: string; label: string; dims: string }[] = [
+    { value: 'square_hd',      label: 'Square HD',    dims: '1024×1024' },
+    { value: 'square',         label: 'Square',       dims: '512×512'   },
+    { value: 'portrait_4_3',   label: 'Portrait 4:3', dims: '768×1024'  },
+    { value: 'portrait_16_9',  label: 'Portrait 9:16',dims: '576×1024'  },
+    { value: 'landscape_4_3',  label: 'Landscape 4:3',dims: '1024×768'  },
+    { value: 'landscape_16_9', label: 'Wide 16:9',    dims: '1024×576'  },
+    { value: '1024x1024',      label: 'Square',       dims: '1024×1024' },
+    { value: '1536x1024',      label: 'Landscape',    dims: '1536×1024' },
+    { value: '1024x1536',      label: 'Portrait',     dims: '1024×1536' },
+  ];
+
+  allSizeOptions = computed(() => {
+    const m = this.selectedModel();
+    if (!m || m.paramMode !== 'imageSize') return [];
+    return this.sizeOptionMap.filter(s => m.imageSizes.includes(s.value));
+  });
+
+  selectedModel = signal<ImageModel | null>(this.groups[0].subModels[2]); // FLUX Pro 1.1 default
 
   prompt = '';
   negativePrompt = '';
-  imageSize = 'square_hd';
+  imageSize    = signal('square_hd');
+  aspectRatio  = signal('1:1');
+  style        = signal('');
+  quality      = signal('high');
+  background   = signal('auto');
+  resolution   = signal('');
+
+  // ── dynamic cost estimate ─────────────────────────────────────────
+  costEstimate = computed(() => {
+    const m = this.selectedModel();
+    if (!m) return 0;
+
+    // GPT Image: quality + size based pricing
+    if (m.id.includes('gpt-image')) {
+      const isLarge = this.imageSize() === '1536x1024' || this.imageSize() === '1024x1536';
+      if (m.id.includes('1-mini'))
+        return this.quality() === 'low' ? 2 : this.quality() === 'medium' ? 5 : isLarge ? 11 : 8;
+      if (m.id.includes('1.5'))
+        return this.quality() === 'low' ? 2 : this.quality() === 'medium' ? 8 : isLarge ? 22 : 15;
+      // gpt-image-1
+      return this.quality() === 'low' ? 3 : this.quality() === 'medium' ? 7 : isLarge ? 16 : 12;
+    }
+
+    // Nano Banana 2: resolution multipliers
+    if (m.id === 'fal-ai/nano-banana-2')
+      return this.resolution() === '0.5K' ? 6 : this.resolution() === '2K' ? 12 : this.resolution() === '4K' ? 16 : 8;
+
+    // Nano Banana Pro: resolution multipliers
+    if (m.id === 'fal-ai/nano-banana-pro')
+      return this.resolution() === '2K' ? 15 : this.resolution() === '4K' ? 20 : 10;
+
+    return m.credits;
+  });
 
   generating = signal(false);
   jobStatus = signal<JobStatus | null>(null);
@@ -237,8 +459,6 @@ export class ImageGenComponent implements OnInit, OnDestroy {
   isPublic = signal(true);
   zone = '';
 
-  costEstimate = signal(this.models[1].credits);
-
   private currentJobId: string | null = null;
   private pollInterval?: ReturnType<typeof setInterval>;
 
@@ -246,50 +466,69 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     const qp = this.route.snapshot.queryParams;
     if (qp['prompt']) this.prompt = qp['prompt'];
     if (qp['model']) {
-      const m = this.models.find(x => x.id === qp['model']);
+      const m = this.groups.flatMap(g => g.subModels).find(x => x.id === qp['model']);
       if (m) this.selectModel(m);
     }
   }
 
   onModelSelect(id: string) {
-    const m = this.models.find(x => x.id === id);
+    const m = this.groups.flatMap(g => g.subModels).find(x => x.id === id);
     if (m) this.selectModel(m);
   }
 
   selectModel(m: ImageModel) {
     this.selectedModel.set(m);
-    this.costEstimate.set(m.credits);
+    this.imageSize.set(m.imageSizes[0] ?? 'square_hd');
+    this.aspectRatio.set(m.aspectRatios[0] ?? '1:1');
+    this.style.set(m.styles?.[0] ?? '');
+    this.resolution.set(m.resolutions?.[0] ?? '');
+    this.quality.set(m.qualities?.[0] ?? 'high');
+    this.background.set(m.backgrounds?.[0] ?? 'auto');
   }
 
   generate() {
     if (!this.auth.isLoggedIn()) { this.loginModal.show(); return; }
-    if (!this.prompt.trim() || this.generating() || !this.selectedModel()) return;
+    const m = this.selectedModel();
+    if (!this.prompt.trim() || this.generating() || !m) return;
     this.generating.set(true);
     this.jobStatus.set('Queued');
     this.outputUrl.set(undefined);
     this.errorMsg.set(undefined);
     this.gen.generateImage({
       prompt: this.prompt,
-      modelId: this.selectedModel()!.id,
-      imageSize: this.imageSize,
+      modelId: m.id,
+      imageSize: m.paramMode === 'imageSize' ? this.imageSize() : 'square_hd',
       negativePrompt: this.negativePrompt || undefined,
-      isPublic: this.isPublic(), zone: this.zone || undefined
+      isPublic: this.isPublic(),
+      zone: this.zone || undefined,
+      aspectRatio: m.paramMode === 'aspectRatio' ? this.aspectRatio() : undefined,
+      style: this.style() || undefined,
+      quality: this.quality() !== 'auto' ? this.quality() : undefined,
+      background: this.background() !== 'auto' ? this.background() : undefined,
+      resolution: this.resolution() || undefined,
     }).subscribe({
-      next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.signalR.trackJob(res.jobId, 'ImageGen'); this.startFallback(); },
-      error: err => { this.generating.set(false); this.jobStatus.set('Failed'); this.errorMsg.set(err.error?.error ?? 'Failed.'); }
+      next: res => {
+        this.currentJobId = res.jobId;
+        this.credits.reserveLocally(res.creditsReserved);
+        this.signalR.trackJob(res.jobId, 'ImageGen');
+        this.startFallback();
+      },
+      error: err => {
+        this.generating.set(false);
+        this.jobStatus.set('Failed');
+        this.errorMsg.set(err.error?.error ?? 'Failed.');
+      }
     });
   }
 
   private startFallback() {
     let polling = false;
     this.pollInterval = setInterval(() => {
-      // SignalR fast path
       const u = this.signalR.latestUpdate();
       if (u?.jobId === this.currentJobId) {
         this.apply(u.status as JobStatus, u.outputUrl, u.errorMessage);
         clearInterval(this.pollInterval); return;
       }
-      // API polling fallback — no concurrent calls
       if (polling || !this.currentJobId) return;
       polling = true;
       this.gen.getJob(this.currentJobId).subscribe({
@@ -307,12 +546,11 @@ export class ImageGenComponent implements OnInit, OnDestroy {
   }
 
   private apply(status: JobStatus, url?: string, err?: string) {
-    this.jobStatus.set(status); this.generating.set(false);
+    this.jobStatus.set(status);
+    this.generating.set(false);
     if (status === 'Completed') { this.outputUrl.set(url); this.credits.loadBalance().subscribe(); }
     else { this.errorMsg.set(err ?? 'Failed.'); this.credits.loadBalance().subscribe(); }
   }
 
-  ngOnDestroy() {
-    clearInterval(this.pollInterval);
-  }
+  ngOnDestroy() { clearInterval(this.pollInterval); }
 }
