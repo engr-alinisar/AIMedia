@@ -11,6 +11,8 @@ import { MediaPreviewComponent } from '../../shared/components/media-preview/med
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
 import { ModelPickerComponent, type PickerGroup, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
+import { AspectRatioPickerComponent, type AspectRatio } from '../../shared/components/aspect-ratio-picker/aspect-ratio-picker.component';
+import { ResolutionPickerComponent } from '../../shared/components/resolution-picker/resolution-picker.component';
 
 interface ImageModel {
   id: string;
@@ -60,7 +62,7 @@ const RECRAFT_V3_STYLES = [
 @Component({
   selector: 'app-image-gen',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MediaPreviewComponent, JobStatusComponent, ModelPickerComponent],
+  imports: [CommonModule, FormsModule, RouterLink, MediaPreviewComponent, JobStatusComponent, ModelPickerComponent, AspectRatioPickerComponent, ResolutionPickerComponent],
   template: `
 <div class="flex flex-col lg:flex-row lg:h-full">
   <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
@@ -95,23 +97,19 @@ const RECRAFT_V3_STYLES = [
         </div>
       }
 
-      <!-- Image Size / Aspect Ratio (unified UI) -->
-      <div>
-        <label class="form-label">{{ selectedModel()?.paramMode === 'aspectRatio' ? 'Aspect Ratio' : 'Image Size' }}</label>
-        <div class="flex flex-wrap gap-2">
-          @if (selectedModel()?.paramMode === 'aspectRatio') {
-            @for (r of selectedModel()!.aspectRatios; track r) {
-              <button type="button" (click)="aspectRatio.set(r)"
-                class="flex flex-col items-center justify-center px-3 py-2 min-w-[58px] border rounded-lg text-center transition-colors"
-                [class.border-accent]="aspectRatio() === r"
-                [class.bg-accent-light]="aspectRatio() === r"
-                [class.text-accent]="aspectRatio() === r"
-                [class.border-border]="aspectRatio() !== r"
-                [class.text-gray-600]="aspectRatio() !== r">
-                <span class="text-xs font-medium">{{ r }}</span>
-              </button>
-            }
-          } @else {
+      <!-- Aspect Ratio (Google/Imagen models) -->
+      @if (selectedModel()?.paramMode === 'aspectRatio') {
+        <app-aspect-ratio-picker
+          [ratios]="currentAspectRatios()"
+          [value]="aspectRatio()"
+          (valueChange)="aspectRatio.set($event)" />
+      }
+
+      <!-- Image Size (FLUX / GPT / Seedream / Ideogram / Recraft) -->
+      @if (selectedModel()?.paramMode === 'imageSize') {
+        <div>
+          <label class="form-label">Image Size</label>
+          <div class="flex flex-wrap gap-2">
             @for (s of allSizeOptions(); track s.value) {
               <button type="button" (click)="imageSize.set(s.value)"
                 class="flex flex-col items-center justify-center px-3 py-2 min-w-[58px] border rounded-lg text-center transition-colors"
@@ -124,27 +122,16 @@ const RECRAFT_V3_STYLES = [
                 <span class="text-[10px] text-gray-400 mt-0.5">{{ s.dims }}</span>
               </button>
             }
-          }
-        </div>
-      </div>
-
-      <!-- Resolution (Nano Banana 2/Pro, Imagen 4) -->
-      @if (selectedModel()?.resolutions?.length) {
-        <div>
-          <label class="form-label">Resolution</label>
-          <div class="flex gap-2 flex-wrap">
-            @for (r of selectedModel()!.resolutions!; track r) {
-              <button type="button" (click)="resolution.set(r)"
-                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
-                [class.border-accent]="resolution() === r"
-                [class.bg-accent-light]="resolution() === r"
-                [class.text-accent]="resolution() === r"
-                [class.border-border]="resolution() !== r"
-                [class.text-gray-600]="resolution() !== r">{{ r }}</button>
-            }
           </div>
         </div>
       }
+
+      <!-- Resolution (Nano Banana 2/Pro, Imagen 4) -->
+      <app-resolution-picker
+        [resolutions]="selectedModel()?.resolutions ?? []"
+        [value]="resolution()"
+        [premiumResolutions]="premiumResolutions()"
+        (valueChange)="resolution.set($event)" />
 
       <!-- Style (Ideogram, Recraft v3) -->
       @if (selectedModel()?.styles?.length) {
@@ -414,6 +401,24 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     return this.sizeOptionMap.filter(s => m.imageSizes.includes(s.value));
   });
 
+  private readonly arDimMap: Record<string, { w: number; h: number }> = {
+    'auto': { w: 18, h: 18 },
+    '1:1':  { w: 18, h: 18 },
+    '16:9': { w: 22, h: 13 },
+    '9:16': { w: 13, h: 22 },
+    '4:3':  { w: 20, h: 15 },
+    '3:4':  { w: 15, h: 20 },
+    '3:2':  { w: 21, h: 14 },
+    '2:3':  { w: 14, h: 21 },
+    '21:9': { w: 24, h: 10 },
+  };
+
+  currentAspectRatios = computed<AspectRatio[]>(() => {
+    const m = this.selectedModel();
+    if (!m || m.paramMode !== 'aspectRatio') return [];
+    return m.aspectRatios.map(v => ({ value: v, ...(this.arDimMap[v] ?? { w: 18, h: 18 }) }));
+  });
+
   selectedModel = signal<ImageModel | null>(this.groups[0].subModels[2]); // FLUX Pro 1.1 default
 
   prompt = '';
@@ -441,15 +446,26 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       return this.quality() === 'low' ? 3 : this.quality() === 'medium' ? 7 : isLarge ? 16 : 12;
     }
 
-    // Nano Banana 2: resolution multipliers
+    // Nano Banana 2: resolution multipliers (0.75× / 1× / 1.5× / 2×)
     if (m.id === 'fal-ai/nano-banana-2')
       return this.resolution() === '0.5K' ? 6 : this.resolution() === '2K' ? 12 : this.resolution() === '4K' ? 16 : 8;
 
-    // Nano Banana Pro: resolution multipliers
+    // Nano Banana Pro: only 4K costs extra — 2K is same price as 1K
     if (m.id === 'fal-ai/nano-banana-pro')
-      return this.resolution() === '2K' ? 15 : this.resolution() === '4K' ? 20 : 10;
+      return this.resolution() === '4K' ? 20 : 10;
+
+    // Imagen 4: flat pricing regardless of resolution — fal.ai does NOT charge extra for 2K
 
     return m.credits;
+  });
+
+  /** Which resolution buttons show a "+credits" badge — model-specific */
+  premiumResolutions = computed<string[]>(() => {
+    const m = this.selectedModel();
+    if (!m) return [];
+    if (m.id === 'fal-ai/nano-banana-2')  return ['2K', '4K']; // 0.5K cheaper, 1K base
+    if (m.id === 'fal-ai/nano-banana-pro') return ['4K'];       // 2K = same as 1K, only 4K costs more
+    return []; // Imagen 4 flat pricing — no badge
   });
 
   generating = signal(false);
@@ -503,7 +519,7 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       zone: this.zone || undefined,
       aspectRatio: m.paramMode === 'aspectRatio' ? this.aspectRatio() : undefined,
       style: this.style() || undefined,
-      quality: this.quality() !== 'auto' ? this.quality() : undefined,
+      quality: this.quality() || undefined,
       background: this.background() !== 'auto' ? this.background() : undefined,
       resolution: this.resolution() || undefined,
     }).subscribe({

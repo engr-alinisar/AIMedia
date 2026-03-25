@@ -89,10 +89,16 @@ public class GenerateImageCommandHandler(
             {
                 prompt     = request.Prompt,
                 image_size = (request.ImageSize is null or "auto" or "square_hd") ? "1024x1024" : request.ImageSize,
-                quality    = request.Quality ?? "high",
-                background = request.Background ?? "auto"
+                quality    = request.Quality,          // null → fal.ai uses its own default ("auto")
+                background = request.Background        // null → fal.ai uses its own default ("auto")
             }
-            : (object)new    // FLUX (default)
+            : string.IsNullOrEmpty(request.NegativePrompt)
+            ? (object)new    // FLUX without negative prompt
+            {
+                prompt     = request.Prompt,
+                image_size = request.ImageSize
+            }
+            : (object)new    // FLUX with negative prompt
             {
                 prompt          = request.Prompt,
                 image_size      = request.ImageSize,

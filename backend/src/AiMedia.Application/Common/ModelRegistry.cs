@@ -126,8 +126,11 @@ public static class ModelRegistry
         // Nano Banana 2 + Pro: resolution multipliers
         if (modelId == "fal-ai/nano-banana-2")
             return (resolution ?? "1K") switch { "0.5K" => 6, "2K" => 12, "4K" => 16, _ => 8 };
+        // Nano Banana Pro: only 4K costs extra — 2K is same price as 1K
         if (modelId == "fal-ai/nano-banana-pro")
-            return (resolution ?? "1K") switch { "2K" => 15, "4K" => 20, _ => 10 };
+            return resolution == "4K" ? 20 : 10;
+
+        // Imagen 4: flat pricing — fal.ai does NOT charge extra for 2K resolution
 
         return model.CreditsBase;
     }

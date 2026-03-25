@@ -13,6 +13,7 @@ import { type JobStatus } from '../../core/models/models';
 import { AspectRatioPickerComponent, type AspectRatio,
          ASPECT_RATIOS_169_916_11, ASPECT_RATIOS_169_916 } from '../../shared/components/aspect-ratio-picker/aspect-ratio-picker.component';
 import { DurationPickerComponent } from '../../shared/components/duration-picker/duration-picker.component';
+import { ResolutionPickerComponent } from '../../shared/components/resolution-picker/resolution-picker.component';
 import { ModelPickerComponent, type PickerGroup, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
 
 interface TtvModel {
@@ -50,7 +51,7 @@ interface TtvGroup {
   selector: 'app-text-to-video',
   standalone: true,
   imports: [CommonModule, FormsModule, MediaPreviewComponent, JobStatusComponent,
-            AspectRatioPickerComponent, DurationPickerComponent, ModelPickerComponent],
+            AspectRatioPickerComponent, DurationPickerComponent, ResolutionPickerComponent, ModelPickerComponent],
   template: `
 <div class="flex flex-col lg:flex-row lg:h-full">
   <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
@@ -92,28 +93,11 @@ interface TtvGroup {
       }
 
       <!-- Resolution -->
-      @if ((selectedModel()?.resolutions?.length ?? 0) > 0) {
-        <div>
-          <label class="form-label">Resolution</label>
-          <div class="flex gap-2">
-            @for (r of selectedModel()!.resolutions; track r) {
-              <button type="button"
-                      class="flex-1 py-2 text-sm font-medium rounded-lg border transition-colors"
-                      [class.border-accent]="resolution() === r"
-                      [class.bg-accent-light]="resolution() === r"
-                      [class.text-accent]="resolution() === r"
-                      [class.border-border]="resolution() !== r"
-                      [class.text-gray-600]="resolution() !== r"
-                      (click)="resolution.set(r)">
-                {{ r.toUpperCase() }}
-                @if (r === '1080p' || r === '4k') {
-                  <span class="ml-1 text-[10px] text-gray-400">+credits</span>
-                }
-              </button>
-            }
-          </div>
-        </div>
-      }
+      <app-resolution-picker
+        [resolutions]="selectedModel()?.resolutions ?? []"
+        [value]="resolution()"
+        [premiumResolutions]="['1080p','4k']"
+        (valueChange)="resolution.set($event)" />
 
       <!-- Multi-Shot toggle (Kling v3 / o3) -->
       @if (selectedModel()?.supportsMultiShot) {

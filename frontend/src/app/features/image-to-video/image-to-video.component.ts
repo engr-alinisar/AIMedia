@@ -10,6 +10,7 @@ import { LoginModalService } from '../../core/services/login-modal.service';
 import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
+import { ResolutionPickerComponent } from '../../shared/components/resolution-picker/resolution-picker.component';
 import { AspectRatioPickerComponent, type AspectRatio,
          ASPECT_RATIOS_169_916_11, ASPECT_RATIOS_169_916,
          ASPECT_RATIOS_AUTO_169_916 } from '../../shared/components/aspect-ratio-picker/aspect-ratio-picker.component';
@@ -49,7 +50,7 @@ interface ModelGroup {
 @Component({
   selector: 'app-image-to-video',
   standalone: true,
-  imports: [CommonModule, FormsModule, MediaPreviewComponent, JobStatusComponent, AspectRatioPickerComponent, DurationPickerComponent, ModelPickerComponent],
+  imports: [CommonModule, FormsModule, MediaPreviewComponent, JobStatusComponent, AspectRatioPickerComponent, DurationPickerComponent, ResolutionPickerComponent, ModelPickerComponent],
   template: `
 <div class="flex flex-col lg:flex-row lg:h-full">
   <!-- Left panel -->
@@ -136,28 +137,11 @@ interface ModelGroup {
         (valueChange)="duration.set($event)" />
 
       <!-- Resolution -->
-      @if ((selectedModel()?.resolutions?.length ?? 0) > 0) {
-        <div>
-          <label class="form-label">Resolution</label>
-          <div class="flex gap-2">
-            @for (r of selectedModel()!.resolutions; track r) {
-              <button type="button"
-                      class="flex-1 py-2 text-sm font-medium rounded-lg border transition-colors"
-                      [class.border-accent]="resolution() === r"
-                      [class.bg-accent-light]="resolution() === r"
-                      [class.text-accent]="resolution() === r"
-                      [class.border-border]="resolution() !== r"
-                      [class.text-gray-600]="resolution() !== r"
-                      (click)="resolution.set(r)">
-                {{ r.toUpperCase() }}
-                @if (r === '1080p' || r === '768P' || r === '4k') {
-                  <span class="ml-1 text-[10px] text-gray-400">+credits</span>
-                }
-              </button>
-            }
-          </div>
-        </div>
-      }
+      <app-resolution-picker
+        [resolutions]="selectedModel()?.resolutions ?? []"
+        [value]="resolution()"
+        [premiumResolutions]="['1080p','768P','4k']"
+        (valueChange)="resolution.set($event)" />
 
       <!-- Multi-Shot toggle -->
       @if (selectedModel()?.supportsMultiShot) {
