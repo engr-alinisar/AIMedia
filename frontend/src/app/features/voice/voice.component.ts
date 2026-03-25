@@ -63,7 +63,7 @@ interface VoiceModel {
       <div>
         <label class="form-label">Text</label>
         <textarea class="form-textarea h-40" [(ngModel)]="text"
-          [spellcheck]="true" lang="en" autocorrect="on" autocapitalize="sentences"
+          spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
           placeholder="Enter the text to convert to speech..." maxlength="5000"></textarea>
         <p class="text-right text-xs text-gray-400 mt-1">{{ text.length }}/5000</p>
       </div>

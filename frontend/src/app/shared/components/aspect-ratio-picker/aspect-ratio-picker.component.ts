@@ -35,7 +35,7 @@ export const ASPECT_RATIOS_ALL: AspectRatio[] = [
   imports: [CommonModule],
   template: `
 @if (ratios.length > 0) {
-  <div>
+  <div class="pb-2">
     <label class="form-label">Aspect Ratio</label>
     <div class="flex gap-2">
       @for (ar of ratios; track ar.value) {

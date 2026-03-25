@@ -105,7 +105,14 @@
       "WebSearch",
       "Bash(grep -v \"interface\\\\|//\")",
       "Bash(cmd.exe /c \"cd D:\\\\Projects\\\\AiMedia\\\\frontend && npx ng build --configuration development 2>&1\")",
-      "Bash(find /d/Projects/AiMedia/backend -name GetJob*Handler* -o -name GetJobs*Handler*)"
+      "Bash(find /d/Projects/AiMedia/backend -name GetJob*Handler* -o -name GetJobs*Handler*)",
+      "Bash(mkdir -p /d/Projects/AiMedia/frontend/src/assets/icons)",
+      "Bash(curl -sL \"https://images.media.io/media-ai/icon/Kling.png\" -o kling.png)",
+      "Bash(curl -sL \"https://images.media.io/media-ai/icon/Icon16_Hailuo.png\" -o hailuo.png)",
+      "Bash(curl -sL \"https://images.media.io/media-ai/icon/Icon20_Veo3.png\" -o veo.png)",
+      "Bash(curl -sL \"https://images.media.io/media-ai/icon/16_wan.png\" -o wan.png)",
+      "Bash(grep -n \"safePlay\\\\|mouseenter.*play\\\\|$any.*play\" /d/Projects/AiMedia/frontend/src/app/features/landing/landing.component.ts)",
+      "Bash(ng build:*)"
     ]
   }
 }

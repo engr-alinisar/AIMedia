@@ -11,29 +11,46 @@ import { MediaPreviewComponent } from '../../shared/components/media-preview/med
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
 import { AspectRatioPickerComponent, type AspectRatio,
-         ASPECT_RATIOS_169_916_11, ASPECT_RATIOS_169_916, ASPECT_RATIOS_ALL } from '../../shared/components/aspect-ratio-picker/aspect-ratio-picker.component';
+         ASPECT_RATIOS_169_916_11, ASPECT_RATIOS_169_916 } from '../../shared/components/aspect-ratio-picker/aspect-ratio-picker.component';
 import { DurationPickerComponent } from '../../shared/components/duration-picker/duration-picker.component';
-import { ModelPickerComponent, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
+import { ModelPickerComponent, type PickerGroup, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
 
-interface VideoModel {
+interface TtvModel {
   id: string;
   name: string;
   description: string;
   creditsPerSec: number;
+  creditsFlat: number;        // >0 for flat-rate models (no duration)
   badge?: string;
   badgeColor?: string;
   tags: string[];
   durations: number[];
-  aspectRatios: AspectRatio[];
-  supportsResolution: boolean;
+  resolutions: string[];      // empty = no resolution picker
+  aspectRatios: AspectRatio[]; // empty = no AR picker
   supportsMultiShot: boolean;
-  hasAudio: boolean;
+  supportsAudio: boolean;     // show generate_audio toggle
+  audioDefault: boolean;
+  supportsPromptOptimizer: boolean; // Hailuo models
+}
+
+interface TtvGroup {
+  id: string;
+  name: string;
+  tagline: string;
+  icon: string;
+  iconBg: string;
+  iconUrl?: string;
+  tags: string[];
+  badge?: string;
+  badgeColor?: string;
+  subModels: TtvModel[];
 }
 
 @Component({
   selector: 'app-text-to-video',
   standalone: true,
-  imports: [CommonModule, FormsModule, MediaPreviewComponent, JobStatusComponent, AspectRatioPickerComponent, DurationPickerComponent, ModelPickerComponent],
+  imports: [CommonModule, FormsModule, MediaPreviewComponent, JobStatusComponent,
+            AspectRatioPickerComponent, DurationPickerComponent, ModelPickerComponent],
   template: `
 <div class="flex flex-col lg:flex-row lg:h-full">
   <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
@@ -45,7 +62,7 @@ interface VideoModel {
 
       <!-- Model dropdown -->
       <app-model-picker
-        [models]="pickerModels()"
+        [groups]="pickerGroups()"
         [selectedId]="selectedModel()?.id ?? null"
         (modelSelect)="onModelSelect($event)" />
 
@@ -53,28 +70,33 @@ interface VideoModel {
       <div>
         <label class="form-label">Prompt</label>
         <textarea class="form-textarea h-32" [(ngModel)]="prompt"
-          [spellcheck]="true" lang="en" autocorrect="on" autocapitalize="sentences"
+          spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
           placeholder="Describe your video scene in detail..." maxlength="2500"></textarea>
         <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2500</p>
       </div>
 
       <!-- Aspect Ratio -->
-      <app-aspect-ratio-picker
-        [ratios]="selectedModel()?.aspectRatios ?? []"
-        [(value)]="aspectRatio" />
+      @if ((selectedModel()?.aspectRatios?.length ?? 0) > 0) {
+        <app-aspect-ratio-picker
+          [ratios]="selectedModel()!.aspectRatios"
+          [value]="aspectRatio()"
+          (valueChange)="aspectRatio.set($event)" />
+      }
 
       <!-- Duration -->
-      <app-duration-picker
-        [durations]="selectedModel()?.durations ?? []"
-        [value]="duration()"
-        (valueChange)="duration.set($event)" />
+      @if ((selectedModel()?.durations?.length ?? 0) > 0) {
+        <app-duration-picker
+          [durations]="selectedModel()!.durations"
+          [value]="duration()"
+          (valueChange)="duration.set($event)" />
+      }
 
-      <!-- Resolution (Kling only) -->
-      @if (selectedModel()?.supportsResolution) {
+      <!-- Resolution -->
+      @if ((selectedModel()?.resolutions?.length ?? 0) > 0) {
         <div>
           <label class="form-label">Resolution</label>
           <div class="flex gap-2">
-            @for (r of ['720p', '1080p']; track r) {
+            @for (r of selectedModel()!.resolutions; track r) {
               <button type="button"
                       class="flex-1 py-2 text-sm font-medium rounded-lg border transition-colors"
                       [class.border-accent]="resolution() === r"
@@ -84,14 +106,16 @@ interface VideoModel {
                       [class.text-gray-600]="resolution() !== r"
                       (click)="resolution.set(r)">
                 {{ r.toUpperCase() }}
-                @if (r === '1080p') { <span class="ml-1 text-[10px] text-gray-400">+credits</span> }
+                @if (r === '1080p' || r === '4k') {
+                  <span class="ml-1 text-[10px] text-gray-400">+credits</span>
+                }
               </button>
             }
           </div>
         </div>
       }
 
-      <!-- Multi-Shot toggle (Kling v3 only) -->
+      <!-- Multi-Shot toggle (Kling v3 / o3) -->
       @if (selectedModel()?.supportsMultiShot) {
         <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
           <div>
@@ -109,6 +133,23 @@ interface VideoModel {
         </div>
       }
 
+      <!-- Generate Audio toggle (Kling, Veo) -->
+      @if (selectedModel()?.supportsAudio) {
+        <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <div>
+            <p class="text-sm font-medium text-gray-700">Generate Audio</p>
+            <p class="text-xs text-gray-400 mt-0.5">Native audio with voice &amp; sound effects</p>
+          </div>
+          <button type="button" (click)="generateAudio.update(v => !v)"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 mt-0.5"
+                  [class.bg-accent]="generateAudio()"
+                  [class.bg-gray-300]="!generateAudio()">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                  [class.translate-x-6]="generateAudio()"
+                  [class.translate-x-1]="!generateAudio()"></span>
+          </button>
+        </div>
+      }
 
       @if (errorMsg()) {
         <div class="p-3 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700">{{ errorMsg() }}</div>
@@ -179,7 +220,6 @@ interface VideoModel {
             Download
           </a>
         }
-
       </div>
     </div>
     @if (generating() && !outputUrl()) {
@@ -194,7 +234,9 @@ interface VideoModel {
         </div>
       </div>
     }
-    <div class="h-[55vw] sm:h-[420px] lg:h-auto lg:flex-1 lg:min-h-0 card overflow-hidden"><app-media-preview [url]="outputUrl()" product="TextToVideo"/></div>
+    <div class="h-[55vw] sm:h-[420px] lg:h-auto lg:flex-1 lg:min-h-0 card overflow-hidden">
+      <app-media-preview [url]="outputUrl()" product="TextToVideo"/>
+    </div>
   </div>
 </div>
   `
@@ -207,67 +249,211 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   private signalR = inject(SignalRService);
   private route = inject(ActivatedRoute);
 
-  models: VideoModel[] = [
+  modelGroups: TtvGroup[] = [
     {
-      id: 'fal-ai/kling-video/v3/pro/text-to-video',
-      name: 'Kling v3 Pro',
-      description: 'Longer, consistent, cinematic AI video generation.',
-      creditsPerSec: 18,
-      badge: 'HOT',
-      badgeColor: '#EF4444',
-      tags: ['Multi-Shot', 'Cinematic'],
-      durations: [5, 10],
-      aspectRatios: ASPECT_RATIOS_169_916_11,
-      supportsResolution: false,
-      supportsMultiShot: true,
-      hasAudio: false,
+      id: 'kling',
+      name: 'Kling',
+      tagline: 'Motion quality leader',
+      icon: 'K', iconBg: '#F97316', iconUrl: '/assets/icons/kling.png',
+      tags: ['Multi-Shot', 'Audio'],
+      badge: 'HOT', badgeColor: '#EF4444',
+      subModels: [
+        {
+          id: 'fal-ai/kling-video/v3/pro/text-to-video',
+          name: 'Kling v3 Pro',
+          description: 'Latest Kling — up to 15s, multi-shot, native audio.',
+          creditsPerSec: 18, creditsFlat: 0,
+          badge: 'HOT', badgeColor: '#EF4444',
+          tags: ['Multi-Shot', 'Audio', 'Up to 15s'],
+          durations: [5, 10, 15],
+          resolutions: [],
+          aspectRatios: ASPECT_RATIOS_169_916_11,
+          supportsMultiShot: true, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+        },
+        {
+          id: 'fal-ai/kling-video/o3/pro/text-to-video',
+          name: 'Kling o3 Pro',
+          description: 'New o3 architecture — multi-shot, up to 15s, native audio.',
+          creditsPerSec: 15, creditsFlat: 0,
+          badge: 'NEW', badgeColor: '#7C3AED',
+          tags: ['Multi-Shot', 'Audio', 'Up to 15s'],
+          durations: [5, 10, 15],
+          resolutions: [],
+          aspectRatios: ASPECT_RATIOS_169_916_11,
+          supportsMultiShot: true, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+        },
+        {
+          id: 'fal-ai/kling-video/v2.6/pro/text-to-video',
+          name: 'Kling v2.6 Pro',
+          description: 'Improved realism with native audio generation.',
+          creditsPerSec: 14, creditsFlat: 0,
+          tags: ['Audio'],
+          durations: [5, 10],
+          resolutions: [],
+          aspectRatios: ASPECT_RATIOS_169_916_11,
+          supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+        },
+        {
+          id: 'fal-ai/kling-video/v2.5-turbo/pro/text-to-video',
+          name: 'Kling v2.5 Turbo',
+          description: 'Fast generation with strong visual fidelity and audio.',
+          creditsPerSec: 10, creditsFlat: 0,
+          badge: 'FAST', badgeColor: '#2563EB',
+          tags: ['Fast', 'Audio'],
+          durations: [5, 10],
+          resolutions: [],
+          aspectRatios: ASPECT_RATIOS_169_916_11,
+          supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+        },
+      ],
     },
     {
-      id: 'fal-ai/veo3',
-      name: 'Google Veo 3',
-      description: 'Cinematic realism with synchronized audio generation.',
-      creditsPerSec: 30,
-      tags: ['Ultra Quality'],
-      durations: [4, 6, 8],
-      aspectRatios: ASPECT_RATIOS_169_916,
-      supportsResolution: true,
-      supportsMultiShot: false,
-      hasAudio: true,
+      id: 'hailuo',
+      name: 'Hailuo',
+      tagline: 'MiniMax AI Video',
+      icon: 'H', iconBg: '#10B981', iconUrl: '/assets/icons/hailuo.png',
+      tags: ['Prompt Optimizer'],
+      badge: 'NEW', badgeColor: '#059669',
+      subModels: [
+        {
+          id: 'fal-ai/minimax/hailuo-2.3/pro/text-to-video',
+          name: 'Hailuo 2.3 Pro',
+          description: 'Highest quality MiniMax — automatic prompt optimization.',
+          creditsPerSec: 0, creditsFlat: 120,
+          badge: 'NEW', badgeColor: '#059669',
+          tags: ['1080p', 'Prompt Optimizer'],
+          durations: [],
+          resolutions: [],
+          aspectRatios: [],
+          supportsMultiShot: false, supportsAudio: false, audioDefault: false, supportsPromptOptimizer: true,
+        },
+        {
+          id: 'fal-ai/minimax/hailuo-02/standard/text-to-video',
+          name: 'Hailuo 2.0 Standard',
+          description: 'Reliable MiniMax with flexible duration control.',
+          creditsPerSec: 9, creditsFlat: 0,
+          tags: ['768p', 'Prompt Optimizer'],
+          durations: [6, 10],
+          resolutions: [],
+          aspectRatios: [],
+          supportsMultiShot: false, supportsAudio: false, audioDefault: false, supportsPromptOptimizer: true,
+        },
+      ],
     },
     {
-      id: 'fal-ai/wan/v2.2-a14b/text-to-video',
-      name: 'WAN 2.2',
-      description: 'Fast open-source model, great for quick previews.',
-      creditsPerSec: 5,
+      id: 'veo',
+      name: 'Google Veo',
+      tagline: 'Cinematic realism with audio',
+      icon: 'G', iconBg: '#4285F4', iconUrl: '/assets/icons/veo.png',
+      tags: ['Audio', 'Ultra Quality', '4K'],
+      subModels: [
+        {
+          id: 'fal-ai/veo3.1',
+          name: 'Veo 3.1',
+          description: 'Latest Google Veo — up to 4K with native audio.',
+          creditsPerSec: 35, creditsFlat: 0,
+          badge: 'NEW', badgeColor: '#1a73e8',
+          tags: ['Audio', 'Up to 4K'],
+          durations: [4, 6, 8],
+          resolutions: ['720p', '1080p', '4k'],
+          aspectRatios: ASPECT_RATIOS_169_916,
+          supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+        },
+        {
+          id: 'fal-ai/veo3.1/fast',
+          name: 'Veo 3.1 Fast',
+          description: 'Faster Veo 3.1 — 4K and audio at lower cost.',
+          creditsPerSec: 20, creditsFlat: 0,
+          badge: 'FAST', badgeColor: '#2563EB',
+          tags: ['Audio', 'Up to 4K', 'Fast'],
+          durations: [4, 6, 8],
+          resolutions: ['720p', '1080p', '4k'],
+          aspectRatios: ASPECT_RATIOS_169_916,
+          supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+        },
+        {
+          id: 'fal-ai/veo3',
+          name: 'Veo 3',
+          description: 'Google Veo 3 — cinematic realism with synchronized audio.',
+          creditsPerSec: 30, creditsFlat: 0,
+          tags: ['Audio', '1080p'],
+          durations: [4, 6, 8],
+          resolutions: ['720p', '1080p'],
+          aspectRatios: ASPECT_RATIOS_169_916,
+          supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+        },
+        {
+          id: 'fal-ai/veo3/fast',
+          name: 'Veo 3 Fast',
+          description: 'Speed-optimised Veo 3 with audio — lower cost.',
+          creditsPerSec: 20, creditsFlat: 0,
+          badge: 'FAST', badgeColor: '#2563EB',
+          tags: ['Audio', 'Fast'],
+          durations: [4, 6, 8],
+          resolutions: ['720p', '1080p'],
+          aspectRatios: ASPECT_RATIOS_169_916,
+          supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+        },
+      ],
+    },
+    {
+      id: 'wan',
+      name: 'WAN',
+      tagline: 'Fast open-source generation',
+      icon: 'W', iconBg: '#8B5CF6', iconUrl: '/assets/icons/wan.png',
       tags: ['Open Source', 'Fast'],
-      durations: [5],
-      aspectRatios: ASPECT_RATIOS_ALL,
-      supportsResolution: false,
-      supportsMultiShot: false,
-      hasAudio: false,
+      subModels: [
+        {
+          id: 'fal-ai/wan/v2.2-a14b/text-to-video',
+          name: 'WAN 2.2',
+          description: 'Fast open-source model — great for quick previews.',
+          creditsPerSec: 5, creditsFlat: 0,
+          tags: ['Open Source', 'Fast'],
+          durations: [5],
+          resolutions: ['480p', '580p', '720p'],
+          aspectRatios: ASPECT_RATIOS_169_916_11,
+          supportsMultiShot: false, supportsAudio: false, audioDefault: false, supportsPromptOptimizer: false,
+        },
+      ],
     },
   ];
 
-  pickerModels = computed<PickerModel[]>(() =>
-    this.models.map(m => ({
-      id: m.id,
-      name: m.name,
-      description: m.description,
-      creditsDisplay: `${m.creditsPerSec} cr/s`,
-      badge: m.badge,
-      badgeColor: m.badgeColor,
-      tags: m.tags,
-      audioBadge: m.hasAudio,
-    } satisfies PickerModel))
+  get allModels(): TtvModel[] {
+    return this.modelGroups.flatMap(g => g.subModels);
+  }
+
+  pickerGroups = computed<PickerGroup[]>(() =>
+    this.modelGroups.map(g => ({
+      id: g.id,
+      name: g.name,
+      tagline: g.tagline,
+      icon: g.icon,
+      iconBg: g.iconBg,
+      iconUrl: g.iconUrl,
+      groupTags: g.tags,
+      badge: g.badge,
+      badgeColor: g.badgeColor,
+      models: g.subModels.map(m => ({
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        creditsDisplay: m.creditsFlat > 0 ? `${m.creditsFlat} cr` : `${m.creditsPerSec} cr/s`,
+        badge: m.badge,
+        badgeColor: m.badgeColor,
+        tags: m.tags,
+        audioBadge: m.supportsAudio,
+      } satisfies PickerModel)),
+    } satisfies PickerGroup))
   );
 
-  selectedModel = signal<VideoModel | null>(this.models[0]);
+  selectedModel = signal<TtvModel | null>(this.modelGroups[0].subModels[0]);
 
   prompt = '';
-  aspectRatio = '16:9';
+  aspectRatio = signal('16:9');
   duration = signal(5);
   resolution = signal<string>('720p');
   multiShot = signal(false);
+  generateAudio = signal(true);
 
   generating = signal(false);
   jobStatus = signal<JobStatus | null>(null);
@@ -279,8 +465,13 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   costEstimate = computed(() => {
     const m = this.selectedModel();
     if (!m) return 0;
-    const resMultiplier = m.supportsResolution && this.resolution() === '1080p' ? 1.5 : 1;
-    return Math.ceil(m.creditsPerSec * this.duration() * resMultiplier);
+    if (m.creditsFlat > 0) return m.creditsFlat;
+    const dur = m.durations.length > 0 ? this.duration() : 1;
+    const res = this.resolution();
+    const resMult = m.resolutions.length > 0
+      ? (res === '4k' ? 2 : res === '1080p' ? 1.5 : 1)
+      : 1;
+    return Math.ceil(m.creditsPerSec * dur * resMult);
   });
 
   private currentJobId: string | null = null;
@@ -290,26 +481,24 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
     const qp = this.route.snapshot.queryParams;
     if (qp['prompt']) this.prompt = qp['prompt'];
     if (qp['model']) {
-      const m = this.models.find(x => x.id === qp['model']);
+      const m = this.allModels.find(x => x.id === qp['model']);
       if (m) this.selectModel(m);
     }
   }
 
   onModelSelect(id: string) {
-    const m = this.models.find(x => x.id === id);
+    const m = this.allModels.find(x => x.id === id);
     if (m) this.selectModel(m);
   }
 
-  selectModel(m: VideoModel) {
+  selectModel(m: TtvModel) {
     this.selectedModel.set(m);
-    this.duration.set(m.durations[0]);
-    // Reset aspect ratio to first valid option for this model
-    this.aspectRatio = m.aspectRatios[0]?.value ?? '16:9';
-    if (!m.supportsResolution) this.resolution.set('720p');
+    if (m.durations.length > 0) this.duration.set(m.durations[0]);
+    this.aspectRatio.set(m.aspectRatios[0]?.value ?? '16:9');
+    if (m.resolutions.length > 0) this.resolution.set(m.resolutions[0]);
+    this.generateAudio.set(m.audioDefault);
     if (!m.supportsMultiShot) this.multiShot.set(false);
   }
-
-  setDuration(d: number) { this.duration.set(d); }
 
   generate() {
     if (!this.auth.isLoggedIn()) { this.loginModal.show(); return; }
@@ -322,14 +511,25 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
     this.gen.generateTextToVideo({
       prompt: this.prompt,
       modelId: m.id,
-      durationSeconds: this.duration(),
-      aspectRatio: this.aspectRatio,
-      resolution: m.supportsResolution ? this.resolution() : undefined,
+      durationSeconds: m.durations.length > 0 ? this.duration() : 1,
+      aspectRatio: m.aspectRatios.length > 0 ? this.aspectRatio() : '16:9',
+      resolution: m.resolutions.length > 0 ? this.resolution() : undefined,
       multiShot: m.supportsMultiShot ? this.multiShot() : undefined,
-      isPublic: this.isPublic(), zone: this.zone || undefined
+      generateAudio: m.supportsAudio ? this.generateAudio() : undefined,
+      isPublic: this.isPublic(),
+      zone: this.zone || undefined,
     }).subscribe({
-      next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.signalR.trackJob(res.jobId, 'TextToVideo'); this.startFallback(); },
-      error: err => { this.generating.set(false); this.jobStatus.set('Failed'); this.errorMsg.set(err.error?.error ?? 'Failed.'); }
+      next: res => {
+        this.currentJobId = res.jobId;
+        this.credits.reserveLocally(res.creditsReserved);
+        this.signalR.trackJob(res.jobId, 'TextToVideo');
+        this.startFallback();
+      },
+      error: err => {
+        this.generating.set(false);
+        this.jobStatus.set('Failed');
+        this.errorMsg.set(err.error?.error ?? 'Failed.');
+      }
     });
   }
 
@@ -358,12 +558,11 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   }
 
   private apply(status: JobStatus, url?: string, err?: string) {
-    this.jobStatus.set(status); this.generating.set(false);
+    this.jobStatus.set(status);
+    this.generating.set(false);
     if (status === 'Completed') { this.outputUrl.set(url); this.credits.loadBalance().subscribe(); }
     else { this.errorMsg.set(err ?? 'Failed.'); this.credits.loadBalance().subscribe(); }
   }
 
-  ngOnDestroy() {
-    clearInterval(this.pollInterval);
-  }
+  ngOnDestroy() { clearInterval(this.pollInterval); }
 }

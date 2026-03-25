@@ -40,7 +40,7 @@ export class GenerationService {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image-to-video`, payload);
   }
 
-  generateTextToVideo(payload: { prompt: string; modelId: string; durationSeconds?: number; aspectRatio?: string; resolution?: string; multiShot?: boolean; isPublic?: boolean; zone?: string }) {
+  generateTextToVideo(payload: { prompt: string; modelId: string; durationSeconds?: number; aspectRatio?: string; resolution?: string; multiShot?: boolean; generateAudio?: boolean; isPublic?: boolean; zone?: string }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/text-to-video`, payload);
   }
 

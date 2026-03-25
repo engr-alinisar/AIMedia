@@ -12,4 +12,5 @@ public record GenerateTextToVideoCommand(
     bool IsPublic = true,
     string Resolution = "720p",
     bool MultiShot = false,
+    bool GenerateAudio = true,
     string? Zone = null) : IRequest<GenerationResponse>;

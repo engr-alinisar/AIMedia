@@ -45,7 +45,7 @@ interface ImageModel {
       <div>
         <label class="form-label">Prompt</label>
         <textarea class="form-textarea h-28" [(ngModel)]="prompt"
-          [spellcheck]="true" lang="en" autocorrect="on" autocapitalize="sentences"
+          spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
           placeholder="Describe the image you want to generate..." maxlength="2000"></textarea>
         <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2000</p>
       </div>
@@ -54,7 +54,7 @@ interface ImageModel {
       <div>
         <label class="form-label">Negative Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
         <textarea class="form-textarea h-16" [(ngModel)]="negativePrompt"
-          [spellcheck]="true" lang="en" autocorrect="on" autocapitalize="sentences"
+          spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
           placeholder="What to avoid in the image..."></textarea>
       </div>
 

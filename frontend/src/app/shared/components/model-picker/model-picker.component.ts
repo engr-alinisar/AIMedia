@@ -18,8 +18,9 @@ export interface PickerGroup {
   id: string;
   name: string;
   tagline: string;
-  icon: string;             // single letter for the colored circle
-  iconBg: string;           // hex background color of the circle
+  icon: string;             // single letter fallback when no iconUrl
+  iconBg: string;           // background color for letter fallback
+  iconUrl?: string;         // optional logo image URL (preferred over letter)
   groupTags: string[];      // feature tags shown in the group row
   badge?: string;
   badgeColor?: string;
@@ -41,8 +42,12 @@ export interface PickerGroup {
           (click)="toggleDropdown()">
     <div class="flex items-center gap-2 min-w-0">
       @if (selectedEntry()?.group) {
-        <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-[10px]"
-             [style.background]="selectedEntry()!.group!.iconBg">{{ selectedEntry()!.group!.icon }}</div>
+        @if (selectedEntry()!.group!.iconUrl) {
+          <img [src]="selectedEntry()!.group!.iconUrl" alt="" class="w-6 h-6 rounded-full flex-shrink-0 object-contain bg-white border border-gray-100 p-0.5">
+        } @else {
+          <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-[10px]"
+               [style.background]="selectedEntry()!.group!.iconBg">{{ selectedEntry()!.group!.icon }}</div>
+        }
       } @else {
         <svg class="w-4 h-4 text-accent flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
@@ -79,8 +84,12 @@ export interface PickerGroup {
                [class.bg-accent-light]="hovered()?.id === group.id"
                (mouseenter)="hasFlyoutSpace() && hovered.set(group)"
                (click)="onGroupClick(group)">
-            <div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-sm"
-                 [style.background]="group.iconBg">{{ group.icon }}</div>
+            @if (group.iconUrl) {
+              <img [src]="group.iconUrl" alt="" class="w-9 h-9 rounded-full flex-shrink-0 object-contain bg-white border border-gray-100 p-1">
+            } @else {
+              <div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-sm"
+                   [style.background]="group.iconBg">{{ group.icon }}</div>
+            }
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-semibold text-gray-900">{{ group.name }}</span>
@@ -184,8 +193,12 @@ export interface PickerGroup {
           <div class="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
                [class.bg-accent-light]="currentId() === m.id"
                (click)="selectModel(m.id)">
-            <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-xs mt-0.5"
-                 [style.background]="hovered()!.iconBg">{{ hovered()!.icon }}</div>
+            @if (hovered()!.iconUrl) {
+              <img [src]="hovered()!.iconUrl" alt="" class="w-8 h-8 rounded-full flex-shrink-0 object-contain bg-white border border-gray-100 p-1 mt-0.5">
+            } @else {
+              <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-xs mt-0.5"
+                   [style.background]="hovered()!.iconBg">{{ hovered()!.icon }}</div>
+            }
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="text-sm font-semibold text-gray-900">{{ m.name }}</span>

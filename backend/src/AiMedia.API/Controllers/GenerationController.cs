@@ -49,7 +49,7 @@ public class GenerationController : ControllerBase
         var result = await _mediator.Send(new GenerateTextToVideoCommand(
             GetUserId(), request.Prompt, request.ModelId,
             request.DurationSeconds, request.AspectRatio, request.IsPublic,
-            request.Resolution, request.MultiShot, request.Zone), ct);
+            request.Resolution, request.MultiShot, request.GenerateAudio, request.Zone), ct);
         return Accepted(result);
     }
 
@@ -135,6 +135,7 @@ public record GenerateTextToVideoRequest(
     bool IsPublic = true,
     string Resolution = "720p",
     bool MultiShot = false,
+    bool GenerateAudio = true,
     string? Zone = null);
 
 public record GenerateVoiceRequest(

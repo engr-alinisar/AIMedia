@@ -37,9 +37,10 @@ interface ModelGroup {
   id: string;
   name: string;
   tagline: string;
-  icon: string;       // letter shown in colored circle
-  iconBg: string;     // background color of circle
-  tags: string[];     // feature tags shown in group row
+  icon: string;        // letter fallback
+  iconBg: string;      // background for letter fallback
+  iconUrl?: string;    // brand logo URL (preferred)
+  tags: string[];
   badge?: string;
   badgeColor?: string;
   subModels: VideoModel[];
@@ -116,7 +117,7 @@ interface ModelGroup {
       <div>
         <label class="form-label">Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
         <textarea class="form-textarea h-24" [(ngModel)]="prompt"
-          [spellcheck]="true" lang="en" autocorrect="on" autocapitalize="sentences"
+          spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
           placeholder="Describe the motion or scene...&#10;Longer, multi-shot prompts work best."
           maxlength="2500"></textarea>
         <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2500</p>
@@ -302,7 +303,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
       id: 'kling',
       name: 'Kling',
       tagline: 'Motion quality leader',
-      icon: 'K', iconBg: '#F97316', tags: ['Multi-Shot', 'Audio', 'End Frame'],
+      icon: 'K', iconBg: '#F97316', iconUrl: '/assets/icons/kling.png', tags: ['Multi-Shot', 'Audio', 'End Frame'],
       badge: 'HOT',
       badgeColor: '#EF4444',
       subModels: [
@@ -370,7 +371,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
       id: 'hailuo',
       name: 'Hailuo',
       tagline: 'Character consistency expert',
-      icon: 'H', iconBg: '#10B981', tags: ['Character AI', 'Pro Quality'],
+      icon: 'H', iconBg: '#10B981', iconUrl: '/assets/icons/hailuo.png', tags: ['Character AI', 'Pro Quality'],
       badge: 'NEW',
       badgeColor: '#059669',
       subModels: [
@@ -408,7 +409,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
       id: 'veo',
       name: 'Google Veo',
       tagline: 'Cinematic realism with audio',
-      icon: 'G', iconBg: '#4285F4', tags: ['Audio', 'Ultra Quality', '4K'],
+      icon: 'G', iconBg: '#4285F4', iconUrl: '/assets/icons/veo.png', tags: ['Audio', 'Ultra Quality', '4K'],
       subModels: [
         {
           id: 'fal-ai/veo3.1/image-to-video',
@@ -475,7 +476,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
       id: 'wan',
       name: 'WAN',
       tagline: 'Fast open-source generation',
-      icon: 'W', iconBg: '#8B5CF6', tags: ['Open Source', 'Fast'],
+      icon: 'W', iconBg: '#8B5CF6', iconUrl: '/assets/icons/wan.png', tags: ['Open Source', 'Fast'],
       subModels: [
         {
           id: 'fal-ai/wan/v2.2-a14b/image-to-video',
@@ -505,6 +506,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
       tagline: g.tagline,
       icon: g.icon,
       iconBg: g.iconBg,
+      iconUrl: g.iconUrl,
       groupTags: g.tags,
       badge: g.badge,
       badgeColor: g.badgeColor,
