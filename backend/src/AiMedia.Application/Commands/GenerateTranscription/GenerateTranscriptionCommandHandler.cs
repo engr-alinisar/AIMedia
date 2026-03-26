@@ -36,7 +36,46 @@ public class GenerateTranscriptionCommandHandler(
             audioUrl = storage.GetPublicUrl(key);
         }
 
-        var input = new { audio_url = audioUrl };
+        object input;
+        var isWhisper    = request.ModelId is "fal-ai/whisper";
+        var isWizper     = request.ModelId is "fal-ai/wizper";
+        var isElevenLabs = request.ModelId.StartsWith("fal-ai/elevenlabs/speech-to-text");
+
+        if (isWhisper)
+        {
+            input = new
+            {
+                audio_url   = audioUrl,
+                task        = request.Task ?? "transcribe",
+                language    = request.Language,
+                diarize     = request.Diarize ?? false,
+                chunk_level = "segment",
+            };
+        }
+        else if (isWizper)
+        {
+            input = new
+            {
+                audio_url   = audioUrl,
+                task        = request.Task ?? "transcribe",
+                language    = request.Language ?? "en",
+                chunk_level = "segment",
+            };
+        }
+        else if (isElevenLabs)
+        {
+            input = new
+            {
+                audio_url          = audioUrl,
+                language_code      = request.Language,
+                diarize            = request.Diarize ?? true,
+                tag_audio_events   = request.TagAudioEvents ?? true,
+            };
+        }
+        else
+        {
+            input = new { audio_url = audioUrl };
+        }
 
         await creditService.ReserveAsync(request.UserId, jobId, credits, $"Transcription ({model.Name})", cancellationToken);
 

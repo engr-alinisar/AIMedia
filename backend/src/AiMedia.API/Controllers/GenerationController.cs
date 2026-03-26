@@ -92,7 +92,9 @@ public class GenerationController : ControllerBase
             request.AudioUrl,
             file?.OpenReadStream(),
             file?.FileName,
-            request.IsPublic, request.Zone), ct);
+            request.IsPublic, request.Zone,
+            request.Language, request.Diarize, request.Task,
+            request.TagAudioEvents), ct);
         return Accepted(result);
     }
 
@@ -180,7 +182,11 @@ public record TranscriptionRequest(
     string ModelId = "fal-ai/whisper",
     string? AudioUrl = null,
     bool IsPublic = true,
-    string? Zone = null);
+    string? Zone = null,
+    string? Language = null,
+    bool? Diarize = null,
+    string? Task = null,
+    bool? TagAudioEvents = null);
 
 public record BackgroundRemovalRequest(
     string? ImageUrl = null,

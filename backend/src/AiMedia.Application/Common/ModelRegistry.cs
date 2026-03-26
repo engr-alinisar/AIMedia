@@ -106,9 +106,14 @@ public static class ModelRegistry
         new("fal-ai/elevenlabs/tts/turbo-v2.5",            "ElevenLabs Turbo v2.5",     "Fast ElevenLabs with high quality output",             12, 0, ProductType.Voice, ModelTier.Premium),
         new("fal-ai/elevenlabs/tts/multilingual-v2",       "ElevenLabs Multilingual v2","Multilingual voice synthesis with 29 languages",      10, 0, ProductType.Voice, ModelTier.Standard),
 
-        // Transcription
-        new("fal-ai/whisper",                             "Whisper",         "OpenAI Whisper, accurate and free",                    10, 0, ProductType.Transcription, ModelTier.Free),
-        new("fal-ai/elevenlabs/speech-to-text",           "ElevenLabs STT",  "Premium transcription with speaker diarization",       18, 0, ProductType.Transcription, ModelTier.Premium),
+        // Transcription — Whisper
+        new("fal-ai/whisper",                                    "Whisper",               "OpenAI Whisper large — accurate, multi-language",       10, 0, ProductType.Transcription, ModelTier.Free),
+        new("fal-ai/wizper",                                     "Wizper",                "Optimised Whisper with segment merging",                10, 0, ProductType.Transcription, ModelTier.Free),
+
+        // Transcription — ElevenLabs
+        new("fal-ai/elevenlabs/speech-to-text",                  "ElevenLabs Scribe v1",  "Premium transcription with speaker diarization",        18, 0, ProductType.Transcription, ModelTier.Premium),
+        new("fal-ai/elevenlabs/speech-to-text/scribe-v2",        "ElevenLabs Scribe v2",  "Latest Scribe — word-level timestamps, 99 languages",   22, 0, ProductType.Transcription, ModelTier.Premium),
+
     };
 
     public static IReadOnlyList<ModelInfo> ForProduct(ProductType product) =>

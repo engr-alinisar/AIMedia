@@ -9,17 +9,45 @@ import { AuthService } from '../../core/auth/auth.service';
 import { LoginModalService } from '../../core/services/login-modal.service';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
-import { ModelPickerComponent, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
+import { ModelPickerComponent, type PickerModel, type PickerGroup } from '../../shared/components/model-picker/model-picker.component';
 
 interface TranscriptionModel {
   id: string;
   name: string;
   description: string;
-  creditsPerMin: number;
+  creditsFlat: number;
   badge?: string;
   badgeColor?: string;
   tags: string[];
+  hasLanguage?: boolean;
+  hasDiarize?: boolean;
+  hasTask?: boolean;       // transcribe / translate
+  hasTagEvents?: boolean;  // ElevenLabs audio event tagging
 }
+
+interface TranscriptionGroup {
+  id: string;
+  name: string;
+  tagline: string;
+  icon: string;
+  iconBg: string;
+  iconUrl?: string;
+  tags: string[];
+  subModels: TranscriptionModel[];
+}
+
+const WHISPER_LANGS = [
+  { code: '', label: 'Auto-detect' },
+  { code: 'en', label: 'English' }, { code: 'es', label: 'Spanish' },
+  { code: 'fr', label: 'French' },  { code: 'de', label: 'German' },
+  { code: 'it', label: 'Italian' }, { code: 'pt', label: 'Portuguese' },
+  { code: 'nl', label: 'Dutch' },   { code: 'pl', label: 'Polish' },
+  { code: 'ru', label: 'Russian' }, { code: 'ja', label: 'Japanese' },
+  { code: 'zh', label: 'Chinese' }, { code: 'ko', label: 'Korean' },
+  { code: 'ar', label: 'Arabic' },  { code: 'hi', label: 'Hindi' },
+  { code: 'tr', label: 'Turkish' }, { code: 'sv', label: 'Swedish' },
+  { code: 'uk', label: 'Ukrainian' },
+];
 
 @Component({
   selector: 'app-transcription',
@@ -27,23 +55,25 @@ interface TranscriptionModel {
   imports: [CommonModule, FormsModule, JobStatusComponent, ModelPickerComponent],
   template: `
 <div class="flex flex-col lg:flex-row lg:h-full">
+
+  <!-- Left panel -->
   <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
     <div class="px-5 py-4 border-b border-border">
-      <h1 class="text-base font-semibold text-gray-900">Transcription</h1>
+      <h1 class="text-base font-semibold text-gray-900">Audio to Text</h1>
     </div>
 
-    <div class="flex-1 px-5 py-4 space-y-5">
+    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
-      <!-- Model dropdown -->
+      <!-- Model picker -->
       <app-model-picker
-        [models]="pickerModels()"
+        [groups]="pickerGroups()"
         [selectedId]="selectedModel()?.id ?? null"
         (modelSelect)="onModelSelect($event)" />
 
       <!-- File upload -->
       <div>
         <label class="form-label">Audio / Video File</label>
-        <div class="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-accent hover:bg-accent-light/30 transition-colors"
+        <div class="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-accent hover:bg-accent-light/30 transition-colors"
              (click)="fileInput.click()">
           @if (fileName()) {
             <div class="text-sm text-gray-700 font-medium">📎 {{ fileName() }}</div>
@@ -51,8 +81,8 @@ interface TranscriptionModel {
           } @else {
             <div class="text-gray-400">
               <div class="text-3xl mb-2">🎵</div>
-              <p class="text-sm">Click to upload audio/video</p>
-              <p class="text-xs text-gray-400 mt-1">MP3, MP4, WAV, M4A, WebM</p>
+              <p class="text-sm font-medium text-gray-600">Click to upload audio or video</p>
+              <p class="text-xs text-gray-400 mt-1">MP3, MP4, WAV, M4A, WebM, OGG</p>
             </div>
           }
           <input #fileInput type="file" accept="audio/*,video/*" class="hidden" (change)="onFile($event)"/>
@@ -65,6 +95,76 @@ interface TranscriptionModel {
         <input type="url" class="form-input" [(ngModel)]="audioUrl" placeholder="https://..."/>
       </div>
 
+      <!-- Language (Whisper, Wizper, ElevenLabs) -->
+      @if (selectedModel()?.hasLanguage) {
+        <div>
+          <label class="form-label">Language</label>
+          <select class="form-select" [(ngModel)]="language">
+            @for (l of whisperLangs; track l.code) {
+              <option [value]="l.code">{{ l.label }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <!-- Task — Whisper / Wizper -->
+      @if (selectedModel()?.hasTask) {
+        <div>
+          <label class="form-label">Task</label>
+          <div class="flex gap-2">
+            @for (t of ['transcribe','translate']; track t) {
+              <button type="button" (click)="task = t"
+                class="flex-1 py-2 text-sm font-medium rounded-lg border transition-colors capitalize"
+                [class.border-accent]="task === t"
+                [class.bg-accent-light]="task === t"
+                [class.text-accent]="task === t"
+                [class.border-border]="task !== t"
+                [class.text-gray-600]="task !== t">{{ t }}</button>
+            }
+          </div>
+          @if (task === 'translate') {
+            <p class="text-xs text-gray-400 mt-1">Translates audio into English text.</p>
+          }
+        </div>
+      }
+
+      <!-- Diarize (Whisper, ElevenLabs) -->
+      @if (selectedModel()?.hasDiarize) {
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <div>
+            <p class="text-sm font-medium text-gray-700">Speaker Diarization</p>
+            <p class="text-xs text-gray-400">Label who said what in the transcript</p>
+          </div>
+          <button type="button" (click)="diarize = !diarize"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  [class.bg-accent]="diarize"
+                  [class.bg-gray-300]="!diarize">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                  [class.translate-x-6]="diarize"
+                  [class.translate-x-1]="!diarize"></span>
+          </button>
+        </div>
+      }
+
+      <!-- Tag Audio Events (ElevenLabs) -->
+      @if (selectedModel()?.hasTagEvents) {
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <div>
+            <p class="text-sm font-medium text-gray-700">Tag Audio Events</p>
+            <p class="text-xs text-gray-400">Mark laughter, applause, music, etc.</p>
+          </div>
+          <button type="button" (click)="tagAudioEvents = !tagAudioEvents"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                  [class.bg-accent]="tagAudioEvents"
+                  [class.bg-gray-300]="!tagAudioEvents">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                  [class.translate-x-6]="tagAudioEvents"
+                  [class.translate-x-1]="!tagAudioEvents"></span>
+          </button>
+        </div>
+      }
+
+
       @if (errorMsg()) {
         <div class="p-3 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700">{{ errorMsg() }}</div>
       }
@@ -75,14 +175,13 @@ interface TranscriptionModel {
       <div class="flex items-center justify-between text-sm">
         <span class="text-gray-500">Cost estimate</span>
         <span class="font-semibold text-gray-900">
-          <span class="text-accent">{{ costEstimate() }}</span> credits / 30 min
+          <span class="text-accent">{{ selectedModel()?.creditsFlat ?? 10 }}</span> credits / job
         </span>
       </div>
-      <!-- Public visibility toggle -->
       <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
         <div>
           <p class="text-sm font-medium text-gray-700">Public visibility</p>
-          <p class="text-xs text-gray-400">Show this output on the Explore page</p>
+          <p class="text-xs text-gray-400">Show on the Explore page</p>
         </div>
         <button type="button" (click)="isPublic.update(v => !v)"
                 class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
@@ -94,22 +193,17 @@ interface TranscriptionModel {
         </button>
       </div>
       @if (isPublic()) {
-        <div>
-          <select [(ngModel)]="zone"
-                  class="w-full px-3 py-2 text-sm border border-border rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
-            <option value="">Zone (optional)</option>
-            <option value="Cinematic">🎬 Cinematic</option>
-            <option value="Character">🧑 Character</option>
-            <option value="Viral">🔥 Viral</option>
-            <option value="Pet">🐾 Pet</option>
-            <option value="Dramatic">🎭 Dramatic</option>
-            <option value="Cool">😎 Cool</option>
-            <option value="Playful">🎮 Playful</option>
-            <option value="Fantasy">🧙 Fantasy</option>
-            <option value="Dark">🌑 Dark</option>
-            <option value="Anime">🌸 Anime</option>
-          </select>
-        </div>
+        <select [(ngModel)]="zone"
+                class="w-full px-3 py-2 text-sm border border-border rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
+          <option value="">Zone (optional)</option>
+          <option value="Cinematic">🎬 Cinematic</option>
+          <option value="Character">🧑 Character</option>
+          <option value="Viral">🔥 Viral</option>
+          <option value="Dramatic">🎭 Dramatic</option>
+          <option value="Cool">😎 Cool</option>
+          <option value="Playful">🎮 Playful</option>
+          <option value="Fantasy">🧙 Fantasy</option>
+        </select>
       }
       <button class="btn-primary w-full" (click)="generate()"
               [disabled]="(!audioFile && !audioUrl.trim()) || generating() || !selectedModel()">
@@ -123,14 +217,40 @@ interface TranscriptionModel {
   <div class="flex-1 p-4 lg:p-6 flex flex-col gap-4">
     <div class="flex items-center justify-between">
       <h2 class="text-sm font-medium text-gray-600">Transcript</h2>
-      @if (jobStatus()) { <app-job-status [status]="jobStatus()!"/> }
+      <div class="flex items-center gap-2">
+        @if (jobStatus()) { <app-job-status [status]="jobStatus()!"/> }
+        @if (transcript()) {
+          <button type="button" (click)="copyTranscript()"
+                  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+            {{ copied() ? '✓ Copied' : '📋 Copy' }}
+          </button>
+          <a [href]="downloadUrl()" download="transcript.txt"
+             class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors">
+            ⬇ Download
+          </a>
+        }
+      </div>
     </div>
+
+    @if (generating() && !transcript()) {
+      <div class="flex items-center gap-3 px-4 py-3 bg-accent-light border border-accent/20 rounded-xl">
+        <svg class="w-5 h-5 text-accent animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+        <div>
+          <p class="text-sm font-medium text-accent">Transcribing your audio...</p>
+          <p class="text-xs text-accent/70">Usually takes 10–60 seconds. You can navigate away — results will be in <a href="/jobs" class="underline">My Jobs</a>.</p>
+        </div>
+      </div>
+    }
+
     @if (transcript()) {
-      <div class="h-[300px] sm:h-[400px] lg:h-auto lg:flex-1 card p-5 overflow-y-auto">
+      <div class="flex-1 lg:min-h-0 card p-5 overflow-y-auto">
         <pre class="text-sm text-gray-800 whitespace-pre-wrap font-sans leading-relaxed">{{ transcript() }}</pre>
       </div>
-    } @else {
-      <div class="h-[300px] sm:h-[400px] lg:h-auto lg:flex-1 card flex items-center justify-center text-gray-400">
+    } @else if (!generating()) {
+      <div class="flex-1 card flex items-center justify-center text-gray-400 min-h-[280px]">
         <div class="text-center">
           <div class="text-4xl mb-2">📝</div>
           <p class="text-sm">Transcript will appear here</p>
@@ -149,51 +269,76 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
   private signalR = inject(SignalRService);
   private route = inject(ActivatedRoute);
 
-  models: TranscriptionModel[] = [
+  readonly whisperLangs = WHISPER_LANGS;
+
+  groups: TranscriptionGroup[] = [
     {
-      id: 'fal-ai/whisper',
-      name: 'Whisper',
-      description: 'OpenAI Whisper — fast and accurate speech recognition.',
-      creditsPerMin: 3,
-      tags: ['Open Source', 'Fast', 'Multi-language']
+      id: 'whisper', name: 'Whisper', tagline: 'OpenAI Whisper',
+      icon: 'W', iconBg: '#7C3AED', iconUrl: undefined,
+      tags: ['Open Source', 'Free'],
+      subModels: [
+        { id: 'fal-ai/whisper', name: 'Whisper Large v3', description: 'OpenAI Whisper large — accurate, multi-language, speaker diarization', creditsFlat: 10, tags: ['Multi-language', 'Diarization'], hasLanguage: true, hasDiarize: true, hasTask: true },
+        { id: 'fal-ai/wizper',  name: 'Wizper',           description: 'Optimised Whisper with smart segment merging',                        creditsFlat: 10, tags: ['Fast', 'Segment Merge'],  hasLanguage: true, hasTask: true },
+      ]
     },
     {
-      id: 'fal-ai/elevenlabs/speech-to-text',
-      name: 'ElevenLabs Scribe',
-      description: 'High-accuracy transcription with speaker diarization.',
-      creditsPerMin: 8,
-      badge: 'PRO',
-      badgeColor: '#7C3AED',
-      tags: ['Speaker ID', 'High Accuracy']
-    }
+      id: 'elevenlabs', name: 'ElevenLabs', tagline: 'Scribe',
+      icon: 'E', iconBg: '#1A1A1A', iconUrl: undefined,
+      tags: ['Premium', 'Speaker ID'],
+      subModels: [
+        { id: 'fal-ai/elevenlabs/speech-to-text/scribe-v2', name: 'Scribe v2', description: 'Latest ElevenLabs — word-level timestamps, 99 languages, audio event tagging', creditsFlat: 22, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['99 Languages', 'Word Timestamps', 'Speaker ID'], hasLanguage: true, hasDiarize: true, hasTagEvents: true },
+        { id: 'fal-ai/elevenlabs/speech-to-text',           name: 'Scribe v1', description: 'ElevenLabs premium transcription with speaker diarization',                    creditsFlat: 18, tags: ['99 Languages', 'Speaker ID'], hasLanguage: true, hasDiarize: true, hasTagEvents: true },
+      ]
+    },
   ];
 
-  pickerModels = computed<PickerModel[]>(() =>
-    this.models.map(m => ({
-      id: m.id,
-      name: m.name,
-      description: m.description,
-      creditsDisplay: `${m.creditsPerMin} cr/min`,
-      badge: m.badge,
-      badgeColor: m.badgeColor,
-      tags: m.tags,
-    } satisfies PickerModel))
+  allModels = computed(() => this.groups.flatMap(g => g.subModels));
+
+  pickerGroups = computed<PickerGroup[]>(() =>
+    this.groups.map(g => ({
+      id: g.id,
+      name: g.name,
+      tagline: g.tagline,
+      icon: g.icon,
+      iconBg: g.iconBg,
+      iconUrl: g.iconUrl,
+      groupTags: g.tags,
+      models: g.subModels.map(m => ({
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        creditsDisplay: `${m.creditsFlat} cr`,
+        badge: m.badge,
+        badgeColor: m.badgeColor,
+        tags: m.tags,
+      } satisfies PickerModel))
+    } satisfies PickerGroup))
   );
 
-  selectedModel = signal<TranscriptionModel | null>(this.models[0]);
+  selectedModel = signal<TranscriptionModel | null>(this.groups[0].subModels[0]);
 
-  audioUrl = '';
+  audioUrl  = '';
   audioFile: File | null = null;
-  fileName = signal<string>('');
+  fileName  = signal('');
 
-  generating = signal(false);
-  jobStatus = signal<JobStatus | null>(null);
-  transcript = signal<string | undefined>(undefined);
-  errorMsg = signal<string | undefined>(undefined);
-  isPublic = signal(true);
-  zone = '';
+  language       = '';
+  task           = 'transcribe';
+  diarize        = false;
+  tagAudioEvents = true;
 
-  costEstimate = signal(this.models[0].creditsPerMin);
+  generating  = signal(false);
+  jobStatus   = signal<JobStatus | null>(null);
+  transcript  = signal<string | undefined>(undefined);
+  errorMsg    = signal<string | undefined>(undefined);
+  isPublic    = signal(true);
+  zone        = '';
+  copied      = signal(false);
+
+  downloadUrl = computed(() => {
+    const t = this.transcript();
+    if (!t) return '#';
+    return URL.createObjectURL(new Blob([t], { type: 'text/plain' }));
+  });
 
   private currentJobId: string | null = null;
   private pollInterval?: ReturnType<typeof setInterval>;
@@ -201,19 +346,22 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
   ngOnInit() {
     const qp = this.route.snapshot.queryParams;
     if (qp['model']) {
-      const m = this.models.find(x => x.id === qp['model']);
+      const m = this.allModels().find(x => x.id === qp['model']);
       if (m) this.selectModel(m);
     }
   }
 
   onModelSelect(id: string) {
-    const m = this.models.find(x => x.id === id);
+    const m = this.allModels().find(x => x.id === id);
     if (m) this.selectModel(m);
   }
 
   selectModel(m: TranscriptionModel) {
     this.selectedModel.set(m);
-    this.costEstimate.set(m.creditsPerMin);
+    this.language = '';
+    this.task = 'transcribe';
+    this.diarize = false;
+    this.tagAudioEvents = true;
   }
 
   onFile(e: Event) {
@@ -221,47 +369,81 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
     if (f) { this.audioFile = f; this.fileName.set(f.name); }
   }
 
+  copyTranscript() {
+    const t = this.transcript();
+    if (!t) return;
+    navigator.clipboard.writeText(t).then(() => {
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 2000);
+    });
+  }
+
   generate() {
     if (!this.auth.isLoggedIn()) { this.loginModal.show(); return; }
     if ((!this.audioFile && !this.audioUrl.trim()) || this.generating() || !this.selectedModel()) return;
+
     this.generating.set(true);
     this.jobStatus.set('Queued');
     this.transcript.set(undefined);
     this.errorMsg.set(undefined);
 
+    const m = this.selectedModel()!;
     const fd = new FormData();
     if (this.audioFile) fd.append('file', this.audioFile);
     else fd.append('audioUrl', this.audioUrl);
-    fd.append('modelId', this.selectedModel()!.id);
+    fd.append('modelId', m.id);
     fd.append('isPublic', String(this.isPublic()));
     if (this.zone) fd.append('zone', this.zone);
+    if (m.hasLanguage && this.language) fd.append('language', this.language);
+    if (m.hasDiarize)    fd.append('diarize', String(this.diarize));
+    if (m.hasTask)       fd.append('task', this.task);
+    if (m.hasTagEvents)  fd.append('tagAudioEvents', String(this.tagAudioEvents));
 
     this.gen.generateTranscription(fd).subscribe({
-      next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.signalR.trackJob(res.jobId, 'Transcription'); this.startFallback(); },
-      error: err => { this.generating.set(false); this.jobStatus.set('Failed'); this.errorMsg.set(err.error?.error ?? 'Failed.'); }
+      next: res => {
+        this.currentJobId = res.jobId;
+        this.credits.reserveLocally(res.creditsReserved);
+        this.signalR.trackJob(res.jobId, 'Transcription');
+        this.startFallback();
+      },
+      error: err => {
+        this.generating.set(false);
+        this.jobStatus.set('Failed');
+        this.errorMsg.set(err.error?.error ?? 'Failed.');
+      }
     });
   }
 
   private startFallback() {
-    const start = Date.now();
     this.pollInterval = setInterval(() => {
       const u = this.signalR.latestUpdate();
-      if (u?.jobId === this.currentJobId) { this.apply(u.status as JobStatus, u.outputUrl, u.errorMessage); clearInterval(this.pollInterval); return; }
-      if (Date.now() - start > 30000 && this.currentJobId) {
-        this.gen.getJob(this.currentJobId).subscribe(j => { if (j.status === 'Completed' || j.status === 'Failed') { this.signalR.publishUpdate({ jobId: j.id, status: j.status, outputUrl: j.outputUrl, creditsCharged: j.creditsCharged, errorMessage: j.errorMessage }); this.apply(j.status, j.outputUrl, j.errorMessage); clearInterval(this.pollInterval); } });
+      if (u?.jobId === this.currentJobId) {
+        this.apply(u.status as JobStatus, u.outputUrl, u.errorMessage);
+        clearInterval(this.pollInterval);
+        return;
       }
-    }, 1000);
+      if (!this.currentJobId) return;
+      this.gen.getJob(this.currentJobId).subscribe({
+        next: j => {
+          if (j.status === 'Completed' || j.status === 'Failed') {
+            this.apply(j.status, j.outputUrl, j.errorMessage);
+            clearInterval(this.pollInterval);
+          }
+        },
+        error: () => {}
+      });
+    }, 5000);
   }
 
   private apply(status: JobStatus, url?: string, err?: string) {
-    this.jobStatus.set(status); this.generating.set(false);
+    this.jobStatus.set(status);
+    this.generating.set(false);
     if (status === 'Completed') {
       if (url) {
-        // Fetch transcript text from R2 public URL
         fetch(url)
           .then(r => r.text())
-          .then(text => { this.transcript.set(text); })
-          .catch(() => { this.transcript.set('(could not load transcript)'); });
+          .then(text => this.transcript.set(text))
+          .catch(() => this.transcript.set('(could not load transcript)'));
       } else {
         this.transcript.set('(no transcript returned)');
       }
@@ -272,7 +454,5 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy() {
-    clearInterval(this.pollInterval);
-  }
+  ngOnDestroy() { clearInterval(this.pollInterval); }
 }

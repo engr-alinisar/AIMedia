@@ -152,20 +152,4 @@ public class FalService : IFalClient
 
         return new AiMedia.Application.Interfaces.FalResultOutput(result.GetFirstUrl(), result.Text);
     }
-
-    /// <summary>Calls fal.run synchronously (no queue) and returns the raw JSON response.</summary>
-    public async Task<System.Text.Json.JsonElement?> RunSyncAsync(string endpoint, object input, CancellationToken ct = default)
-    {
-        var url = $"https://fal.run/{endpoint}";
-        var json = System.Text.Json.JsonSerializer.Serialize(input, JsonOptions);
-        using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        var response = await _http.PostAsync(url, content, ct);
-        var body = await response.Content.ReadAsStringAsync(ct);
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogWarning("RunSyncAsync {Endpoint} failed {Status}: {Body}", endpoint, (int)response.StatusCode, body);
-            return null;
-        }
-        return System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(body, JsonOptions);
-    }
 }

@@ -10,4 +10,9 @@ public record GenerateTranscriptionCommand(
     Stream? AudioStream = null,
     string? FileName = null,
     bool IsPublic = true,
-    string? Zone = null) : IRequest<GenerationResponse>;
+    string? Zone = null,
+    string? Language = null,        // whisper/wizper: language code; elevenlabs: language_code
+    bool? Diarize = null,           // whisper/elevenlabs: speaker diarization
+    string? Task = null,            // whisper/wizper: "transcribe" | "translate"
+    bool? TagAudioEvents = null     // elevenlabs: tag laughter, applause, etc.
+) : IRequest<GenerationResponse>;

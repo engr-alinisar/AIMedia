@@ -385,7 +385,7 @@ export class LandingComponent implements OnInit {
     },
     {
       icon: '📝',
-      title: 'Transcription',
+      title: 'Audio to Text',
       description: 'Transcribe any audio or video file to accurate, formatted text instantly.',
       route: '/transcription',
       minCredits: 10,

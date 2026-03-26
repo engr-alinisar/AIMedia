@@ -308,7 +308,7 @@ export class ExploreComponent implements OnInit {
 
   noPromptLabel(product: string): string {
     const labels: Record<string, string> = {
-      Voice: 'Text-to-speech output', Transcription: 'Transcription output',
+      Voice: 'Text-to-speech output', Transcription: 'Audio to Text output',
       BackgroundRemoval: 'Background removed', ImageToVideo: 'Image animated to video',
     };
     return labels[product] ?? 'AI generated content';

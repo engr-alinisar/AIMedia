@@ -21,9 +21,10 @@ public class FalOutputUrls
     [JsonPropertyName("audio_url")]
     public FalMediaItem? AudioUrl { get; set; }
 
-    // Transcription: text (plain string, not a URL)
+    // Transcription: text (plain string, not a URL) — Whisper, ElevenLabs
     [JsonPropertyName("text")]
     public string? Text { get; set; }
+
 
     // Background removal: image.url
     [JsonPropertyName("image")]

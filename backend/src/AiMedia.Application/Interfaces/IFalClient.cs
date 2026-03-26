@@ -14,8 +14,6 @@ public interface IFalClient
     /// </summary>
     Task<FalResultOutput?> GetResultOutputAsync(string responseUrl, CancellationToken ct = default);
 
-    /// <summary>Calls fal.run (synchronous) and returns raw JSON response. Used for quick operations like voice cloning that return results immediately.</summary>
-    Task<System.Text.Json.JsonElement?> RunSyncAsync(string endpoint, object input, CancellationToken ct = default);
 }
 
 public record FalSubmitResult(string RequestId, string? StatusUrl, string? ResponseUrl);

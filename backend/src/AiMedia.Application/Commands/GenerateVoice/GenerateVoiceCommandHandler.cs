@@ -33,7 +33,6 @@ public class GenerateVoiceCommandHandler(
         var isElevenLabs    = request.ModelId.StartsWith("fal-ai/elevenlabs/tts");
         var isMiniMaxSpeech = request.ModelId.Contains("minimax/speech") || request.ModelId.Contains("minimax/preview/speech");
 
-        string? endpointOverride = null; // some models redirect to a different endpoint at runtime
         object input;
         if (request.ModelId == "fal-ai/f5-tts")
         {
@@ -108,7 +107,7 @@ public class GenerateVoiceCommandHandler(
         FalSubmitResult falSubmit;
         try
         {
-            falSubmit = await falClient.SubmitJobAsync(endpointOverride ?? request.ModelId, input, $"{falClient.WebhookBaseUrl}/api/webhooks/fal?jobId={jobId}", cancellationToken);
+            falSubmit = await falClient.SubmitJobAsync(request.ModelId, input, $"{falClient.WebhookBaseUrl}/api/webhooks/fal?jobId={jobId}", cancellationToken);
         }
         catch
         {

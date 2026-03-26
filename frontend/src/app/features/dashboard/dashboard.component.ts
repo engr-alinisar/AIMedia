@@ -99,7 +99,7 @@ export class DashboardComponent implements OnInit {
     { icon: '🎬', label: 'Image to Video',  route: '/image-to-video',   cost: 'From 25 credits' },
     { icon: '🎥', label: 'Text to Video',   route: '/text-to-video',    cost: 'From 25 credits' },
     { icon: '🎙️', label: 'Text to Audio',  route: '/voice',            cost: 'From 4 credits' },
-    { icon: '📝', label: 'Transcription',   route: '/transcription',    cost: 'From 10 credits' },
+    { icon: '📝', label: 'Audio to Text',   route: '/transcription',    cost: 'From 10 credits' },
     { icon: '✂️', label: 'Remove BG',       route: '/background-removal', cost: '3 credits' },
   ];
 
@@ -109,7 +109,7 @@ export class DashboardComponent implements OnInit {
   }
 
   productLabel(p: string) {
-    const map: Record<string, string> = { ImageGen: 'Image Generation', ImageToVideo: 'Image to Video', TextToVideo: 'Text to Video', Voice: 'Text to Audio', Transcription: 'Transcription', BackgroundRemoval: 'Background Removal' };
+    const map: Record<string, string> = { ImageGen: 'Image Generation', ImageToVideo: 'Image to Video', TextToVideo: 'Text to Video', Voice: 'Text to Audio', Transcription: 'Audio to Text', BackgroundRemoval: 'Background Removal' };
     return map[p] ?? p;
   }
 

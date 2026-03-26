@@ -341,7 +341,7 @@ export class ShellComponent implements OnInit, OnDestroy {
       category: 'Audio AI',
       items: [
         { label: 'Text to Audio', icon: '🎙️', route: '/voice' },
-        { label: 'Transcription',  icon: '📝', route: '/transcription' },
+        { label: 'Audio to Text',  icon: '📝', route: '/transcription' },
       ]
     },
     {
