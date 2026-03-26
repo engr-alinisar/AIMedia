@@ -5,8 +5,9 @@ import { environment } from '../../../environments/environment';
 export interface VoiceCloneDto {
   id: string;
   name: string;
+  falVoiceId: string;
   description?: string;
-  referenceText: string;
+  referenceText?: string;
   createdAt: string;
   lastUsedAt: string;
 }

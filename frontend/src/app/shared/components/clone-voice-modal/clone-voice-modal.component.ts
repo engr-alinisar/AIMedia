@@ -257,7 +257,9 @@ export class CloneVoiceModalComponent {
 
   onFileSelected(e: Event) {
     const file = (e.target as HTMLInputElement).files?.[0];
-    if (file) this.audioFile.set(file);
+    if (!file) return;
+    this.error.set(null);
+    this.audioFile.set(file);
   }
 
   clearAudio() {

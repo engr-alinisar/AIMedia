@@ -375,7 +375,7 @@ export class LandingComponent implements OnInit {
     },
     {
       icon: '🎙️',
-      title: 'Text to Voice',
+      title: 'Text to Audio',
       description: 'Convert text to natural, expressive speech with realistic AI voices.',
       route: '/voice',
       minCredits: 4,

@@ -16,6 +16,7 @@ public class GetVoiceClonesQueryHandler(IAppDbContext db) : IRequestHandler<GetV
             {
                 Id = v.Id,
                 Name = v.Name,
+                FalVoiceId = v.FalVoiceId,
                 CreatedAt = v.CreatedAt,
                 LastUsedAt = v.LastUsedAt
             })

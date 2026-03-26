@@ -28,7 +28,7 @@ export class NotificationService {
 
     const productLabel: Record<string, string> = {
       ImageGen: 'Image Generation', ImageToVideo: 'Image to Video',
-      TextToVideo: 'Text to Video', Voice: 'Text to Voice',
+      TextToVideo: 'Text to Video', Voice: 'Text to Audio',
       Transcription: 'Transcription', BackgroundRemoval: 'Background Removal'
     };
 

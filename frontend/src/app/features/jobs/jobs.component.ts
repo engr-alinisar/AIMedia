@@ -248,7 +248,7 @@ export class JobsComponent implements OnInit, OnDestroy {
     { label: 'Image Generation', value: 'ImageGen' },
     { label: 'Image to Video', value: 'ImageToVideo' },
     { label: 'Text to Video', value: 'TextToVideo' },
-    { label: 'Text to Voice', value: 'Voice' },
+    { label: 'Text to Audio', value: 'Voice' },
     { label: 'Transcription', value: 'Transcription' },
     { label: 'Background Removal', value: 'BackgroundRemoval' },
   ];
@@ -317,7 +317,7 @@ export class JobsComponent implements OnInit, OnDestroy {
   productLabel(p: string) {
     const map: Record<string, string> = {
       ImageGen: 'Image Generation', ImageToVideo: 'Image to Video', TextToVideo: 'Text to Video',
-      Voice: 'Text to Voice', Transcription: 'Transcription', BackgroundRemoval: 'Background Removal'
+      Voice: 'Text to Audio', Transcription: 'Transcription', BackgroundRemoval: 'Background Removal'
     };
     return map[p] ?? p;
   }

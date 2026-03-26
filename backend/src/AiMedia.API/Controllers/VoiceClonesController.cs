@@ -20,7 +20,7 @@ public class VoiceClonesController(IAppDbContext db, IStorageService storage) : 
         var clones = await db.VoiceClones
             .Where(v => v.UserId == userId)
             .OrderByDescending(v => v.CreatedAt)
-            .Select(v => new VoiceCloneDto(v.Id, v.Name, v.Description, v.ReferenceText, v.CreatedAt, v.LastUsedAt))
+            .Select(v => new VoiceCloneDto(v.Id, v.Name, v.FalVoiceId, v.Description, v.ReferenceText, v.CreatedAt, v.LastUsedAt))
             .ToListAsync(ct);
 
         return Ok(clones);
@@ -49,9 +49,6 @@ public class VoiceClonesController(IAppDbContext db, IStorageService storage) : 
         if (string.IsNullOrWhiteSpace(request.Name))
             return BadRequest(new { error = "Voice name is required." });
 
-        if (string.IsNullOrWhiteSpace(request.ReferenceText))
-            return BadRequest(new { error = "Reference text is required for accurate voice cloning." });
-
         var cloneId = Guid.NewGuid();
         var ext = Path.GetExtension(file.FileName).ToLower();
         if (string.IsNullOrEmpty(ext)) ext = ".mp3";
@@ -60,15 +57,20 @@ public class VoiceClonesController(IAppDbContext db, IStorageService storage) : 
         await using var stream = file.OpenReadStream();
         await storage.UploadAsync(stream, r2Key, file.ContentType, ct);
 
+        var r2Url = storage.GetPublicUrl(r2Key);
+
+        // Store the R2 URL as the voice reference (used by F5-TTS as ref_audio_url)
+        var falVoiceId = r2Url;
+
         var clone = new VoiceClone
         {
             Id = cloneId,
             UserId = userId,
             Name = request.Name.Trim(),
             Description = request.Description?.Trim() ?? string.Empty,
-            FalVoiceId = storage.GetPublicUrl(r2Key),
+            FalVoiceId = falVoiceId,
             SampleR2Key = r2Key,
-            ReferenceText = request.ReferenceText.Trim(),
+            ReferenceText = request.ReferenceText?.Trim() ?? string.Empty,
             CreatedAt = DateTime.UtcNow,
             LastUsedAt = DateTime.UtcNow
         };
@@ -76,7 +78,7 @@ public class VoiceClonesController(IAppDbContext db, IStorageService storage) : 
         db.VoiceClones.Add(clone);
         await db.SaveChangesAsync(ct);
 
-        return Ok(new VoiceCloneDto(clone.Id, clone.Name, clone.Description, clone.ReferenceText, clone.CreatedAt, clone.LastUsedAt));
+        return Ok(new VoiceCloneDto(clone.Id, clone.Name, clone.FalVoiceId, clone.Description, clone.ReferenceText, clone.CreatedAt, clone.LastUsedAt));
     }
 
     /// <summary>Delete a voice clone.</summary>
@@ -100,8 +102,8 @@ public class VoiceClonesController(IAppDbContext db, IStorageService storage) : 
                 ?? throw new UnauthorizedAccessException());
 }
 
-public record CreateVoiceCloneRequest(string Name, string? Description, string ReferenceText);
+public record CreateVoiceCloneRequest(string Name, string? Description, string? ReferenceText);
 
 public record VoiceCloneDto(
-    Guid Id, string Name, string? Description,
-    string ReferenceText, DateTime CreatedAt, DateTime LastUsedAt);
+    Guid Id, string Name, string FalVoiceId, string? Description,
+    string? ReferenceText, DateTime CreatedAt, DateTime LastUsedAt);

@@ -62,8 +62,22 @@ public class GenerationController : ControllerBase
                 ? parsed : null;
 
         var result = await _mediator.Send(new GenerateVoiceCommand(
-            GetUserId(), request.Text, request.ModelId,
-            request.VoiceId, cloneId, request.RefAudioUrl, request.IsPublic, request.Zone), ct);
+            UserId: GetUserId(),
+            Text: request.Text,
+            ModelId: request.ModelId,
+            VoiceId: request.VoiceId,
+            VoiceCloneId: cloneId,
+            RefAudioUrl: request.RefAudioUrl,
+            IsPublic: request.IsPublic,
+            Zone: request.Zone,
+            Speed: request.Speed,
+            Stability: request.Stability,
+            SimilarityBoost: request.SimilarityBoost,
+            VoiceStyle: request.VoiceStyle,
+            LanguageCode: request.LanguageCode,
+            Pitch: request.Pitch,
+            Vol: request.Vol,
+            Emotion: request.Emotion), ct);
         return Accepted(result);
     }
 
@@ -146,13 +160,21 @@ public record GenerateTextToVideoRequest(
 
 public record GenerateVoiceRequest(
     string Text,
-    string ModelId = "fal-ai/kokoro",
+    string ModelId,
     string? VoiceId = null,
     Guid? VoiceCloneId = null,
     string? VoiceCloneIdStr = null,
     string? RefAudioUrl = null,
     bool IsPublic = true,
-    string? Zone = null);
+    string? Zone = null,
+    float? Speed = null,
+    float? Stability = null,
+    float? SimilarityBoost = null,
+    int? Pitch = null,
+    float? Vol = null,
+    string? Emotion = null,
+    float? VoiceStyle = null,
+    string? LanguageCode = null);
 
 public record TranscriptionRequest(
     string ModelId = "fal-ai/whisper",

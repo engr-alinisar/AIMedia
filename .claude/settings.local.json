@@ -125,7 +125,13 @@
       "Bash(curl -sL \"https://cdn.prod.website-files.com/69654e88dce9154b5f12070c/69a1891659331bb345c4b250_Ideogram.svg\" -o ideogram.svg)",
       "Bash(curl -sL \"https://s.llamagen.ai/u/clr8t07zt0000l208uya2628n/covers/2c9a9790-80c1-4d67-9e22-203f28ad96cd-image.png\" -o recraft.png)",
       "Bash(curl -sL \"https://cdn2.futurepedia.io/2bafc36affb1539a01f7e32f7cf19b6ba000aa51-128x128.png?w=256\" -o flux.png)",
-      "Bash(curl -sL \"https://cdn.iconscout.com/icon/free/png-256/free-chatgpt-icon-svg-download-png-7576880.png?f=webp\" -o openai.png)"
+      "Bash(curl -sL \"https://cdn.iconscout.com/icon/free/png-256/free-chatgpt-icon-svg-download-png-7576880.png?f=webp\" -o openai.png)",
+      "Bash(curl -sL \"https://images.media.io/media-ai/icon/Icon16_elevenlabs.png\" -o elevenlabs.png)",
+      "Bash(curl -sLo elevenlabs.png \"https://cdn.prod.website-files.com/62bcd27e89a7d4de671d8e44/66d56c8e57fd0b93e2de9b23_Elevenlabs_logo.png\")",
+      "Bash(curl -sLo elevenlabs.png \"https://pbs.twimg.com/profile_images/1735024697893224448/h-rZLjbj_400x400.jpg\")",
+      "Bash(curl -sLo elevenlabs.png \"https://assets-global.website-files.com/62bcd27e89a7d4de671d8e44/655acac5c1acc87ca32d3f00_elevenlabs-favicon.png\")",
+      "Bash(curl -sL \"https://cdn.prod.website-files.com/69654e88dce9154b5f12070c/69a193e3bb88e5b26c2807f2_minimax.svg\" -o minimax.svg)",
+      "Bash(find /d/Projects/AiMedia/backend -name *.cs)"
     ]
   }
 }

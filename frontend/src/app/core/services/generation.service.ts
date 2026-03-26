@@ -44,7 +44,7 @@ export class GenerationService {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/text-to-video`, payload);
   }
 
-  generateVoice(payload: { text: string; modelId: string; voiceId?: string; voiceCloneId?: string; refAudioUrl?: string; isPublic?: boolean; zone?: string }) {
+  generateVoice(payload: { text: string; modelId: string; voiceId?: string; voiceCloneId?: string; refAudioUrl?: string; isPublic?: boolean; zone?: string; speed?: number; stability?: number; similarityBoost?: number; voiceStyle?: number; languageCode?: string; pitch?: number; vol?: number; emotion?: string }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/voice`, payload);
   }
 

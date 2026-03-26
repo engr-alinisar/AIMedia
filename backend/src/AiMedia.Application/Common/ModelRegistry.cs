@@ -84,8 +84,27 @@ public static class ModelRegistry
 
         // Voice
         new("fal-ai/kokoro",                              "Kokoro",          "Lightweight TTS, natural voice quality",               4,  0, ProductType.Voice, ModelTier.Free),
-        new("fal-ai/minimax/speech-02-hd",                "MiniMax HD",      "High definition voice synthesis",                     18, 0, ProductType.Voice, ModelTier.Standard),
+        new("fal-ai/minimax/speech-2.8-hd",               "MiniMax Speech 2.8 HD",    "Latest MiniMax HD — emotion & pitch control",          20, 0, ProductType.Voice, ModelTier.Premium),
+        new("fal-ai/minimax/speech-2.8-turbo",            "MiniMax Speech 2.8 Turbo", "Latest MiniMax fast — emotion & pitch control",         16, 0, ProductType.Voice, ModelTier.Premium),
+        new("fal-ai/minimax/speech-02-hd",                "MiniMax Speech 02 HD",     "High definition voice with emotion control",            18, 0, ProductType.Voice, ModelTier.Standard),
+        new("fal-ai/minimax/speech-02-turbo",             "MiniMax Speech 02 Turbo",  "Fast MiniMax with emotion control",                     14, 0, ProductType.Voice, ModelTier.Standard),
+        new("fal-ai/minimax/speech-2.6-hd",               "MiniMax Speech 2.6 HD",    "MiniMax 2.6 HD with expressive voice",                  17, 0, ProductType.Voice, ModelTier.Standard),
+        new("fal-ai/minimax/speech-2.6-turbo",            "MiniMax Speech 2.6 Turbo", "MiniMax 2.6 fast with expressive voice",                13, 0, ProductType.Voice, ModelTier.Standard),
+        new("fal-ai/minimax/preview/speech-2.5-hd",       "MiniMax Speech 2.5 HD",    "MiniMax 2.5 preview HD quality",                        15, 0, ProductType.Voice, ModelTier.Standard),
+        new("fal-ai/minimax/preview/speech-2.5-turbo",    "MiniMax Speech 2.5 Turbo", "MiniMax 2.5 preview fast generation",                   12, 0, ProductType.Voice, ModelTier.Standard),
         new("fal-ai/f5-tts",                              "F5-TTS",          "Clone any voice from a 15–30s audio sample",          12, 0, ProductType.Voice, ModelTier.Premium),
+        new("fal-ai/kokoro/american-english",              "Kokoro American English",   "Natural US English voices, 20+ options",              4,  0, ProductType.Voice, ModelTier.Free),
+        new("fal-ai/kokoro/british-english",               "Kokoro British English",    "British accent voices",                               4,  0, ProductType.Voice, ModelTier.Free),
+        new("fal-ai/kokoro/spanish",                       "Kokoro Spanish",            "Spanish language Kokoro voices",                      4,  0, ProductType.Voice, ModelTier.Free),
+        new("fal-ai/kokoro/french",                        "Kokoro French",             "French language Kokoro voices",                       4,  0, ProductType.Voice, ModelTier.Free),
+        new("fal-ai/kokoro/japanese",                      "Kokoro Japanese",           "Japanese language Kokoro voices",                     4,  0, ProductType.Voice, ModelTier.Free),
+        new("fal-ai/kokoro/brazilian-portuguese",          "Kokoro Portuguese",         "Brazilian Portuguese Kokoro voices",                  4,  0, ProductType.Voice, ModelTier.Free),
+        new("fal-ai/kokoro/hindi",                         "Kokoro Hindi",              "Hindi language Kokoro voices",                        4,  0, ProductType.Voice, ModelTier.Free),
+        new("fal-ai/kokoro/mandarin-chinese",              "Kokoro Mandarin",           "Mandarin Chinese Kokoro voices",                      4,  0, ProductType.Voice, ModelTier.Free),
+        new("fal-ai/kokoro/italian",                       "Kokoro Italian",            "Italian language Kokoro voices",                      4,  0, ProductType.Voice, ModelTier.Free),
+        new("fal-ai/elevenlabs/tts/eleven-v3",             "ElevenLabs Eleven v3",      "Latest ElevenLabs model with superior expressiveness", 15, 0, ProductType.Voice, ModelTier.Premium),
+        new("fal-ai/elevenlabs/tts/turbo-v2.5",            "ElevenLabs Turbo v2.5",     "Fast ElevenLabs with high quality output",             12, 0, ProductType.Voice, ModelTier.Premium),
+        new("fal-ai/elevenlabs/tts/multilingual-v2",       "ElevenLabs Multilingual v2","Multilingual voice synthesis with 29 languages",      10, 0, ProductType.Voice, ModelTier.Standard),
 
         // Transcription
         new("fal-ai/whisper",                             "Whisper",         "OpenAI Whisper, accurate and free",                    10, 0, ProductType.Transcription, ModelTier.Free),

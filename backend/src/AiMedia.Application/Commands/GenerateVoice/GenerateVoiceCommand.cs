@@ -11,4 +11,12 @@ public record GenerateVoiceCommand(
     Guid? VoiceCloneId = null,
     string? RefAudioUrl = null,
     bool IsPublic = true,
-    string? Zone = null) : IRequest<GenerationResponse>;
+    string? Zone = null,
+    float? Speed = null,
+    float? Stability = null,
+    float? SimilarityBoost = null,
+    float? VoiceStyle = null,
+    string? LanguageCode = null,
+    int? Pitch = null,
+    float? Vol = null,
+    string? Emotion = null) : IRequest<GenerationResponse>;

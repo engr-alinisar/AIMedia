@@ -12,7 +12,9 @@ import { CloneVoiceModalComponent } from '../../shared/components/clone-voice-mo
 import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
-import { ModelPickerComponent, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
+import { ModelPickerComponent, type PickerModel, type PickerGroup } from '../../shared/components/model-picker/model-picker.component';
+
+interface VoiceOption { id: string; name: string; }
 
 interface VoiceModel {
   id: string;
@@ -23,7 +25,80 @@ interface VoiceModel {
   badgeColor?: string;
   tags: string[];
   requiresAudioSample?: boolean;
+  voices?: VoiceOption[];
+  hasSpeed?: boolean;
+  hasStability?: boolean;
+  hasLanguageCode?: boolean;
+  hasMiniMaxParams?: boolean;   // pitch, vol, emotion
 }
+
+interface VoiceGroup {
+  id: string;
+  name: string;
+  tagline: string;
+  icon: string;
+  iconBg: string;
+  iconUrl?: string;
+  tags: string[];
+  badge?: string;
+  subModels: VoiceModel[];
+}
+
+// ── Voice lists ─────────────────────────────────────────────────────────────
+const KOKORO_EN_US: VoiceOption[] = [
+  {id:'af_heart',name:'Heart (F)'},{id:'af_alloy',name:'Alloy (F)'},{id:'af_aoede',name:'Aoede (F)'},
+  {id:'af_bella',name:'Bella (F)'},{id:'af_jessica',name:'Jessica (F)'},{id:'af_kore',name:'Kore (F)'},
+  {id:'af_nicole',name:'Nicole (F)'},{id:'af_nova',name:'Nova (F)'},{id:'af_river',name:'River (F)'},
+  {id:'af_sarah',name:'Sarah (F)'},{id:'af_sky',name:'Sky (F)'},
+  {id:'am_adam',name:'Adam (M)'},{id:'am_echo',name:'Echo (M)'},{id:'am_eric',name:'Eric (M)'},
+  {id:'am_fenrir',name:'Fenrir (M)'},{id:'am_liam',name:'Liam (M)'},{id:'am_michael',name:'Michael (M)'},
+  {id:'am_onyx',name:'Onyx (M)'},{id:'am_puck',name:'Puck (M)'},{id:'am_santa',name:'Santa (M)'},
+];
+const KOKORO_EN_GB: VoiceOption[] = [
+  {id:'bf_alice',name:'Alice (F)'},{id:'bf_emma',name:'Emma (F)'},{id:'bf_isabella',name:'Isabella (F)'},
+  {id:'bf_lily',name:'Lily (F)'},{id:'bm_daniel',name:'Daniel (M)'},{id:'bm_fable',name:'Fable (M)'},
+  {id:'bm_george',name:'George (M)'},{id:'bm_lewis',name:'Lewis (M)'},
+];
+const KOKORO_ES: VoiceOption[] = [
+  {id:'ef_dora',name:'Dora (F)'},{id:'em_alex',name:'Alex (M)'},{id:'em_santa',name:'Santa (M)'},
+];
+const KOKORO_FR: VoiceOption[] = [{id:'ff_siwis',name:'Siwis (F)'}];
+const KOKORO_JA: VoiceOption[] = [
+  {id:'jf_alpha',name:'Alpha (F)'},{id:'jf_gongitsune',name:'Gongitsune (F)'},{id:'jf_nezumi',name:'Nezumi (F)'},
+  {id:'jf_tebukuro',name:'Tebukuro (F)'},{id:'jm_kumo',name:'Kumo (M)'},
+];
+const KOKORO_PT: VoiceOption[] = [
+  {id:'pf_dora',name:'Dora (F)'},{id:'pm_alex',name:'Alex (M)'},{id:'pm_santa',name:'Santa (M)'},
+];
+const KOKORO_HI: VoiceOption[] = [
+  {id:'hf_alpha',name:'Alpha (F)'},{id:'hf_beta',name:'Beta (F)'},{id:'hm_omega',name:'Omega (M)'},{id:'hm_psi',name:'Psi (M)'},
+];
+const KOKORO_ZH: VoiceOption[] = [
+  {id:'zf_xiaobei',name:'Xiaobei (F)'},{id:'zf_xiaoni',name:'Xiaoni (F)'},{id:'zf_xiaoxiao',name:'Xiaoxiao (F)'},
+  {id:'zf_xiaoyi',name:'Xiaoyi (F)'},{id:'zm_yunjian',name:'Yunjian (M)'},{id:'zm_yunxi',name:'Yunxi (M)'},
+  {id:'zm_yunxia',name:'Yunxia (M)'},{id:'zm_yunyang',name:'Yunyang (M)'},
+];
+const KOKORO_IT: VoiceOption[] = [{id:'if_sara',name:'Sara (F)'},{id:'im_nicola',name:'Nicola (M)'}];
+
+const MINIMAX_VOICES: VoiceOption[] = [
+  {id:'Wise_Woman',name:'Wise Woman (F)'},{id:'Friendly_Person',name:'Friendly Person (N)'},
+  {id:'Inspirational_girl',name:'Inspirational Girl (F)'},{id:'Deep_Voice_Man',name:'Deep Voice Man (M)'},
+  {id:'Calm_Woman',name:'Calm Woman (F)'},{id:'Casual_Guy',name:'Casual Guy (M)'},
+  {id:'Lively_Girl',name:'Lively Girl (F)'},{id:'Patient_Man',name:'Patient Man (M)'},
+  {id:'Young_Knight',name:'Young Knight (M)'},{id:'Determined_Man',name:'Determined Man (M)'},
+  {id:'Lovely_Girl',name:'Lovely Girl (F)'},{id:'Decent_Boy',name:'Decent Boy (M)'},
+  {id:'Imposing_Manner',name:'Imposing Manner (M)'},{id:'Elegant_Man',name:'Elegant Man (M)'},
+  {id:'Abbess',name:'Abbess (F)'},{id:'Sweet_Girl_2',name:'Sweet Girl (F)'},
+  {id:'Exuberant_Girl',name:'Exuberant Girl (F)'},
+];
+
+const ELEVENLABS_VOICES: VoiceOption[] = [
+  {id:'Aria',name:'Aria'},{id:'Roger',name:'Roger'},{id:'Sarah',name:'Sarah'},{id:'Laura',name:'Laura'},
+  {id:'Charlie',name:'Charlie'},{id:'George',name:'George'},{id:'Callum',name:'Callum'},{id:'River',name:'River'},
+  {id:'Liam',name:'Liam'},{id:'Charlotte',name:'Charlotte'},{id:'Alice',name:'Alice'},{id:'Matilda',name:'Matilda'},
+  {id:'Will',name:'Will'},{id:'Jessica',name:'Jessica'},{id:'Eric',name:'Eric'},{id:'Chris',name:'Chris'},
+  {id:'Brian',name:'Brian'},{id:'Daniel',name:'Daniel'},{id:'Lily',name:'Lily'},{id:'Bill',name:'Bill'},
+];
 
 @Component({
   selector: 'app-voice',
@@ -33,25 +108,25 @@ interface VoiceModel {
 <div class="flex flex-col lg:flex-row lg:h-full">
   <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
     <div class="px-5 py-4 border-b border-border">
-      <h1 class="text-base font-semibold text-gray-900">Text to Voice</h1>
+      <h1 class="text-base font-semibold text-gray-900">Text to Audio</h1>
     </div>
 
-    <div class="flex-1 px-5 py-4 space-y-5">
+    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
       <!-- Model dropdown -->
       <app-model-picker
-        [models]="pickerModels()"
+        [groups]="pickerGroups()"
         [selectedId]="selectedModel()?.id ?? null"
         (modelSelect)="onModelSelect($event)" />
 
-      <!-- Voice clone hint when standard model selected -->
+      <!-- Voice clone hint -->
       @if (!selectedModel()?.requiresAudioSample) {
         <div class="flex items-center gap-2.5 px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors"
-             (click)="selectModel(cloneModels[0])">
+             (click)="selectModelById('fal-ai/f5-tts')">
           <span class="text-lg flex-shrink-0">🎤</span>
           <div class="flex-1 min-w-0">
             <p class="text-xs font-semibold text-green-800">Want to clone your own voice?</p>
-            <p class="text-xs text-green-600">Select <strong>F5-TTS</strong> to upload a voice sample and generate speech in that voice.</p>
+            <p class="text-xs text-green-600">Select <strong>F5-TTS</strong> to upload a voice sample.</p>
           </div>
           <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -68,19 +143,106 @@ interface VoiceModel {
         <p class="text-right text-xs text-gray-400 mt-1">{{ text.length }}/5000</p>
       </div>
 
-      <!-- Voice selector (only for non-F5-TTS models) -->
-      @if (!selectedModel()?.requiresAudioSample) {
+      <!-- Voice selector -->
+      @if (!selectedModel()?.requiresAudioSample && selectedModel()?.voices?.length) {
         <div>
           <label class="form-label">Voice</label>
           <select class="form-select" [(ngModel)]="voiceId">
-            @for (v of voices; track v.id) {
+            @for (v of selectedModel()!.voices!; track v.id) {
               <option [value]="v.id">{{ v.name }}</option>
             }
           </select>
         </div>
       }
 
-      <!-- Saved voice clones (F5-TTS only) -->
+      <!-- Speed (Kokoro + ElevenLabs) -->
+      @if (selectedModel()?.hasSpeed) {
+        <div>
+          <label class="form-label">Speed — <span class="text-accent font-semibold">{{ speed().toFixed(1) }}×</span></label>
+          <input type="range" class="w-full accent-accent"
+            [min]="selectedModel()?.hasStability ? 0.7 : 0.1"
+            [max]="selectedModel()?.hasStability ? 1.2 : 5.0"
+            step="0.1"
+            [value]="speed()"
+            (input)="speed.set(+$any($event.target).value)" />
+          <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
+            <span>{{ selectedModel()?.hasStability ? '0.7×' : '0.1×' }}</span>
+            <span>Normal</span>
+            <span>{{ selectedModel()?.hasStability ? '1.2×' : '5.0×' }}</span>
+          </div>
+        </div>
+      }
+
+      <!-- ElevenLabs — Stability + Similarity -->
+      @if (selectedModel()?.hasStability) {
+        <div class="space-y-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Voice Settings</p>
+          <div>
+            <label class="form-label">Stability — <span class="text-accent font-semibold">{{ stability().toFixed(2) }}</span></label>
+            <input type="range" class="w-full accent-accent" min="0" max="1" step="0.05"
+              [value]="stability()" (input)="stability.set(+$any($event.target).value)" />
+            <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
+              <span>More Variable</span><span>More Stable</span>
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Similarity Boost — <span class="text-accent font-semibold">{{ similarityBoost().toFixed(2) }}</span></label>
+            <input type="range" class="w-full accent-accent" min="0" max="1" step="0.05"
+              [value]="similarityBoost()" (input)="similarityBoost.set(+$any($event.target).value)" />
+          </div>
+          <div>
+            <label class="form-label">Style Exaggeration — <span class="text-accent font-semibold">{{ voiceStyle().toFixed(2) }}</span></label>
+            <input type="range" class="w-full accent-accent" min="0" max="1" step="0.05"
+              [value]="voiceStyle()" (input)="voiceStyle.set(+$any($event.target).value)" />
+          </div>
+        </div>
+      }
+
+      <!-- Language Code (ElevenLabs Multilingual) -->
+      @if (selectedModel()?.hasLanguageCode) {
+        <div>
+          <label class="form-label">Language Code <span class="text-gray-400 font-normal">(optional)</span></label>
+          <input type="text" class="form-input" [(ngModel)]="languageCode"
+            placeholder="e.g. en, es, fr, de, ja..." maxlength="5" />
+          <p class="text-xs text-gray-400 mt-1">ISO 639-1 code to enforce a specific language.</p>
+        </div>
+      }
+
+      <!-- MiniMax params: Pitch, Volume, Emotion -->
+      @if (selectedModel()?.hasMiniMaxParams) {
+        <div class="space-y-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Voice Controls</p>
+          <div>
+            <label class="form-label">Pitch — <span class="text-accent font-semibold">{{ pitch() > 0 ? '+' : '' }}{{ pitch() }}</span></label>
+            <input type="range" class="w-full accent-accent" min="-12" max="12" step="1"
+              [value]="pitch()" (input)="pitch.set(+$any($event.target).value)" />
+            <div class="flex justify-between text-[10px] text-gray-400 mt-0.5"><span>-12</span><span>0</span><span>+12</span></div>
+          </div>
+          <div>
+            <label class="form-label">Volume — <span class="text-accent font-semibold">{{ vol().toFixed(1) }}</span></label>
+            <input type="range" class="w-full accent-accent" min="0" max="10" step="0.5"
+              [value]="vol()" (input)="vol.set(+$any($event.target).value)" />
+            <div class="flex justify-between text-[10px] text-gray-400 mt-0.5"><span>0</span><span>1 (normal)</span><span>10</span></div>
+          </div>
+          <div>
+            <label class="form-label">Emotion <span class="text-gray-400 font-normal">(optional)</span></label>
+            <div class="flex flex-wrap gap-2">
+              @for (e of ['','happy','sad','angry','fearful','disgusted','surprised','neutral']; track e) {
+                <button type="button" (click)="emotion.set(e)"
+                  class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize"
+                  [class.border-accent]="emotion() === e"
+                  [class.bg-accent-light]="emotion() === e"
+                  [class.text-accent]="emotion() === e"
+                  [class.border-border]="emotion() !== e"
+                  [class.text-gray-600]="emotion() !== e">{{ e || 'Auto' }}</button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+
+      <!-- Saved voice clones (F5-TTS) -->
       @if (selectedModel()?.requiresAudioSample) {
         <div>
           <div class="flex items-center justify-between mb-2">
@@ -115,8 +277,7 @@ interface VoiceModel {
                      class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-colors"
                      [class.border-accent]="selectedCloneId() === clone.id"
                      [class.bg-accent-light]="selectedCloneId() === clone.id"
-                     [class.border-border]="selectedCloneId() !== clone.id"
-                     [class.hover:border-accent]="selectedCloneId() !== clone.id">
+                     [class.border-border]="selectedCloneId() !== clone.id">
                   <div class="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center flex-shrink-0">
                     <span class="text-white text-sm font-bold">{{ clone.name[0].toUpperCase() }}</span>
                   </div>
@@ -125,7 +286,7 @@ interface VoiceModel {
                     @if (clone.description) {
                       <p class="text-xs text-gray-500 truncate">{{ clone.description }}</p>
                     } @else {
-                      <p class="text-xs text-gray-400">{{ clone.referenceText.slice(0, 40) }}...</p>
+                      <p class="text-xs text-gray-400">{{ (clone.referenceText ?? '').slice(0, 40) }}...</p>
                     }
                   </div>
                   @if (selectedCloneId() === clone.id) {
@@ -159,7 +320,6 @@ interface VoiceModel {
           <span class="text-accent">{{ costEstimate() }}</span> credits / 1K chars
         </span>
       </div>
-      <!-- Public visibility toggle -->
       <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
         <div>
           <p class="text-sm font-medium text-gray-700">Public visibility</p>
@@ -175,25 +335,19 @@ interface VoiceModel {
         </button>
       </div>
       @if (isPublic()) {
-        <div>
-          <select [(ngModel)]="zone"
-                  class="w-full px-3 py-2 text-sm border border-border rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
-            <option value="">Zone (optional)</option>
-            <option value="Cinematic">🎬 Cinematic</option>
-            <option value="Character">🧑 Character</option>
-            <option value="Viral">🔥 Viral</option>
-            <option value="Pet">🐾 Pet</option>
-            <option value="Dramatic">🎭 Dramatic</option>
-            <option value="Cool">😎 Cool</option>
-            <option value="Playful">🎮 Playful</option>
-            <option value="Fantasy">🧙 Fantasy</option>
-            <option value="Dark">🌑 Dark</option>
-            <option value="Anime">🌸 Anime</option>
-          </select>
-        </div>
+        <select [(ngModel)]="zone"
+                class="w-full px-3 py-2 text-sm border border-border rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
+          <option value="">Zone (optional)</option>
+          <option value="Cinematic">🎬 Cinematic</option>
+          <option value="Character">🧑 Character</option>
+          <option value="Viral">🔥 Viral</option>
+          <option value="Dramatic">🎭 Dramatic</option>
+          <option value="Cool">😎 Cool</option>
+          <option value="Playful">🎮 Playful</option>
+          <option value="Fantasy">🧙 Fantasy</option>
+        </select>
       }
-      <button class="btn-primary w-full" (click)="generate()"
-              [disabled]="!canGenerate()">
+      <button class="btn-primary w-full" (click)="generate()" [disabled]="!canGenerate()">
         @if (generating()) { <span class="animate-spin mr-1">⟳</span> Generating... }
         @else { 🎙️ Generate Voice }
       </button>
@@ -215,7 +369,6 @@ interface VoiceModel {
             Download
           </a>
         }
-
       </div>
     </div>
     @if (generating() && !outputUrl()) {
@@ -230,7 +383,9 @@ interface VoiceModel {
         </div>
       </div>
     }
-    <div class="h-[200px] sm:h-[280px] lg:h-auto lg:flex-1 lg:min-h-0 card overflow-hidden"><app-media-preview [url]="outputUrl()" product="Voice"/></div>
+    <div class="h-[200px] sm:h-[280px] lg:h-auto lg:flex-1 lg:min-h-0 card overflow-hidden">
+      <app-media-preview [url]="outputUrl()" product="Voice"/>
+    </div>
   </div>
 </div>
 
@@ -250,103 +405,147 @@ export class VoiceComponent implements OnInit, OnDestroy {
   private voiceCloneSvc = inject(VoiceCloneService);
   private route = inject(ActivatedRoute);
 
-  models: VoiceModel[] = [
+  // ── model groups ──────────────────────────────────────────────────
+  groups: VoiceGroup[] = [
     {
-      id: 'fal-ai/kokoro',
-      name: 'Kokoro',
-      description: 'Fast open-source TTS with natural-sounding voices.',
-      creditsPerKChars: 4,
-      tags: ['Open Source', 'Fast']
+      id: 'kokoro', name: 'Kokoro', tagline: 'Open Source TTS',
+      icon: 'K', iconBg: '#7C3AED', iconUrl: '/assets/icons/kokoro.png',
+      tags: ['Open Source', 'Free'],
+      subModels: [
+        { id: 'fal-ai/kokoro/american-english',   name: 'American English',   description: '20 voices — female & male US accents', creditsPerKChars: 4, tags: ['20 Voices', 'Free'], hasSpeed: true, voices: KOKORO_EN_US },
+        { id: 'fal-ai/kokoro/british-english',    name: 'British English',    description: '8 voices — British accents',           creditsPerKChars: 4, tags: ['8 Voices', 'Free'],  hasSpeed: true, voices: KOKORO_EN_GB },
+        { id: 'fal-ai/kokoro/spanish',            name: 'Spanish',            description: '3 Spanish language voices',            creditsPerKChars: 4, tags: ['3 Voices', 'Free'],  hasSpeed: true, voices: KOKORO_ES },
+        { id: 'fal-ai/kokoro/french',             name: 'French',             description: '1 French language voice',             creditsPerKChars: 4, tags: ['1 Voice', 'Free'],   hasSpeed: true, voices: KOKORO_FR },
+        { id: 'fal-ai/kokoro/japanese',           name: 'Japanese',           description: '5 Japanese language voices',          creditsPerKChars: 4, tags: ['5 Voices', 'Free'],  hasSpeed: true, voices: KOKORO_JA },
+        { id: 'fal-ai/kokoro/brazilian-portuguese', name: 'Brazilian Portuguese', description: '3 Brazilian Portuguese voices',   creditsPerKChars: 4, tags: ['3 Voices', 'Free'],  hasSpeed: true, voices: KOKORO_PT },
+        { id: 'fal-ai/kokoro/hindi',              name: 'Hindi',              description: '4 Hindi language voices',             creditsPerKChars: 4, tags: ['4 Voices', 'Free'],  hasSpeed: true, voices: KOKORO_HI },
+        { id: 'fal-ai/kokoro/mandarin-chinese',   name: 'Mandarin Chinese',   description: '8 Mandarin Chinese voices',           creditsPerKChars: 4, tags: ['8 Voices', 'Free'],  hasSpeed: true, voices: KOKORO_ZH },
+        { id: 'fal-ai/kokoro/italian',            name: 'Italian',            description: '2 Italian language voices',           creditsPerKChars: 4, tags: ['2 Voices', 'Free'],  hasSpeed: true, voices: KOKORO_IT },
+      ]
     },
     {
-      id: 'fal-ai/minimax/speech-02-hd',
-      name: 'MiniMax Speech HD',
-      description: 'High-definition voice with emotional expressiveness.',
-      creditsPerKChars: 18,
-      badge: 'HD',
-      badgeColor: '#7C3AED',
-      tags: ['HD Quality', 'Expressive']
+      id: 'elevenlabs', name: 'ElevenLabs', tagline: 'Professional TTS',
+      icon: 'E', iconBg: '#1A1A1A', iconUrl: undefined,
+      tags: ['Professional', 'Expressive'],
+      subModels: [
+        { id: 'fal-ai/elevenlabs/tts/eleven-v3',        name: 'Eleven v3',          description: 'Latest ElevenLabs — superior expressiveness', creditsPerKChars: 15, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'Expressive'], hasSpeed: true, hasStability: true, voices: ELEVENLABS_VOICES },
+        { id: 'fal-ai/elevenlabs/tts/turbo-v2.5',       name: 'Turbo v2.5',         description: 'Fast ElevenLabs with high quality',           creditsPerKChars: 12, tags: ['Fast', 'High Quality'], hasSpeed: true, hasStability: true, voices: ELEVENLABS_VOICES },
+        { id: 'fal-ai/elevenlabs/tts/multilingual-v2',  name: 'Multilingual v2',    description: '29 languages with natural speech',            creditsPerKChars: 10, tags: ['29 Languages', 'Multilingual'], hasSpeed: true, hasStability: true, hasLanguageCode: true, voices: ELEVENLABS_VOICES },
+      ]
     },
     {
-      id: 'fal-ai/f5-tts',
-      name: 'F5-TTS (Voice Clone)',
-      description: 'Clone any voice from a 15–30s audio sample. Upload your own voice or any speaker.',
-      creditsPerKChars: 12,
-      badge: 'CLONE',
-      badgeColor: '#059669',
-      tags: ['Voice Cloning', 'Custom Voice'],
-      requiresAudioSample: true
-    }
+      id: 'minimax', name: 'MiniMax', tagline: 'MiniMax Speech',
+      icon: 'M', iconBg: '#059669', iconUrl: '/assets/icons/minimax.svg',
+      tags: ['HD Quality', 'Expressive'],
+      subModels: [
+        { id: 'fal-ai/minimax/speech-2.8-hd',            name: 'Speech 2.8 HD',    description: 'Latest MiniMax HD — emotion, pitch & volume control', creditsPerKChars: 20, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'HD'],    hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
+        { id: 'fal-ai/minimax/speech-2.8-turbo',          name: 'Speech 2.8 Turbo', description: 'Latest MiniMax fast — emotion & pitch control',         creditsPerKChars: 16, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'Fast'],  hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
+        { id: 'fal-ai/minimax/speech-02-hd',              name: 'Speech 02 HD',     description: 'MiniMax 02 HD with emotion & pitch control',             creditsPerKChars: 18, tags: ['HD Quality'],                                         hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
+        { id: 'fal-ai/minimax/speech-02-turbo',           name: 'Speech 02 Turbo',  description: 'MiniMax 02 fast with emotion control',                   creditsPerKChars: 14, tags: ['Fast'],                                               hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
+        { id: 'fal-ai/minimax/speech-2.6-hd',             name: 'Speech 2.6 HD',    description: 'MiniMax 2.6 HD expressive voice',                        creditsPerKChars: 17, tags: ['HD Quality'],                                         hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
+        { id: 'fal-ai/minimax/speech-2.6-turbo',          name: 'Speech 2.6 Turbo', description: 'MiniMax 2.6 fast expressive voice',                      creditsPerKChars: 13, tags: ['Fast'],                                               hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
+        { id: 'fal-ai/minimax/preview/speech-2.5-hd',     name: 'Speech 2.5 HD',    description: 'MiniMax 2.5 preview HD quality',                         creditsPerKChars: 15, tags: ['Preview', 'HD'],                                      hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
+        { id: 'fal-ai/minimax/preview/speech-2.5-turbo',  name: 'Speech 2.5 Turbo', description: 'MiniMax 2.5 preview fast generation',                    creditsPerKChars: 12, tags: ['Preview', 'Fast'],                                    hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
+      ]
+    },
+    {
+      id: 'f5tts', name: 'F5-TTS', tagline: 'Voice Cloning',
+      icon: 'F', iconBg: '#059669', iconUrl: '/assets/icons/f5tts.svg',
+      tags: ['Voice Cloning', 'Custom'],
+      subModels: [
+        { id: 'fal-ai/f5-tts', name: 'F5-TTS', description: 'Clone any voice from a 15–30s audio sample', creditsPerKChars: 12, badge: 'CLONE', badgeColor: '#059669', tags: ['Voice Cloning', 'Custom Voice'], requiresAudioSample: true },
+      ]
+    },
   ];
 
-  voices = [
-    { id: 'af_heart', name: 'Heart (Female)' },
-    { id: 'af_sky', name: 'Sky (Female)' },
-    { id: 'am_adam', name: 'Adam (Male)' },
-    { id: 'am_michael', name: 'Michael (Male)' }
-  ];
-
-  get standardModels() { return this.models.filter(m => !m.requiresAudioSample); }
-  get cloneModels() { return this.models.filter(m => m.requiresAudioSample); }
-
-  pickerModels = computed<PickerModel[]>(() =>
-    this.models.map(m => ({
-      id: m.id,
-      name: m.name,
-      description: m.description,
-      creditsDisplay: `${m.creditsPerKChars} cr/1K chars`,
-      badge: m.badge,
-      badgeColor: m.badgeColor,
-      tags: m.tags,
-    } satisfies PickerModel))
+  pickerGroups = computed<PickerGroup[]>(() =>
+    this.groups.map(g => ({
+      id: g.id,
+      name: g.name,
+      tagline: g.tagline,
+      icon: g.icon,
+      iconBg: g.iconBg,
+      iconUrl: g.iconUrl,
+      groupTags: g.tags,
+      badge: g.badge,
+      models: g.subModels.map(m => ({
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        creditsDisplay: `${m.creditsPerKChars} cr/1K`,
+        badge: m.badge,
+        badgeColor: m.badgeColor,
+        tags: m.tags,
+      } satisfies PickerModel))
+    } satisfies PickerGroup))
   );
 
-  selectedModel = signal<VoiceModel | null>(this.models[0]);
+  costEstimate = computed(() => this.selectedModel()?.creditsPerKChars ?? 4);
 
-  text = '';
-  voiceId = 'af_heart';
+  allModels = computed(() => this.groups.flatMap(g => g.subModels));
 
-  generating = signal(false);
-  jobStatus = signal<JobStatus | null>(null);
-  outputUrl = signal<string | undefined>(undefined);
-  errorMsg = signal<string | undefined>(undefined);
+  selectedModel = signal<VoiceModel | null>(this.groups[0].subModels[0]);
 
-  // Voice clones (F5-TTS)
-  showCloneModal = signal(false);
-  voiceClones = signal<VoiceCloneDto[]>([]);
-  loadingClones = signal(false);
+  text         = '';
+  voiceId      = 'af_heart';
+  languageCode = '';
+
+  speed           = signal(1.0);
+  stability       = signal(0.5);
+  similarityBoost = signal(0.75);
+  voiceStyle      = signal(0.0);
+  pitch           = signal(0);
+  vol             = signal(1.0);
+  emotion         = signal('');
+
+  generating  = signal(false);
+  jobStatus   = signal<JobStatus | null>(null);
+  outputUrl   = signal<string | undefined>(undefined);
+  errorMsg    = signal<string | undefined>(undefined);
+  isPublic    = signal(true);
+  zone        = '';
+
+  showCloneModal  = signal(false);
+  voiceClones     = signal<VoiceCloneDto[]>([]);
+  loadingClones   = signal(false);
   selectedCloneId = signal<string | null>(null);
-  isPublic = signal(true);
-  zone = '';
-
-  costEstimate = signal(this.models[0].creditsPerKChars);
 
   private currentJobId: string | null = null;
   private pollInterval?: ReturnType<typeof setInterval>;
 
   canGenerate() {
-    if (!this.text.trim() || this.generating() || !this.selectedModel()) return false;
-    if (this.selectedModel()?.requiresAudioSample && !this.selectedCloneId()) return false;
+    const m = this.selectedModel();
+    if (!this.generating() && !m) return false;
+    if (this.generating()) return false;
+    if (m?.requiresAudioSample && !this.selectedCloneId()) return false;
+    if (!this.text.trim()) return false;
     return true;
   }
 
   ngOnInit() {
     const qp = this.route.snapshot.queryParams;
     if (qp['prompt']) this.text = qp['prompt'];
-    if (qp['model']) {
-      const m = this.models.find(x => x.id === qp['model']);
-      if (m) this.selectModel(m);
-    }
+    if (qp['model']) this.selectModelById(qp['model']);
   }
 
-  onModelSelect(id: string) {
-    const m = this.models.find(x => x.id === id);
+  onModelSelect(id: string) { this.selectModelById(id); }
+
+  selectModelById(id: string) {
+    const m = this.allModels().find(x => x.id === id);
     if (m) this.selectModel(m);
   }
 
   selectModel(m: VoiceModel) {
     this.selectedModel.set(m);
-    this.costEstimate.set(m.creditsPerKChars);
+    this.voiceId = m.voices?.[0]?.id ?? 'af_heart';
+    this.speed.set(1.0);
+    this.stability.set(0.5);
+    this.similarityBoost.set(0.75);
+    this.voiceStyle.set(0.0);
+    this.pitch.set(0);
+    this.vol.set(1.0);
+    this.emotion.set('');
+    this.languageCode = '';
     if (m.requiresAudioSample) this.loadClones();
   }
 
@@ -358,9 +557,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
     });
   }
 
-  selectClone(clone: VoiceCloneDto) {
-    this.selectedCloneId.set(clone.id);
-  }
+  selectClone(clone: VoiceCloneDto) { this.selectedCloneId.set(clone.id); }
 
   onCloneCreated(clone: VoiceCloneDto) {
     this.voiceClones.update(list => [clone, ...list]);
@@ -386,14 +583,29 @@ export class VoiceComponent implements OnInit, OnDestroy {
     this.jobStatus.set('Queued');
     this.outputUrl.set(undefined);
     this.errorMsg.set(undefined);
+    const m = this.selectedModel()!;
     this.gen.generateVoice({
-      text: this.text,
-      modelId: this.selectedModel()!.id,
-      voiceId: this.selectedModel()?.requiresAudioSample ? undefined : this.voiceId,
-      voiceCloneId: this.selectedCloneId() ?? undefined,
-      isPublic: this.isPublic(), zone: this.zone || undefined
+      text:             this.text,
+      modelId:          m.id,
+      voiceId:          m.requiresAudioSample ? undefined : this.voiceId,
+      voiceCloneId:     m.requiresAudioSample ? (this.selectedCloneId() ?? undefined) : undefined,
+      isPublic:         this.isPublic(),
+      zone:             this.zone || undefined,
+      speed:            m.hasSpeed ? this.speed() : undefined,
+      stability:        m.hasStability ? this.stability() : undefined,
+      similarityBoost:  m.hasStability ? this.similarityBoost() : undefined,
+      voiceStyle:       m.hasStability ? this.voiceStyle() : undefined,
+      languageCode:     m.hasLanguageCode && this.languageCode ? this.languageCode : undefined,
+      pitch:            m.hasMiniMaxParams && this.pitch() !== 0 ? this.pitch() : undefined,
+      vol:              m.hasMiniMaxParams && this.vol() !== 1.0 ? this.vol() : undefined,
+      emotion:          m.hasMiniMaxParams && this.emotion() ? this.emotion() : undefined,
     }).subscribe({
-      next: res => { this.currentJobId = res.jobId; this.credits.reserveLocally(res.creditsReserved); this.signalR.trackJob(res.jobId, 'Voice'); this.startFallback(); },
+      next: res => {
+        this.currentJobId = res.jobId;
+        this.credits.reserveLocally(res.creditsReserved);
+        this.signalR.trackJob(res.jobId, 'Voice');
+        this.startFallback();
+      },
       error: err => { this.generating.set(false); this.jobStatus.set('Failed'); this.errorMsg.set(err.error?.error ?? 'Failed.'); }
     });
   }
@@ -423,12 +635,11 @@ export class VoiceComponent implements OnInit, OnDestroy {
   }
 
   private apply(status: JobStatus, url?: string, err?: string) {
-    this.jobStatus.set(status); this.generating.set(false);
+    this.jobStatus.set(status);
+    this.generating.set(false);
     if (status === 'Completed') { this.outputUrl.set(url); this.credits.loadBalance().subscribe(); }
     else { this.errorMsg.set(err ?? 'Failed.'); this.credits.loadBalance().subscribe(); }
   }
 
-  ngOnDestroy() {
-    clearInterval(this.pollInterval);
-  }
+  ngOnDestroy() { clearInterval(this.pollInterval); }
 }
