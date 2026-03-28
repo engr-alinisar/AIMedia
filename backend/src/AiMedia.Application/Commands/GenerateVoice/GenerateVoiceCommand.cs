@@ -19,4 +19,5 @@ public record GenerateVoiceCommand(
     string? LanguageCode = null,
     int? Pitch = null,
     float? Vol = null,
-    string? Emotion = null) : IRequest<GenerationResponse>;
+    string? Emotion = null,
+    string? Title = null) : IRequest<GenerationResponse>;

@@ -31,14 +31,20 @@ import type { ExploreItemDto } from '../../../core/models/models';
                (loadeddata)="safePlay($event)"
                style="max-height: 55vh; display: block;"></video>
       } @else if (isAudio()) {
-        <div class="flex flex-col items-center justify-center py-16 bg-gradient-to-br from-purple-50 to-purple-100">
-          <div class="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-            <svg class="w-10 h-10 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
-            </svg>
+        <div class="flex flex-col items-center justify-center py-16"
+             [style]="audioMoodGradient()">
+          <div class="flex flex-col items-center gap-4">
+            <div class="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
+              <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+              </svg>
+            </div>
+            @if (item!.title) {
+              <p class="text-sm font-semibold text-white text-center px-4">{{ item!.title }}</p>
+            }
+            <audio [src]="item!.outputUrl" controls class="w-64"></audio>
           </div>
-          <audio [src]="item!.outputUrl" controls class="w-64"></audio>
         </div>
       } @else if (isTranscription()) {
         <div class="flex flex-col items-center justify-center py-16 bg-gradient-to-br from-blue-50 to-blue-100">
@@ -66,8 +72,13 @@ import type { ExploreItemDto } from '../../../core/models/models';
         }
       </div>
 
-      <!-- Prompt -->
-      @if (item!.prompt) {
+      <!-- Title (audio) or Prompt -->
+      @if (isAudio() && item!.title) {
+        <p class="text-sm font-semibold text-gray-900">{{ item!.title }}</p>
+        @if (item!.prompt) {
+          <p class="text-sm text-gray-600 leading-relaxed">{{ item!.prompt }}</p>
+        }
+      } @else if (item!.prompt) {
         <p class="text-sm text-gray-700 leading-relaxed">{{ item!.prompt }}</p>
       } @else {
         <p class="text-sm text-gray-400 italic">{{ noPromptLabel() }}</p>
@@ -117,6 +128,20 @@ export class ExploreItemModalComponent implements OnInit, OnDestroy {
 
   isAudio(): boolean {
     return this.item?.product === 'Voice';
+  }
+
+  audioMoodGradient(): string {
+    const gradients: Record<string, string> = {
+      'Narration':       'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'Podcast':         'background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+      'Character Voice': 'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      'Storytelling':    'background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      'Kids':            'background: linear-gradient(135deg, #f9d423 0%, #ff4e50 100%)',
+      'Meditation':      'background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+      'News':            'background: linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+      'Entertainment':   'background: linear-gradient(135deg, #fd7043 0%, #ef5350 100%)',
+    };
+    return gradients[this.item?.zone ?? ''] ?? 'background: linear-gradient(135deg, #6b7280 0%, #374151 100%)';
   }
 
   isTranscription(): boolean {

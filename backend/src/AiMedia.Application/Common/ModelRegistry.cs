@@ -78,9 +78,28 @@ public static class ModelRegistry
         new("fal-ai/gpt-image-1/text-to-image",                "GPT Image 1",          "OpenAI GPT Image 1 — high quality",                12, 0, ProductType.ImageGen, ModelTier.Premium),
         new("fal-ai/gpt-image-1.5",                            "GPT Image 1.5",        "OpenAI GPT Image 1.5 — latest model",              15, 0, ProductType.ImageGen, ModelTier.Premium),
 
-        // Background Removal
-        new("fal-ai/birefnet",                            "BiRefNet",        "High accuracy background removal",                     3,  0, ProductType.BackgroundRemoval, ModelTier.Free),
-        new("fal-ai/pixelcut/remove-background",          "Pixelcut",        "Fast background removal optimized for products",       3,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
+        // Image Studio — Background
+        new("fal-ai/bria/background/remove",                                    "BRIA Remove BG",         "Commercial-safe background removal by BRIA",                4,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
+        new("fal-ai/bria/background/replace",                                   "BRIA Replace BG",        "Swap background with text prompt or reference image",        8,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
+
+        // Image Studio — Edit
+        new("fal-ai/image-editing/object-removal",                              "Object Removal",         "Remove any object and reconstruct the background",          8,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
+        new("fal-ai/ideogram/v3/edit",                                          "Ideogram Inpaint",       "Ideogram V3 masked region inpainting with style control",  12, 0, ProductType.BackgroundRemoval, ModelTier.Premium),
+        new("fal-ai/iclight-v2",                                                "IC-Light v2",            "AI relighting — change scene lighting via text prompt",    25, 0, ProductType.BackgroundRemoval, ModelTier.Premium),
+
+        // Image Studio — Portrait & Beauty
+        new("fal-ai/image-apps-v2/headshot-photo",                              "Pro Headshot",           "Turn any portrait into a polished professional headshot",   8,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
+        new("fal-ai/image-apps-v2/makeup-application",                          "Makeup Artist",          "Apply realistic makeup styles with adjustable intensity",   8,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
+
+        // Image Studio — Creative Styles
+        new("fal-ai/flux-2-lora-gallery/ballpoint-pen-sketch",                  "Pen Sketch",             "Convert image to ballpoint pen sketch style artwork",       6,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
+        new("fal-ai/flux-2-lora-gallery/digital-comic-art",                     "Digital Comic",          "Transform photo into digital comic book illustration",      6,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
+        new("fal-ai/flux-2-lora-gallery/sepia-vintage",                         "Sepia Vintage",          "Apply sepia-toned vintage photography aesthetic",           6,  0, ProductType.BackgroundRemoval, ModelTier.Free),
+
+        // Image Studio — Transform
+        new("fal-ai/flux-2-lora-gallery/face-to-full-portrait",                 "Face to Portrait",       "Extend a face crop into a full-body portrait",              6,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
+        new("fal-ai/flux-2-lora-gallery/virtual-tryon",                         "Virtual Try-On",         "Dress a person in any garment — realistic try-on",          6,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
+        new("fal-ai/qwen-image-edit-plus-lora-gallery/integrate-product",       "Product Integration",    "Seamlessly blend product into a background scene",          9,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
 
         // Voice
         new("fal-ai/kokoro",                              "Kokoro",          "Lightweight TTS, natural voice quality",               4,  0, ProductType.Voice, ModelTier.Free),

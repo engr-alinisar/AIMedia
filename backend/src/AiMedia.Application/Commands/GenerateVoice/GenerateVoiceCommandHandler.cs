@@ -130,6 +130,7 @@ public class GenerateVoiceCommandHandler(
             FalInput = JsonDocument.Parse(JsonSerializer.Serialize(input)),
             IsPublic = request.IsPublic,
             Zone = request.Zone,
+            Title = request.Title,
             CreatedAt = DateTime.UtcNow
         });
 

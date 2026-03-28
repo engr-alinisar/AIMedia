@@ -46,50 +46,50 @@ interface VoiceGroup {
 
 // ── Voice lists ─────────────────────────────────────────────────────────────
 const KOKORO_EN_US: VoiceOption[] = [
-  {id:'af_heart',name:'Heart (F)'},{id:'af_alloy',name:'Alloy (F)'},{id:'af_aoede',name:'Aoede (F)'},
-  {id:'af_bella',name:'Bella (F)'},{id:'af_jessica',name:'Jessica (F)'},{id:'af_kore',name:'Kore (F)'},
-  {id:'af_nicole',name:'Nicole (F)'},{id:'af_nova',name:'Nova (F)'},{id:'af_river',name:'River (F)'},
-  {id:'af_sarah',name:'Sarah (F)'},{id:'af_sky',name:'Sky (F)'},
-  {id:'am_adam',name:'Adam (M)'},{id:'am_echo',name:'Echo (M)'},{id:'am_eric',name:'Eric (M)'},
-  {id:'am_fenrir',name:'Fenrir (M)'},{id:'am_liam',name:'Liam (M)'},{id:'am_michael',name:'Michael (M)'},
-  {id:'am_onyx',name:'Onyx (M)'},{id:'am_puck',name:'Puck (M)'},{id:'am_santa',name:'Santa (M)'},
+  {id:'af_heart',name:'Heart (Female)'},{id:'af_alloy',name:'Alloy (Female)'},{id:'af_aoede',name:'Aoede (Female)'},
+  {id:'af_bella',name:'Bella (Female)'},{id:'af_jessica',name:'Jessica (Female)'},{id:'af_kore',name:'Kore (Female)'},
+  {id:'af_nicole',name:'Nicole (Female)'},{id:'af_nova',name:'Nova (Female)'},{id:'af_river',name:'River (Female)'},
+  {id:'af_sarah',name:'Sarah (Female)'},{id:'af_sky',name:'Sky (Female)'},
+  {id:'am_adam',name:'Adam (Male)'},{id:'am_echo',name:'Echo (Male)'},{id:'am_eric',name:'Eric (Male)'},
+  {id:'am_fenrir',name:'Fenrir (Male)'},{id:'am_liam',name:'Liam (Male)'},{id:'am_michael',name:'Michael (Male)'},
+  {id:'am_onyx',name:'Onyx (Male)'},{id:'am_puck',name:'Puck (Male)'},{id:'am_santa',name:'Santa (Male)'},
 ];
 const KOKORO_EN_GB: VoiceOption[] = [
-  {id:'bf_alice',name:'Alice (F)'},{id:'bf_emma',name:'Emma (F)'},{id:'bf_isabella',name:'Isabella (F)'},
-  {id:'bf_lily',name:'Lily (F)'},{id:'bm_daniel',name:'Daniel (M)'},{id:'bm_fable',name:'Fable (M)'},
-  {id:'bm_george',name:'George (M)'},{id:'bm_lewis',name:'Lewis (M)'},
+  {id:'bf_alice',name:'Alice (Female)'},{id:'bf_emma',name:'Emma (Female)'},{id:'bf_isabella',name:'Isabella (Female)'},
+  {id:'bf_lily',name:'Lily (Female)'},{id:'bm_daniel',name:'Daniel (Male)'},{id:'bm_fable',name:'Fable (Male)'},
+  {id:'bm_george',name:'George (Male)'},{id:'bm_lewis',name:'Lewis (Male)'},
 ];
 const KOKORO_ES: VoiceOption[] = [
-  {id:'ef_dora',name:'Dora (F)'},{id:'em_alex',name:'Alex (M)'},{id:'em_santa',name:'Santa (M)'},
+  {id:'ef_dora',name:'Dora (Female)'},{id:'em_alex',name:'Alex (Male)'},{id:'em_santa',name:'Santa (Male)'},
 ];
-const KOKORO_FR: VoiceOption[] = [{id:'ff_siwis',name:'Siwis (F)'}];
+const KOKORO_FR: VoiceOption[] = [{id:'ff_siwis',name:'Siwis (Female)'}];
 const KOKORO_JA: VoiceOption[] = [
-  {id:'jf_alpha',name:'Alpha (F)'},{id:'jf_gongitsune',name:'Gongitsune (F)'},{id:'jf_nezumi',name:'Nezumi (F)'},
-  {id:'jf_tebukuro',name:'Tebukuro (F)'},{id:'jm_kumo',name:'Kumo (M)'},
+  {id:'jf_alpha',name:'Alpha (Female)'},{id:'jf_gongitsune',name:'Gongitsune (Female)'},{id:'jf_nezumi',name:'Nezumi (Female)'},
+  {id:'jf_tebukuro',name:'Tebukuro (Female)'},{id:'jm_kumo',name:'Kumo (Male)'},
 ];
 const KOKORO_PT: VoiceOption[] = [
-  {id:'pf_dora',name:'Dora (F)'},{id:'pm_alex',name:'Alex (M)'},{id:'pm_santa',name:'Santa (M)'},
+  {id:'pf_dora',name:'Dora (Female)'},{id:'pm_alex',name:'Alex (Male)'},{id:'pm_santa',name:'Santa (Male)'},
 ];
 const KOKORO_HI: VoiceOption[] = [
-  {id:'hf_alpha',name:'Alpha (F)'},{id:'hf_beta',name:'Beta (F)'},{id:'hm_omega',name:'Omega (M)'},{id:'hm_psi',name:'Psi (M)'},
+  {id:'hf_alpha',name:'Alpha (Female)'},{id:'hf_beta',name:'Beta (Female)'},{id:'hm_omega',name:'Omega (Male)'},{id:'hm_psi',name:'Psi (Male)'},
 ];
 const KOKORO_ZH: VoiceOption[] = [
-  {id:'zf_xiaobei',name:'Xiaobei (F)'},{id:'zf_xiaoni',name:'Xiaoni (F)'},{id:'zf_xiaoxiao',name:'Xiaoxiao (F)'},
-  {id:'zf_xiaoyi',name:'Xiaoyi (F)'},{id:'zm_yunjian',name:'Yunjian (M)'},{id:'zm_yunxi',name:'Yunxi (M)'},
-  {id:'zm_yunxia',name:'Yunxia (M)'},{id:'zm_yunyang',name:'Yunyang (M)'},
+  {id:'zf_xiaobei',name:'Xiaobei (Female)'},{id:'zf_xiaoni',name:'Xiaoni (Female)'},{id:'zf_xiaoxiao',name:'Xiaoxiao (Female)'},
+  {id:'zf_xiaoyi',name:'Xiaoyi (Female)'},{id:'zm_yunjian',name:'Yunjian (Male)'},{id:'zm_yunxi',name:'Yunxi (Male)'},
+  {id:'zm_yunxia',name:'Yunxia (Male)'},{id:'zm_yunyang',name:'Yunyang (Male)'},
 ];
-const KOKORO_IT: VoiceOption[] = [{id:'if_sara',name:'Sara (F)'},{id:'im_nicola',name:'Nicola (M)'}];
+const KOKORO_IT: VoiceOption[] = [{id:'if_sara',name:'Sara (Female)'},{id:'im_nicola',name:'Nicola (Male)'}];
 
 const MINIMAX_VOICES: VoiceOption[] = [
-  {id:'Wise_Woman',name:'Wise Woman (F)'},{id:'Friendly_Person',name:'Friendly Person (N)'},
-  {id:'Inspirational_girl',name:'Inspirational Girl (F)'},{id:'Deep_Voice_Man',name:'Deep Voice Man (M)'},
-  {id:'Calm_Woman',name:'Calm Woman (F)'},{id:'Casual_Guy',name:'Casual Guy (M)'},
-  {id:'Lively_Girl',name:'Lively Girl (F)'},{id:'Patient_Man',name:'Patient Man (M)'},
-  {id:'Young_Knight',name:'Young Knight (M)'},{id:'Determined_Man',name:'Determined Man (M)'},
-  {id:'Lovely_Girl',name:'Lovely Girl (F)'},{id:'Decent_Boy',name:'Decent Boy (M)'},
-  {id:'Imposing_Manner',name:'Imposing Manner (M)'},{id:'Elegant_Man',name:'Elegant Man (M)'},
-  {id:'Abbess',name:'Abbess (F)'},{id:'Sweet_Girl_2',name:'Sweet Girl (F)'},
-  {id:'Exuberant_Girl',name:'Exuberant Girl (F)'},
+  {id:'Wise_Woman',name:'Wise Woman (Female)'},{id:'Friendly_Person',name:'Friendly Person (Neutral)'},
+  {id:'Inspirational_girl',name:'Inspirational Girl (Female)'},{id:'Deep_Voice_Man',name:'Deep Voice Man (Male)'},
+  {id:'Calm_Woman',name:'Calm Woman (Female)'},{id:'Casual_Guy',name:'Casual Guy (Male)'},
+  {id:'Lively_Girl',name:'Lively Girl (Female)'},{id:'Patient_Man',name:'Patient Man (Male)'},
+  {id:'Young_Knight',name:'Young Knight (Male)'},{id:'Determined_Man',name:'Determined Man (Male)'},
+  {id:'Lovely_Girl',name:'Lovely Girl (Female)'},{id:'Decent_Boy',name:'Decent Boy (Male)'},
+  {id:'Imposing_Manner',name:'Imposing Manner (Male)'},{id:'Elegant_Man',name:'Elegant Man (Male)'},
+  {id:'Abbess',name:'Abbess (Female)'},{id:'Sweet_Girl_2',name:'Sweet Girl (Female)'},
+  {id:'Exuberant_Girl',name:'Exuberant Girl (Female)'},
 ];
 
 const ELEVENLABS_VOICES: VoiceOption[] = [
@@ -133,6 +133,13 @@ const ELEVENLABS_VOICES: VoiceOption[] = [
           </svg>
         </div>
       }
+
+      <!-- Title -->
+      <div>
+        <label class="form-label">Title <span class="text-gray-400 font-normal">(optional)</span></label>
+        <input type="text" class="form-input" [(ngModel)]="title"
+          placeholder="e.g. My Meditation Audio..." maxlength="120" />
+      </div>
 
       <!-- Text -->
       <div>
@@ -320,6 +327,8 @@ const ELEVENLABS_VOICES: VoiceOption[] = [
           <span class="text-accent">{{ costEstimate() }}</span> credits / 1K chars
         </span>
       </div>
+
+      <!-- Public visibility toggle -->
       <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
         <div>
           <p class="text-sm font-medium text-gray-700">Public visibility</p>
@@ -334,19 +343,24 @@ const ELEVENLABS_VOICES: VoiceOption[] = [
                 [class.translate-x-1]="!isPublic()"></span>
         </button>
       </div>
+
       @if (isPublic()) {
+        <!-- Zone -->
         <select [(ngModel)]="zone"
                 class="w-full px-3 py-2 text-sm border border-border rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent">
           <option value="">Zone (optional)</option>
-          <option value="Cinematic">🎬 Cinematic</option>
-          <option value="Character">🧑 Character</option>
-          <option value="Viral">🔥 Viral</option>
-          <option value="Dramatic">🎭 Dramatic</option>
-          <option value="Cool">😎 Cool</option>
-          <option value="Playful">🎮 Playful</option>
-          <option value="Fantasy">🧙 Fantasy</option>
+          <option value="Narration">🎙️ Narration</option>
+          <option value="Podcast">🎧 Podcast</option>
+          <option value="Character Voice">🎭 Character Voice</option>
+          <option value="Storytelling">📖 Storytelling</option>
+          <option value="Kids">🧒 Kids</option>
+          <option value="Meditation">🧘 Meditation</option>
+          <option value="News">📰 News</option>
+          <option value="Entertainment">🎉 Entertainment</option>
         </select>
+
       }
+
       <button class="btn-primary w-full" (click)="generate()" [disabled]="!canGenerate()">
         @if (generating()) { <span class="animate-spin mr-1">⟳</span> Generating... }
         @else { 🎙️ Generate Voice }
@@ -498,6 +512,8 @@ export class VoiceComponent implements OnInit, OnDestroy {
   vol             = signal(1.0);
   emotion         = signal('');
 
+  title = '';
+
   generating  = signal(false);
   jobStatus   = signal<JobStatus | null>(null);
   outputUrl   = signal<string | undefined>(undefined);
@@ -584,6 +600,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
     this.outputUrl.set(undefined);
     this.errorMsg.set(undefined);
     const m = this.selectedModel()!;
+
     this.gen.generateVoice({
       text:             this.text,
       modelId:          m.id,
@@ -591,6 +608,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
       voiceCloneId:     m.requiresAudioSample ? (this.selectedCloneId() ?? undefined) : undefined,
       isPublic:         this.isPublic(),
       zone:             this.zone || undefined,
+      title:            this.title.trim() || undefined,
       speed:            m.hasSpeed ? this.speed() : undefined,
       stability:        m.hasStability ? this.stability() : undefined,
       similarityBoost:  m.hasStability ? this.similarityBoost() : undefined,
@@ -614,7 +632,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
     let polling = false;
     this.pollInterval = setInterval(() => {
       const u = this.signalR.latestUpdate();
-      if (u?.jobId === this.currentJobId) {
+      if (u?.jobId === this.currentJobId && (u.status === 'Completed' || u.status === 'Failed')) {
         this.apply(u.status as JobStatus, u.outputUrl, u.errorMessage);
         clearInterval(this.pollInterval); return;
       }

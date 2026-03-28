@@ -28,19 +28,22 @@ interface FilterItem {
 
   <!-- Filter bar -->
   <div class="bg-white border-b border-border sticky top-0 z-10">
-    <div class="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex gap-2 overflow-x-auto scrollbar-none">
-      @for (f of filters; track f.value) {
-        <button
-          (click)="setFilter(f.value)"
-          class="flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-          [class.bg-accent]="activeFilter() === f.value"
-          [class.text-white]="activeFilter() === f.value"
-          [class.bg-gray-100]="activeFilter() !== f.value"
-          [class.text-gray-600]="activeFilter() !== f.value"
-          [class.hover:bg-gray-200]="activeFilter() !== f.value">
-          {{ f.label }}
-        </button>
-      }
+    <div class="max-w-7xl mx-auto px-4 lg:px-8 py-3">
+      <div class="flex flex-wrap gap-2">
+        @for (f of filters; track f.value) {
+          <button (click)="setFilter(f.value)"
+                  class="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap"
+                  [class.bg-accent]="activeFilter() === f.value"
+                  [class.text-white]="activeFilter() === f.value"
+                  [class.border-accent]="activeFilter() === f.value"
+                  [class.bg-white]="activeFilter() !== f.value"
+                  [class.text-gray-600]="activeFilter() !== f.value"
+                  [class.border-border]="activeFilter() !== f.value"
+                  [class.hover:bg-gray-50]="activeFilter() !== f.value">
+            {{ f.label }}
+          </button>
+        }
+      </div>
     </div>
   </div>
 
@@ -93,14 +96,19 @@ interface FilterItem {
                   </div>
                 </div>
               } @else if (isAudio(item)) {
-                <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100 p-4">
-                  <div class="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mb-2">
-                    <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-full h-full flex flex-col items-center justify-center p-4"
+                     [style]="audioMoodGradient(item)">
+                  <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-2">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
                     </svg>
                   </div>
-                  <p class="text-xs text-gray-500 text-center">Audio</p>
+                  @if (item.title) {
+                    <p class="text-xs text-white font-semibold text-center line-clamp-2 leading-snug px-1">{{ item.title }}</p>
+                  } @else {
+                    <p class="text-xs text-white/80 text-center font-medium">{{ item.zone || 'Audio' }}</p>
+                  }
                 </div>
               } @else if (isTranscription(item)) {
                 <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">
@@ -139,8 +147,13 @@ interface FilterItem {
                 <span class="text-[10px] text-gray-400 truncate">{{ item.userDisplayName }}</span>
               </div>
 
-              <!-- Prompt -->
-              @if (item.prompt) {
+              <!-- Title (audio) or Prompt -->
+              @if (isAudio(item) && item.title) {
+                <p class="text-xs font-semibold text-gray-800 line-clamp-1">{{ item.title }}</p>
+                @if (item.prompt) {
+                  <p class="text-xs text-gray-500 line-clamp-1 leading-relaxed">{{ item.prompt }}</p>
+                }
+              } @else if (item.prompt) {
                 <p class="text-xs text-gray-600 line-clamp-2 leading-relaxed">{{ item.prompt }}</p>
               } @else {
                 <p class="text-xs text-gray-400 italic">{{ noPromptLabel(item.product) }}</p>
@@ -208,17 +221,24 @@ export class ExploreComponent implements OnInit {
   private loginModal = inject(LoginModalService);
 
   filters: FilterItem[] = [
-    { label: 'All',        value: null },
-    { label: 'Cinematic',  value: 'Cinematic' },
-    { label: 'Character',  value: 'Character' },
-    { label: 'Viral',      value: 'Viral' },
-    { label: 'Pet',        value: 'Pet' },
-    { label: 'Dramatic',   value: 'Dramatic' },
-    { label: 'Cool',       value: 'Cool' },
-    { label: 'Playful',    value: 'Playful' },
-    { label: 'Fantasy',    value: 'Fantasy' },
-    { label: 'Dark',       value: 'Dark' },
-    { label: 'Anime',      value: 'Anime' },
+    { label: 'All',             value: null },
+    { label: 'Cinematic',       value: 'Cinematic' },
+    { label: 'Character',       value: 'Character' },
+    { label: 'Viral',           value: 'Viral' },
+    { label: 'Dramatic',        value: 'Dramatic' },
+    { label: 'Cool',            value: 'Cool' },
+    { label: 'Playful',         value: 'Playful' },
+    { label: 'Fantasy',         value: 'Fantasy' },
+    { label: 'Dark',            value: 'Dark' },
+    { label: 'Anime',           value: 'Anime' },
+    { label: 'Narration',       value: 'Narration' },
+    { label: 'Podcast',         value: 'Podcast' },
+    { label: 'Character Voice', value: 'Character Voice' },
+    { label: 'Storytelling',    value: 'Storytelling' },
+    { label: 'Kids',            value: 'Kids' },
+    { label: 'Meditation',      value: 'Meditation' },
+    { label: 'News',            value: 'News' },
+    { label: 'Entertainment',   value: 'Entertainment' },
   ];
 
   skeletons = Array(12).fill(0);
@@ -284,6 +304,20 @@ export class ExploreComponent implements OnInit {
 
   isAudio(item: ExploreItemDto): boolean {
     return item.product === 'Voice';
+  }
+
+  audioMoodGradient(item: ExploreItemDto): string {
+    const gradients: Record<string, string> = {
+      'Narration':       'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'Podcast':         'background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+      'Character Voice': 'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      'Storytelling':    'background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      'Kids':            'background: linear-gradient(135deg, #f9d423 0%, #ff4e50 100%)',
+      'Meditation':      'background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+      'News':            'background: linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+      'Entertainment':   'background: linear-gradient(135deg, #fd7043 0%, #ef5350 100%)',
+    };
+    return gradients[item.zone ?? ''] ?? 'background: linear-gradient(135deg, #6b7280 0%, #374151 100%)';
   }
 
   isTranscription(item: ExploreItemDto): boolean {

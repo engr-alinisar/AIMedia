@@ -131,7 +131,18 @@
       "Bash(curl -sLo elevenlabs.png \"https://pbs.twimg.com/profile_images/1735024697893224448/h-rZLjbj_400x400.jpg\")",
       "Bash(curl -sLo elevenlabs.png \"https://assets-global.website-files.com/62bcd27e89a7d4de671d8e44/655acac5c1acc87ca32d3f00_elevenlabs-favicon.png\")",
       "Bash(curl -sL \"https://cdn.prod.website-files.com/69654e88dce9154b5f12070c/69a193e3bb88e5b26c2807f2_minimax.svg\" -o minimax.svg)",
-      "Bash(find /d/Projects/AiMedia/backend -name *.cs)"
+      "Bash(find /d/Projects/AiMedia/backend -name *.cs)",
+      "Bash(grep -n \"jobUpdates$\\\\|JobStatusUpdate\\\\|interface.*Update\" \"D:/Projects/AiMedia/frontend/src/app/core/services/signalr.service.ts\")",
+      "Bash(grep -n \"updates$\\\\|Observable\\\\|subscribe\\\\|trackJob\" \"D:/Projects/AiMedia/frontend/src/app/core/services/signalr.service.ts\")",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//d/Projects/AiMedia/**)",
+      "Bash(done)",
+      "Bash(curl -sL \"https://storage.googleapis.com/falserverless/example_inputs/birefnet-input.jpeg\" -o \"bria-remove-before.jpg\")",
+      "Bash(curl -sL \"https://storage.googleapis.com/falserverless/example_outputs/birefnet-output.png\" -o \"bria-remove-after.png\")",
+      "Bash(curl -sL \"https://storage.googleapis.com/falserverless/bria/bria_bg_replace_fg.jpg\" -o \"bria-replace-before.jpg\")",
+      "Bash(curl -sL \"https://storage.googleapis.com/falserverless/bria/bria_bg_replace_res.jpg\" -o \"bria-replace-after.jpg\")",
+      "Bash(pip show:*)"
     ]
   }
 }

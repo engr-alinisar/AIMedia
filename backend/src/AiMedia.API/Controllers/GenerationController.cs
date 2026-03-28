@@ -77,7 +77,8 @@ public class GenerationController : ControllerBase
             LanguageCode: request.LanguageCode,
             Pitch: request.Pitch,
             Vol: request.Vol,
-            Emotion: request.Emotion), ct);
+            Emotion: request.Emotion,
+            Title: request.Title), ct);
         return Accepted(result);
     }
 
@@ -104,13 +105,23 @@ public class GenerationController : ControllerBase
         IFormFile? file,
         CancellationToken ct)
     {
+        // Secondary image file (virtual try-on, product integration)
+        IFormFile? secondaryFile = Request.Form.Files.Count > 1 ? Request.Form.Files[1] : null;
+
         var result = await _mediator.Send(new GenerateBackgroundRemovalCommand(
             GetUserId(),
             request.ImageUrl,
             file?.OpenReadStream(),
             file?.FileName,
             request.ModelId,
-            request.IsPublic, request.Zone), ct);
+            request.IsPublic, request.Zone,
+            request.Prompt, request.NegativePrompt,
+            request.SecondaryImageUrl,
+            secondaryFile?.OpenReadStream(),
+            secondaryFile?.FileName,
+            request.MaskUrl,
+            request.BackgroundStyle, request.MakeupStyle, request.MakeupIntensity,
+            request.RenderingSpeed, request.ImageSize), ct);
         return Accepted(result);
     }
 
@@ -176,7 +187,8 @@ public record GenerateVoiceRequest(
     float? Vol = null,
     string? Emotion = null,
     float? VoiceStyle = null,
-    string? LanguageCode = null);
+    string? LanguageCode = null,
+    string? Title = null);
 
 public record TranscriptionRequest(
     string ModelId = "fal-ai/whisper",
@@ -190,6 +202,15 @@ public record TranscriptionRequest(
 
 public record BackgroundRemovalRequest(
     string? ImageUrl = null,
-    string ModelId = "fal-ai/pixelcut/remove-background",
+    string ModelId = "fal-ai/bria/background/remove",
     bool IsPublic = true,
-    string? Zone = null);
+    string? Zone = null,
+    string? Prompt = null,
+    string? NegativePrompt = null,
+    string? SecondaryImageUrl = null,
+    string? MaskUrl = null,
+    string? BackgroundStyle = null,
+    string? MakeupStyle = null,
+    string? MakeupIntensity = null,
+    string? RenderingSpeed = null,
+    string? ImageSize = null);

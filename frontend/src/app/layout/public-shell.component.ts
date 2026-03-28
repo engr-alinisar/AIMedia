@@ -342,7 +342,7 @@ export class PublicShellComponent implements OnInit, OnDestroy {
       category: 'Image AI',
       items: [
         { label: 'Image Generation',   icon: '🖼️', route: '/image-gen' },
-        { label: 'Background Removal', icon: '✂️', route: '/background-removal' },
+        { label: 'Image Studio', icon: '✂️', route: '/background-removal' },
       ]
     },
     {

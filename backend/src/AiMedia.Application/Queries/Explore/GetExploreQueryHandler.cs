@@ -64,7 +64,8 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
                 j.FalEndpoint,
                 j.CreatedAt,
                 displayName,
-                j.Zone
+                j.Zone,
+                j.Title
             );
         }).ToList();
 

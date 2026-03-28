@@ -81,6 +81,7 @@ try
     builder.Services.AddSignalR()
         .AddJsonProtocol(opts =>
         {
+            opts.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
             opts.PayloadSerializerOptions.Converters.Add(
                 new System.Text.Json.Serialization.JsonStringEnumConverter());
         });

@@ -8,5 +8,6 @@ public record ExploreItemDto(
     string? ModelId,
     DateTime CreatedAt,
     string? UserDisplayName,
-    string? Zone
+    string? Zone,
+    string? Title
 );

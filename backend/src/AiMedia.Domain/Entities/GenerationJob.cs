@@ -24,6 +24,7 @@ public class GenerationJob
     public int DurationSeconds { get; set; }
     public bool IsPublic { get; set; } = true;
     public string? Zone { get; set; }
+    public string? Title { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
 

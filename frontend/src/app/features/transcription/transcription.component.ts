@@ -417,7 +417,7 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
   private startFallback() {
     this.pollInterval = setInterval(() => {
       const u = this.signalR.latestUpdate();
-      if (u?.jobId === this.currentJobId) {
+      if (u?.jobId === this.currentJobId && (u.status === 'Completed' || u.status === 'Failed')) {
         this.apply(u.status as JobStatus, u.outputUrl, u.errorMessage);
         clearInterval(this.pollInterval);
         return;

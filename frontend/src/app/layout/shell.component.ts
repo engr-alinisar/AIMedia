@@ -285,6 +285,30 @@ interface NavGroup { category: string; items: NavItem[]; }
     </main>
   </div>
 </div>
+
+<!-- Toast notification -->
+@if (toast()) {
+  <div class="fixed bottom-5 right-5 z-[9999] flex items-start gap-3 px-4 py-3.5 rounded-xl shadow-xl border max-w-sm w-full pointer-events-auto transition-all"
+       [class.bg-white]="true"
+       [class.border-green-200]="toast()!.type === 'completed'"
+       [class.border-red-200]="toast()!.type === 'failed'"
+       (click)="onToastClick()">
+    <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm"
+         [class.bg-green-100]="toast()!.type === 'completed'"
+         [class.bg-red-100]="toast()!.type === 'failed'">
+      {{ toast()!.type === 'completed' ? '✅' : '❌' }}
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-semibold text-gray-900">{{ toast()!.title }}</p>
+      <p class="text-xs text-gray-500 mt-0.5 truncate">{{ toast()!.message }}</p>
+    </div>
+    <button (click)="toast.set(null); $event.stopPropagation()" class="text-gray-400 hover:text-gray-600 flex-shrink-0">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+}
   `
 })
 export class ShellComponent implements OnInit, OnDestroy {
@@ -306,6 +330,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         if (update.status === 'Completed' || update.status === 'Failed') {
           this.credits.loadBalance().subscribe();
           this.notif.addFromJobUpdate(update, update.product ?? 'Unknown');
+          this.showToast(update.status as 'Completed' | 'Failed', update.product ?? 'Unknown', update.jobId);
         }
       });
     });
@@ -315,6 +340,8 @@ export class ShellComponent implements OnInit, OnDestroy {
   showNotifications = signal(false);
   showUserMenu = signal(false);
   sidebarOpen = signal(false);
+  toast = signal<{ type: 'completed' | 'failed'; title: string; message: string; jobId?: string } | null>(null);
+  private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   navGroups: NavGroup[] = [
     {
@@ -334,7 +361,7 @@ export class ShellComponent implements OnInit, OnDestroy {
       category: 'Image AI',
       items: [
         { label: 'Image Generation', icon: '🖼️', route: '/image-gen' },
-        { label: 'Background Removal', icon: '✂️', route: '/background-removal' },
+        { label: 'Image Studio', icon: '✂️', route: '/background-removal' },
       ]
     },
     {
@@ -369,6 +396,31 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.notif.markRead(n.id);
     this.showNotifications.set(false);
     this.router.navigate(['/jobs'], { queryParams: { highlight: n.jobId } });
+  }
+
+  private readonly productLabel: Record<string, string> = {
+    ImageGen: 'Image Generation', ImageToVideo: 'Image to Video',
+    TextToVideo: 'Text to Video', Voice: 'Text to Audio',
+    Transcription: 'Audio to Text', BackgroundRemoval: 'Image Studio'
+  };
+
+  showToast(status: 'Completed' | 'Failed', product: string, jobId?: string) {
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    const label = this.productLabel[product] ?? product;
+    this.toast.set({
+      type: status === 'Completed' ? 'completed' : 'failed',
+      title: status === 'Completed' ? `${label} complete!` : `${label} failed`,
+      message: status === 'Completed' ? 'Click to view result in My Jobs' : 'Click to see details',
+      jobId
+    });
+    this.toastTimer = setTimeout(() => this.toast.set(null), 5000);
+  }
+
+  onToastClick() {
+    const t = this.toast();
+    this.toast.set(null);
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.router.navigate(['/jobs'], t?.jobId ? { queryParams: { highlight: t.jobId } } : {});
   }
 
   timeAgo(iso: string): string {
@@ -406,5 +458,6 @@ export class ShellComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.auth.isLoggedIn()) this.signalR.stop();
     document.removeEventListener('click', this.onDocumentClick);
+    if (this.toastTimer) clearTimeout(this.toastTimer);
   }
 }

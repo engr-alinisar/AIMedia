@@ -395,7 +395,7 @@ export class LandingComponent implements OnInit {
     },
     {
       icon: '✂️',
-      title: 'Background Removal',
+      title: 'Image Studio',
       description: 'Remove backgrounds from images in one click with pixel-perfect AI precision.',
       route: '/background-removal',
       minCredits: 3,
