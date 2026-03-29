@@ -142,7 +142,8 @@
       "Bash(curl -sL \"https://storage.googleapis.com/falserverless/example_outputs/birefnet-output.png\" -o \"bria-remove-after.png\")",
       "Bash(curl -sL \"https://storage.googleapis.com/falserverless/bria/bria_bg_replace_fg.jpg\" -o \"bria-replace-before.jpg\")",
       "Bash(curl -sL \"https://storage.googleapis.com/falserverless/bria/bria_bg_replace_res.jpg\" -o \"bria-replace-after.jpg\")",
-      "Bash(pip show:*)"
+      "Bash(pip show:*)",
+      "Bash(grep \"\\\\.cs$\")"
     ]
   }
 }

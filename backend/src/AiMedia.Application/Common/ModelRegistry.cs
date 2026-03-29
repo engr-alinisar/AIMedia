@@ -22,9 +22,9 @@ public static class ModelRegistry
         new("fal-ai/kling-video/v2.6/pro/image-to-video",      "Kling v2.6 Pro",    "Improved realism with native audio",            0, 14, ProductType.ImageToVideo, ModelTier.Standard),
         new("fal-ai/kling-video/v2.5-turbo/pro/image-to-video","Kling v2.5 Turbo",          "Fast generation with strong visual fidelity",   0, 10, ProductType.ImageToVideo, ModelTier.Standard),
         new("fal-ai/minimax/hailuo-02/standard/image-to-video","Hailuo 2.0 Standard",      "Dual-resolution image-to-video with end frame", 0, 9,  ProductType.ImageToVideo, ModelTier.Standard),
-        new("fal-ai/minimax/hailuo-2.3/pro/image-to-video",    "Hailuo 2.3 Pro",           "Highest quality MiniMax character consistency",  0, 20, ProductType.ImageToVideo, ModelTier.Premium),
+        new("fal-ai/minimax/hailuo-2.3/pro/image-to-video",    "Hailuo 2.3 Pro",           "Highest quality MiniMax character consistency",  70, 0, ProductType.ImageToVideo, ModelTier.Premium),
         new("fal-ai/wan/v2.2-a14b/image-to-video",             "WAN 2.2",                  "Fast open-source model, good for simple motion", 0, 5,  ProductType.ImageToVideo, ModelTier.Free),
-        new("fal-ai/veo3.1/image-to-video",                    "Veo 3.1",      "Latest Veo with audio and up to 4K",           0, 35, ProductType.ImageToVideo, ModelTier.Premium),
+        new("fal-ai/veo3.1/image-to-video",                    "Veo 3.1",      "Latest Veo with audio and up to 4K",           0, 30, ProductType.ImageToVideo, ModelTier.Premium),
         new("fal-ai/veo3.1/fast/first-last-frame-to-video",   "Veo 3.1 Fast", "First & last frame with audio and 4K",        0, 20, ProductType.ImageToVideo, ModelTier.Premium),
         new("fal-ai/veo3/fast",                                "Veo 3 Fast",   "Speed-optimised Veo 3 with audio",            0, 20, ProductType.ImageToVideo, ModelTier.Premium),
         new("fal-ai/veo3/image-to-video",                      "Veo 3",        "Google's best model, ultra-realistic video",  0, 30, ProductType.ImageToVideo, ModelTier.Premium),
@@ -34,10 +34,10 @@ public static class ModelRegistry
         new("fal-ai/kling-video/o3/pro/text-to-video",         "Kling o3 Pro",       "New o3 architecture — multi-shot, up to 15s",          0, 15, ProductType.TextToVideo, ModelTier.Standard),
         new("fal-ai/kling-video/v2.6/pro/text-to-video",       "Kling v2.6 Pro",     "Improved realism with native audio generation",        0, 14, ProductType.TextToVideo, ModelTier.Standard),
         new("fal-ai/kling-video/v2.5-turbo/pro/text-to-video", "Kling v2.5 Turbo",   "Fast generation with strong visual fidelity",          0, 10, ProductType.TextToVideo, ModelTier.Standard),
-        new("fal-ai/minimax/hailuo-2.3/pro/text-to-video",     "Hailuo 2.3 Pro",     "Highest quality MiniMax with optimized prompts",       120, 0, ProductType.TextToVideo, ModelTier.Premium),
+        new("fal-ai/minimax/hailuo-2.3/pro/text-to-video",     "Hailuo 2.3 Pro",     "Highest quality MiniMax with optimized prompts",       70, 0, ProductType.TextToVideo, ModelTier.Premium),
         new("fal-ai/minimax/hailuo-02/standard/text-to-video", "Hailuo 2.0 Standard","MiniMax with duration control up to 10s",             0,  9, ProductType.TextToVideo, ModelTier.Standard),
         new("fal-ai/veo3",                                     "Veo 3",              "Google Veo 3 — cinematic realism with audio",          0, 30, ProductType.TextToVideo, ModelTier.Premium),
-        new("fal-ai/veo3.1",                                   "Veo 3.1",            "Latest Veo — 4K resolution and audio",                 0, 35, ProductType.TextToVideo, ModelTier.Premium),
+        new("fal-ai/veo3.1",                                   "Veo 3.1",            "Latest Veo — 4K resolution and audio",                 0, 30, ProductType.TextToVideo, ModelTier.Premium),
         new("fal-ai/veo3.1/fast",                              "Veo 3.1 Fast",       "Fast Veo 3.1 — 4K and audio at lower cost",           0, 20, ProductType.TextToVideo, ModelTier.Premium),
         new("fal-ai/wan/v2.2-a14b/text-to-video",              "WAN 2.2",            "Fast open-source text-to-video",                       0,  5, ProductType.TextToVideo, ModelTier.Free),
 
@@ -49,7 +49,7 @@ public static class ModelRegistry
         new("fal-ai/flux-2-pro",                               "FLUX 2 Pro",           "Latest FLUX with improved typography",             10, 0, ProductType.ImageGen, ModelTier.Premium),
 
         // Image Generation — Google (Nano Banana)
-        new("fal-ai/nano-banana",                              "Nano Banana",          "Google's fast generation model",                   5,  0, ProductType.ImageGen, ModelTier.Standard),
+        new("fal-ai/nano-banana",                              "Nano Banana",          "Google's fast generation model",                   6,  0, ProductType.ImageGen, ModelTier.Standard),
         new("fal-ai/nano-banana-2",                            "Nano Banana 2",        "Google gen with web search and up to 4K",          8,  0, ProductType.ImageGen, ModelTier.Premium),
         new("fal-ai/nano-banana-pro",                          "Nano Banana Pro",      "Google's pro model with 4K resolution",            10, 0, ProductType.ImageGen, ModelTier.Premium),
 
@@ -71,7 +71,7 @@ public static class ModelRegistry
         // Image Generation — Recraft
         new("fal-ai/recraft/v3/text-to-image",                 "Recraft v3",           "80+ style options for professional imagery",       6,  0, ProductType.ImageGen, ModelTier.Standard),
         new("fal-ai/recraft/v4/text-to-image",                 "Recraft v4",           "Latest Recraft with enhanced quality",             8,  0, ProductType.ImageGen, ModelTier.Premium),
-        new("fal-ai/recraft/v4/pro/text-to-image",             "Recraft v4 Pro",       "Recraft v4 Pro — highest quality design",          12, 0, ProductType.ImageGen, ModelTier.Premium),
+        new("fal-ai/recraft/v4/pro/text-to-image",             "Recraft v4 Pro",       "Recraft v4 Pro — highest quality design",          35, 0, ProductType.ImageGen, ModelTier.Premium),
 
         // Image Generation — OpenAI
         new("fal-ai/gpt-image-1-mini",                         "GPT Image 1 Mini",     "OpenAI GPT Image 1 Mini — fast generation",        8,  0, ProductType.ImageGen, ModelTier.Premium),
@@ -166,12 +166,13 @@ public static class ModelRegistry
             return (quality ?? "high") switch { "low" => 3, "medium" => 7, _ => isLarge ? 16 : 12 };
         }
 
-        // Nano Banana 2 + Pro: resolution multipliers
+        // Nano Banana 2 + Pro: resolution multipliers (priced at ~2× fal.ai cost)
+        // fal.ai: $0.06/0.5K, $0.08/1K, $0.12/2K, $0.16/4K
         if (modelId == "fal-ai/nano-banana-2")
-            return (resolution ?? "1K") switch { "0.5K" => 6, "2K" => 12, "4K" => 16, _ => 8 };
-        // Nano Banana Pro: only 4K costs extra — 2K is same price as 1K
+            return (resolution ?? "1K") switch { "0.5K" => 12, "2K" => 24, "4K" => 32, _ => 16 };
+        // fal.ai: $0.15/1K+2K, $0.30/4K
         if (modelId == "fal-ai/nano-banana-pro")
-            return resolution == "4K" ? 20 : 10;
+            return resolution == "4K" ? 45 : 22;
 
         // Imagen 4: flat pricing — fal.ai does NOT charge extra for 2K resolution
 
