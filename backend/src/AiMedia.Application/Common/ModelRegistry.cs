@@ -135,6 +135,8 @@ public static class ModelRegistry
 
     };
 
+    public static IReadOnlyList<ModelInfo> AllModels => All;
+
     public static IReadOnlyList<ModelInfo> ForProduct(ProductType product) =>
         All.Where(m => m.Product == product).ToList();
 

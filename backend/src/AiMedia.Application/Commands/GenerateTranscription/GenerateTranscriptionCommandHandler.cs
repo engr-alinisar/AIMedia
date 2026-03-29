@@ -12,14 +12,15 @@ public class GenerateTranscriptionCommandHandler(
     IAppDbContext db,
     IFalClient falClient,
     ICreditService creditService,
-    IStorageService storage) : IRequestHandler<GenerateTranscriptionCommand, GenerationResponse>
+    IStorageService storage,
+    IModelPricingService pricing) : IRequestHandler<GenerateTranscriptionCommand, GenerationResponse>
 {
     public async Task<GenerationResponse> Handle(GenerateTranscriptionCommand request, CancellationToken cancellationToken)
     {
         var model = ModelRegistry.Get(request.ModelId)
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
-        var credits = ModelRegistry.CalculateCredits(request.ModelId);
+        var credits = await pricing.GetCreditsAsync(request.ModelId, 1, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace AiMedia.Infrastructure.Extensions;
 
@@ -43,6 +44,10 @@ public static class ServiceCollectionExtensions
 
         // PayPal
         services.AddHttpClient<IPayPalService, PayPalService>();
+
+        // In-process cache (used for model pricing)
+        services.AddMemoryCache();
+        services.AddScoped<IModelPricingService, ModelPricingService>();
 
         return services;
     }

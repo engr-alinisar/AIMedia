@@ -11,14 +11,15 @@ namespace AiMedia.Application.Commands.GenerateImage;
 public class GenerateImageCommandHandler(
     IAppDbContext db,
     IFalClient falClient,
-    ICreditService creditService) : IRequestHandler<GenerateImageCommand, GenerationResponse>
+    ICreditService creditService,
+    IModelPricingService pricing) : IRequestHandler<GenerateImageCommand, GenerationResponse>
 {
     public async Task<GenerationResponse> Handle(GenerateImageCommand request, CancellationToken cancellationToken)
     {
         var model = ModelRegistry.Get(request.ModelId)
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
-        var credits = ModelRegistry.CalculateImageGenCredits(request.ModelId, request.Quality, request.ImageSize, request.Resolution);
+        var credits = await pricing.GetImageGenCreditsAsync(request.ModelId, request.Quality, request.ImageSize, request.Resolution, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");

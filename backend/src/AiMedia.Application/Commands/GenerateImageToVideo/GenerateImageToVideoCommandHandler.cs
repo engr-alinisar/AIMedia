@@ -11,14 +11,15 @@ namespace AiMedia.Application.Commands.GenerateImageToVideo;
 public class GenerateImageToVideoCommandHandler(
     IAppDbContext db,
     IFalClient falClient,
-    ICreditService creditService) : IRequestHandler<GenerateImageToVideoCommand, GenerationResponse>
+    ICreditService creditService,
+    IModelPricingService pricing) : IRequestHandler<GenerateImageToVideoCommand, GenerationResponse>
 {
     public async Task<GenerationResponse> Handle(GenerateImageToVideoCommand request, CancellationToken cancellationToken)
     {
         var model = ModelRegistry.Get(request.ModelId)
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
-        var credits = ModelRegistry.CalculateCredits(request.ModelId, request.DurationSeconds);
+        var credits = await pricing.GetCreditsAsync(request.ModelId, request.DurationSeconds, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");

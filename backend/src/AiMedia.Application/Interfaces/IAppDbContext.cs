@@ -11,6 +11,7 @@ public interface IAppDbContext
     DbSet<VoiceClone> VoiceClones { get; }
     DbSet<CreditPack> CreditPacks { get; }
     DbSet<FaqItem> FaqItems { get; }
+    DbSet<ModelPricing> ModelPricings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

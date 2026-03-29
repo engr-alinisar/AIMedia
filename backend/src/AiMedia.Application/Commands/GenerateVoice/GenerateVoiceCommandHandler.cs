@@ -12,7 +12,8 @@ namespace AiMedia.Application.Commands.GenerateVoice;
 public class GenerateVoiceCommandHandler(
     IAppDbContext db,
     IFalClient falClient,
-    ICreditService creditService) : IRequestHandler<GenerateVoiceCommand, GenerationResponse>
+    ICreditService creditService,
+    IModelPricingService pricing) : IRequestHandler<GenerateVoiceCommand, GenerationResponse>
 {
     public async Task<GenerationResponse> Handle(GenerateVoiceCommand request, CancellationToken cancellationToken)
     {
@@ -22,7 +23,7 @@ public class GenerateVoiceCommandHandler(
         // Cost per 1000 characters
         var charCount = Math.Max(1, request.Text.Length);
         var units = (int)Math.Ceiling(charCount / 1000.0);
-        var credits = ModelRegistry.CalculateCredits(request.ModelId) * units;
+        var credits = await pricing.GetCreditsAsync(request.ModelId, 1, cancellationToken) * units;
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");

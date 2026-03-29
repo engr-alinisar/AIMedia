@@ -12,7 +12,8 @@ public class GenerateBackgroundRemovalCommandHandler(
     IAppDbContext db,
     IFalClient falClient,
     ICreditService creditService,
-    IStorageService storage) : IRequestHandler<GenerateBackgroundRemovalCommand, GenerationResponse>
+    IStorageService storage,
+    IModelPricingService pricing) : IRequestHandler<GenerateBackgroundRemovalCommand, GenerationResponse>
 {
     public async Task<GenerationResponse> Handle(GenerateBackgroundRemovalCommand request, CancellationToken cancellationToken)
     {
@@ -22,7 +23,7 @@ public class GenerateBackgroundRemovalCommandHandler(
         // Variable pricing: Ideogram speed tiers — TURBO=6, BALANCED=12, QUALITY=18
         int credits = request.ModelId is "fal-ai/ideogram/v3/replace-background" or "fal-ai/ideogram/v3/edit"
             ? (request.RenderingSpeed?.ToUpper() switch { "TURBO" => 6, "QUALITY" => 18, _ => 12 })
-            : ModelRegistry.CalculateCredits(request.ModelId);
+            : await pricing.GetCreditsAsync(request.ModelId, 1, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");

@@ -11,7 +11,8 @@ namespace AiMedia.Application.Commands.GenerateTextToVideo;
 public class GenerateTextToVideoCommandHandler(
     IAppDbContext db,
     IFalClient falClient,
-    ICreditService creditService) : IRequestHandler<GenerateTextToVideoCommand, GenerationResponse>
+    ICreditService creditService,
+    IModelPricingService pricing) : IRequestHandler<GenerateTextToVideoCommand, GenerationResponse>
 {
     public async Task<GenerationResponse> Handle(GenerateTextToVideoCommand request, CancellationToken cancellationToken)
     {
@@ -29,13 +30,10 @@ public class GenerateTextToVideoCommandHandler(
         var isVeo3      = request.ModelId.Contains("veo3") && !request.ModelId.Contains("veo3.1") && !isVeo3Fast;
         var isWan       = request.ModelId.Contains("wan");
 
-        // Hailuo 2.3 is flat-rate: always 1 second so registry returns CreditsBase
-        var durationForCredits = isHailuo23 ? 1 : request.DurationSeconds;
-
         var model = ModelRegistry.Get(request.ModelId)
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
-        var credits = ModelRegistry.CalculateCredits(request.ModelId, durationForCredits);
+        var credits = await pricing.GetCreditsAsync(request.ModelId, request.DurationSeconds, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
