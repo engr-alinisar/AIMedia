@@ -32,7 +32,8 @@ export class NotificationService {
       Transcription: 'Audio to Text', BackgroundRemoval: 'Image Studio'
     };
 
-    const label = productLabel[product] ?? product;
+    // Prefer model name (e.g. "Kling v3 Pro"), fall back to product label
+    const label = update.modelName || (productLabel[product] ?? product);
     const n: AppNotification = {
       id: crypto.randomUUID(),
       jobId: update.jobId,

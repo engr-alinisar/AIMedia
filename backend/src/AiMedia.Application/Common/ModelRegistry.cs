@@ -18,9 +18,9 @@ public static class ModelRegistry
     {
         // Image to Video
         new("fal-ai/kling-video/v3/pro/image-to-video",        "Kling v3 Pro",      "Latest Kling, multi-shot, audio, up to 15s",    0, 17, ProductType.ImageToVideo, ModelTier.Standard),
-        new("fal-ai/kling-video/o3/standard/image-to-video",   "Kling o3",          "New architecture, multi-shot, up to 15s",       0, 15, ProductType.ImageToVideo, ModelTier.Standard),
+        new("fal-ai/kling-video/o3/standard/image-to-video",   "Kling o3",          "New architecture, multi-shot, up to 15s",       0, 13, ProductType.ImageToVideo, ModelTier.Standard),
         new("fal-ai/kling-video/v2.6/pro/image-to-video",      "Kling v2.6 Pro",    "Improved realism with native audio",            0, 14, ProductType.ImageToVideo, ModelTier.Standard),
-        new("fal-ai/kling-video/v2.5-turbo/pro/image-to-video","Kling v2.5 Turbo",          "Fast generation with strong visual fidelity",   0, 10, ProductType.ImageToVideo, ModelTier.Standard),
+        new("fal-ai/kling-video/v2.5-turbo/pro/image-to-video","Kling v2.5 Turbo",          "Fast generation with strong visual fidelity",   0, 11, ProductType.ImageToVideo, ModelTier.Standard),
         new("fal-ai/minimax/hailuo-02/standard/image-to-video","Hailuo 2.0 Standard",      "Dual-resolution image-to-video with end frame", 0, 9,  ProductType.ImageToVideo, ModelTier.Standard),
         new("fal-ai/minimax/hailuo-2.3/pro/image-to-video",    "Hailuo 2.3 Pro",           "Highest quality MiniMax character consistency",  70, 0, ProductType.ImageToVideo, ModelTier.Premium),
         new("fal-ai/wan/v2.2-a14b/image-to-video",             "WAN 2.2",                  "Fast open-source model, good for simple motion", 0, 5,  ProductType.ImageToVideo, ModelTier.Free),

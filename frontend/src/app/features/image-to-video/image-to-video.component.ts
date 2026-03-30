@@ -127,7 +127,7 @@ interface ModelGroup {
             <p class="text-sm font-medium text-gray-700">Multi-Shot</p>
             <p class="text-xs text-gray-400 mt-0.5">Generate cinematic multi-scene video sequences</p>
           </div>
-          <button type="button" (click)="multiShot.update(v => !v)"
+          <button type="button" (click)="multiShot.update(v => !v); clampDuration()"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 mt-0.5"
                   [class.bg-accent]="multiShot()"
                   [class.bg-gray-300]="!multiShot()">
@@ -185,7 +185,7 @@ interface ModelGroup {
 
       <!-- Duration -->
       <app-duration-picker
-        [durations]="selectedModel()?.durations ?? []"
+        [durations]="availableDurations()"
         [value]="duration()"
         (valueChange)="duration.set($event)" />
 
@@ -468,7 +468,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
           badge: 'HOT',
           badgeColor: '#EF4444',
           tags: ['Multi-Shot', 'Audio', 'End Frame', '3–15s'],
-          durations: [3, 5, 10, 15],
+          durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
           resolutions: [],
           supportsMultiShot: true,
           supportsAudio: true,
@@ -484,24 +484,27 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
         {
           id: 'fal-ai/kling-video/o3/standard/image-to-video',
           name: 'Kling o3',
-          description: 'New architecture — multi-shot, audio, up to 15s.',
-          creditsPerSec: 15,
+          description: 'New architecture — multi-shot, audio, end frame, 3–15s.',
+          creditsPerSec: 13,
           badge: 'NEW',
           badgeColor: '#7C3AED',
-          tags: ['Multi-Shot', 'Audio', 'End Frame', 'Up to 15s'],
-          durations: [5, 10, 15],
+          tags: ['Multi-Shot', 'Audio', 'End Frame', '3–15s'],
+          durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
           resolutions: [],
           supportsMultiShot: true,
           supportsAudio: true,
           hasAudio: false,
           aspectRatios: ASPECT_RATIOS_169_916_11,
+          supportsEndFrame: true,
+          supportsMultiPrompt: true,
+          audioTiers: { noAudio: 13, audio: 17 },
         },
         {
           id: 'fal-ai/kling-video/v2.6/pro/image-to-video',
           name: 'Kling v2.6 Pro',
           description: 'Improved realism with audio and end frame.',
           creditsPerSec: 14,
-          tags: ['Audio', 'End Frame'],
+          tags: ['Audio', 'End Frame', '5–10s'],
           durations: [5, 10],
           resolutions: [],
           supportsMultiShot: false,
@@ -512,17 +515,20 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
         {
           id: 'fal-ai/kling-video/v2.5-turbo/pro/image-to-video',
           name: 'Kling v2.5 Turbo',
-          description: 'Fastest Kling with strong visual fidelity.',
-          creditsPerSec: 10,
+          description: 'Fastest Kling — end frame, 5–10s.',
+          creditsPerSec: 11,
           badge: 'FAST',
           badgeColor: '#2563EB',
-          tags: ['Fast', 'End Frame'],
+          tags: ['Fast', 'End Frame', '5–10s'],
           durations: [5, 10],
           resolutions: [],
           supportsMultiShot: false,
           supportsAudio: false,
           hasAudio: false,
           aspectRatios: ASPECT_RATIOS_169_916_11,
+          supportsEndFrame: true,
+          supportsNegativePrompt: true,
+          supportsCfgScale: true,
         },
       ],
     },
@@ -714,6 +720,17 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   isPublic = signal(true);
   zone = '';
 
+  // Filter durations so each multi-prompt segment gets at least 3s
+  availableDurations = computed(() => {
+    const m = this.selectedModel();
+    if (!m) return [];
+    const all = m.durations;
+    if (!m.supportsMultiPrompt || !this.multiShot()) return all;
+    const minDuration = this.multiPrompts().length * 3;
+    const filtered = all.filter(d => d >= minDuration);
+    return filtered.length > 0 ? filtered : [all[all.length - 1]];
+  });
+
   hasValidPrompt = computed(() => {
     const m = this.selectedModel();
     if (!m) return false;
@@ -745,11 +762,24 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     const qp = this.route.snapshot.queryParams;
-    if (qp['prompt']) this.prompt.set(qp['prompt']);
     if (qp['model']) {
       const m = this.allModels.find(x => x.id === qp['model']);
       if (m) this.selectModel(m);
     }
+    // Restore multi-prompt segments from explore
+    if (qp['multiPrompts']) {
+      try {
+        const segments: string[] = JSON.parse(qp['multiPrompts']);
+        if (segments.length >= 2) {
+          this.multiShot.set(true);
+          this.multiPrompts.set(segments);
+          this.clampDuration();
+        }
+      } catch { /* ignore parse errors */ }
+    }
+    if (qp['prompt']) this.prompt.set(qp['prompt']);
+    // Show output from explore
+    if (qp['outputUrl']) this.outputUrl.set(qp['outputUrl']);
   }
 
   onModelSelect(id: string) {
@@ -793,10 +823,22 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
 
   addPromptSegment() {
     this.multiPrompts.update(p => [...p, '']);
+    this.clampDuration();
   }
 
   removePromptSegment(i: number) {
     this.multiPrompts.update(p => p.filter((_, idx) => idx !== i));
+  }
+
+  /** Ensure selected duration is still valid after segment count changes */
+  clampDuration() {
+    // Use setTimeout so availableDurations recomputes first
+    setTimeout(() => {
+      const avail = this.availableDurations();
+      if (avail.length > 0 && !avail.includes(this.duration())) {
+        this.duration.set(avail[0]);
+      }
+    });
   }
 
   updatePromptSegment(i: number, val: string) {

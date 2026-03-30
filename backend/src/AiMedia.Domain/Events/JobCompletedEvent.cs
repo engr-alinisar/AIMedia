@@ -6,4 +6,6 @@ public record JobCompletedEvent(
     Guid JobId,
     Guid UserId,
     string? OutputR2Key,
-    int CreditsCharged) : INotification;
+    int CreditsCharged,
+    string Product = "",
+    string ModelName = "") : INotification;

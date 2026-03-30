@@ -31,6 +31,7 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
         var items = jobs.Select(j =>
         {
             string? prompt = null;
+            List<string>? multiPrompts = null;
 
             if (j.FalInput != null)
             {
@@ -43,6 +44,18 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
                         prompt = textProp.GetString();
                     else if (root.TryGetProperty("gen_text", out var genTextProp))
                         prompt = genTextProp.GetString();
+
+                    // Extract multi_prompt segments
+                    if (root.TryGetProperty("multi_prompt", out var mpProp) && mpProp.ValueKind == JsonValueKind.Array)
+                    {
+                        multiPrompts = new List<string>();
+                        foreach (var seg in mpProp.EnumerateArray())
+                        {
+                            if (seg.TryGetProperty("prompt", out var segPrompt))
+                                multiPrompts.Add(segPrompt.GetString() ?? "");
+                        }
+                        if (multiPrompts.Count == 0) multiPrompts = null;
+                    }
                 }
                 catch (JsonException) { }
             }
@@ -65,7 +78,8 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
                 j.CreatedAt,
                 displayName,
                 j.Zone,
-                j.Title
+                j.Title,
+                multiPrompts
             );
         }).ToList();
 

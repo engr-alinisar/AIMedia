@@ -6,4 +6,6 @@ public record JobFailedEvent(
     Guid JobId,
     Guid UserId,
     int CreditsReleased,
-    string? ErrorMessage) : INotification;
+    string? ErrorMessage,
+    string Product = "",
+    string ModelName = "") : INotification;

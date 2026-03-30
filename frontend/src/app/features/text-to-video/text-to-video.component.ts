@@ -248,8 +248,8 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
           description: 'Latest Kling — up to 15s, multi-shot, native audio.',
           creditsPerSec: 18, creditsFlat: 0,
           badge: 'HOT', badgeColor: '#EF4444',
-          tags: ['Multi-Shot', 'Audio', 'Up to 15s'],
-          durations: [5, 10, 15],
+          tags: ['Multi-Shot', 'Audio', '3–15s'],
+          durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
           resolutions: [],
           aspectRatios: ASPECT_RATIOS_169_916_11,
           supportsMultiShot: true, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
@@ -260,8 +260,8 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
           description: 'New o3 architecture — multi-shot, up to 15s, native audio.',
           creditsPerSec: 15, creditsFlat: 0,
           badge: 'NEW', badgeColor: '#7C3AED',
-          tags: ['Multi-Shot', 'Audio', 'Up to 15s'],
-          durations: [5, 10, 15],
+          tags: ['Multi-Shot', 'Audio', '3–15s'],
+          durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
           resolutions: [],
           aspectRatios: ASPECT_RATIOS_169_916_11,
           supportsMultiShot: true, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
@@ -271,7 +271,7 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
           name: 'Kling v2.6 Pro',
           description: 'Improved realism with native audio generation.',
           creditsPerSec: 14, creditsFlat: 0,
-          tags: ['Audio'],
+          tags: ['Audio', '5–10s'],
           durations: [5, 10],
           resolutions: [],
           aspectRatios: ASPECT_RATIOS_169_916_11,
@@ -283,7 +283,7 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
           description: 'Fast generation with strong visual fidelity and audio.',
           creditsPerSec: 10, creditsFlat: 0,
           badge: 'FAST', badgeColor: '#2563EB',
-          tags: ['Fast', 'Audio'],
+          tags: ['Fast', 'Audio', '5–10s'],
           durations: [5, 10],
           resolutions: [],
           aspectRatios: ASPECT_RATIOS_169_916_11,
@@ -468,6 +468,7 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
       const m = this.allModels.find(x => x.id === qp['model']);
       if (m) this.selectModel(m);
     }
+    if (qp['outputUrl']) this.outputUrl.set(qp['outputUrl']);
   }
 
   onModelSelect(id: string) {

@@ -48,7 +48,8 @@ public class CreditService(IAppDbContext db, ILogger<CreditService> logger) : IC
 
     public async Task DeductAsync(Guid userId, Guid jobId, int credits, string description, CancellationToken cancellationToken = default)
     {
-        // Release from reserved (balance already deducted at reserve time)
+        // Balance was already deducted at reserve time — just release from reserved bucket
+        // and update the existing Reservation transaction to a Deduction (completed).
         var rows = await ((DbContext)(object)db).Database.ExecuteSqlRawAsync(
             """
             UPDATE users
@@ -60,25 +61,14 @@ public class CreditService(IAppDbContext db, ILogger<CreditService> logger) : IC
         if (rows == 0)
             logger.LogWarning("Could not deduct reserved credits for user {UserId} job {JobId}", userId, jobId);
 
-        var user = await ((DbContext)(object)db).Set<User>().AsNoTracking()
-            .Where(u => u.Id == userId)
-            .Select(u => new { u.CreditBalance })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        var tx = new CreditTransaction
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Type = TransactionType.Deduction,
-            Amount = -credits,
-            BalanceAfter = user?.CreditBalance ?? 0,
-            Description = description,
-            JobId = jobId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        ((DbContext)(object)db).Set<CreditTransaction>().Add(tx);
-        await db.SaveChangesAsync(cancellationToken);
+        // Convert the existing Reservation transaction → Deduction (no new row)
+        await ((DbContext)(object)db).Database.ExecuteSqlRawAsync(
+            """
+            UPDATE credit_transactions
+            SET type = {0}, description = {1}
+            WHERE job_id = {2} AND user_id = {3} AND type = {4}
+            """,
+            (int)TransactionType.Deduction, description, jobId, userId, (int)TransactionType.Reservation);
 
         logger.LogInformation("Deducted {Credits} credits for user {UserId} job {JobId}", credits, userId, jobId);
     }

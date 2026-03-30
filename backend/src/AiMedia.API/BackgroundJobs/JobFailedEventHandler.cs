@@ -18,7 +18,9 @@ public class JobFailedEventHandler(
             {
                 JobId = notification.JobId,
                 Status = JobStatus.Failed,
-                ErrorMessage = notification.ErrorMessage
+                ErrorMessage = notification.ErrorMessage,
+                Product = notification.Product,
+                ModelName = notification.ModelName
             });
 
         logger.LogInformation("SignalR JobUpdate sent for failed job {JobId}", notification.JobId);

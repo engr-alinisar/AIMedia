@@ -81,22 +81,33 @@ public class GenerateImageToVideoCommandHandler(
                 aspect_ratio    = request.AspectRatio
             }
             : isKlingO3
-            ? (object)new                                    // o3: image_url, shot_type, audio, aspect_ratio
+            ? (object)new                                    // o3: image_url, shot_type, audio, multi_prompt, end_image
             {
-                image_url      = request.ImageUrl,
-                prompt         = request.Prompt,
-                duration       = request.DurationSeconds.ToString(),
-                shot_type      = request.MultiShot ? "customize" : (string?)null,
-                generate_audio = request.GenerateAudio,
-                aspect_ratio   = request.AspectRatio
+                image_url       = request.ImageUrl,
+                prompt          = request.MultiPrompts is { Count: > 0 } && request.MultiShot
+                                    ? (object?)null : request.Prompt,
+                multi_prompt    = request.MultiPrompts is { Count: > 0 } && request.MultiShot
+                                    ? request.MultiPrompts.Select(p => new
+                                    {
+                                        prompt   = p,
+                                        duration = (request.DurationSeconds / request.MultiPrompts.Count).ToString()
+                                    }).ToList() : null,
+                duration        = request.DurationSeconds.ToString(),
+                shot_type       = request.MultiPrompts is { Count: > 0 } && request.MultiShot ? "customize" : (string?)null,
+                generate_audio  = request.GenerateAudio,
+                aspect_ratio    = request.AspectRatio,
+                end_image_url   = request.EndImageUrl
             }
             : isKling
-            ? (object)new                                    // v2.5-turbo: image_url, aspect_ratio
+            ? (object)new                                    // v2.5-turbo: image_url, negative_prompt, end_image, cfg_scale
             {
-                image_url    = request.ImageUrl,
-                prompt       = request.Prompt,
-                duration     = request.DurationSeconds.ToString(),
-                aspect_ratio = request.AspectRatio
+                image_url       = request.ImageUrl,
+                prompt          = request.Prompt,
+                duration        = request.DurationSeconds.ToString(),
+                aspect_ratio    = request.AspectRatio,
+                negative_prompt = request.NegativePrompt,
+                end_image_url   = request.EndImageUrl,
+                cfg_scale       = request.CfgScale ?? 0.5f
             }
             : isVeo31Fast
             ? (object)new                                    // Veo 3.1 Fast: first_frame_url + last_frame_url

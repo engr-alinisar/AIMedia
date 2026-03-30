@@ -14,4 +14,6 @@ public class JobStatusUpdate
     public string? OutputUrl { get; set; }
     public int CreditsCharged { get; set; }
     public string? ErrorMessage { get; set; }
+    public string? Product { get; set; }
+    public string? ModelName { get; set; }
 }

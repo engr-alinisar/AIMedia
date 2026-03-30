@@ -28,7 +28,9 @@ public class JobCompletedEventHandler(
                 JobId = notification.JobId,
                 Status = JobStatus.Completed,
                 OutputUrl = outputUrl,
-                CreditsCharged = notification.CreditsCharged
+                CreditsCharged = notification.CreditsCharged,
+                Product = notification.Product,
+                ModelName = notification.ModelName
             });
 
         logger.LogInformation("SignalR JobUpdate sent for completed job {JobId}", notification.JobId);

@@ -151,7 +151,9 @@
       "Bash(findstr :5015)",
       "Bash(taskkill /F /PID 36760)",
       "Bash(taskkill //F //PID 36760)",
-      "Bash(taskkill //F //PID 35568)"
+      "Bash(taskkill //F //PID 35568)",
+      "Bash(taskkill //F //PID 3292)",
+      "Bash(taskkill //F //PID 3140)"
     ]
   }
 }

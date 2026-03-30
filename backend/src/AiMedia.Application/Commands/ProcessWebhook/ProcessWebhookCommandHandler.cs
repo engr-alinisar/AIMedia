@@ -1,3 +1,4 @@
+using AiMedia.Application.Common;
 using AiMedia.Application.Interfaces;
 using AiMedia.Domain.Enums;
 using AiMedia.Domain.Events;
@@ -24,6 +25,9 @@ public class ProcessWebhookCommandHandler(
 
         // Idempotency: skip if already processed
         if (job.Status is JobStatus.Completed or JobStatus.Failed) return;
+
+        var productName = job.Product.ToString();
+        var modelName = ModelRegistry.Get(job.FalEndpoint)?.Name ?? job.FalEndpoint;
 
         if (request.Status == "OK" && (request.OutputUrl != null || request.OutputText != null))
         {
@@ -64,7 +68,7 @@ public class ProcessWebhookCommandHandler(
                 job.CompletedAt = DateTime.UtcNow;
                 await db.SaveChangesAsync(cancellationToken);
                 await creditService.ReleaseAsync(job.UserId, job.Id, job.CreditsReserved, "Output storage failed", cancellationToken);
-                await publisher.Publish(new JobFailedEvent(job.Id, job.UserId, job.CreditsReserved, job.ErrorMessage), cancellationToken);
+                await publisher.Publish(new JobFailedEvent(job.Id, job.UserId, job.CreditsReserved, job.ErrorMessage, productName, modelName), cancellationToken);
                 return;
             }
 
@@ -75,7 +79,7 @@ public class ProcessWebhookCommandHandler(
             await db.SaveChangesAsync(cancellationToken);
 
             await creditService.DeductAsync(job.UserId, job.Id, job.CreditsReserved, $"Job completed: {job.Product}", cancellationToken);
-            await publisher.Publish(new JobCompletedEvent(job.Id, job.UserId, r2Key, job.CreditsCharged), cancellationToken);
+            await publisher.Publish(new JobCompletedEvent(job.Id, job.UserId, r2Key, job.CreditsCharged, productName, modelName), cancellationToken);
 
             // Low credit warning — send once when balance drops below 50 (reset when user tops up)
             var (balance, _) = await creditService.GetBalanceAsync(job.UserId, cancellationToken);
@@ -105,7 +109,7 @@ public class ProcessWebhookCommandHandler(
             await db.SaveChangesAsync(cancellationToken);
 
             await creditService.ReleaseAsync(job.UserId, job.Id, job.CreditsReserved, "Job failed - credits refunded", cancellationToken);
-            await publisher.Publish(new JobFailedEvent(job.Id, job.UserId, job.CreditsReserved, job.ErrorMessage), cancellationToken);
+            await publisher.Publish(new JobFailedEvent(job.Id, job.UserId, job.CreditsReserved, job.ErrorMessage, productName, modelName), cancellationToken);
         }
     }
 

@@ -81,6 +81,8 @@ export interface JobStatusUpdate {
   outputUrl?: string;
   creditsCharged: number;
   errorMessage?: string;
+  product?: string;
+  modelName?: string;
 }
 
 export interface FaqItemDto {
@@ -110,6 +112,7 @@ export interface ExploreItemDto {
   userDisplayName?: string;
   zone?: string;
   title?: string;
+  multiPrompts?: string[];
 }
 
 // Credit costs mirrored from CreditCalculator.cs

@@ -366,6 +366,8 @@ export class ExploreComponent implements OnInit {
     const queryParams: Record<string, string> = {};
     if (item.prompt) queryParams['prompt'] = item.prompt;
     if (item.modelId) queryParams['model'] = item.modelId;
+    if (item.outputUrl) queryParams['outputUrl'] = item.outputUrl;
+    if (item.multiPrompts?.length) queryParams['multiPrompts'] = JSON.stringify(item.multiPrompts);
     this.router.navigate([route], { queryParams });
   }
 }

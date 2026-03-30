@@ -330,7 +330,7 @@ export class ShellComponent implements OnInit, OnDestroy {
         if (update.status === 'Completed' || update.status === 'Failed') {
           this.credits.loadBalance().subscribe();
           this.notif.addFromJobUpdate(update, update.product ?? 'Unknown');
-          this.showToast(update.status as 'Completed' | 'Failed', update.product ?? 'Unknown', update.jobId);
+          this.showToast(update.status as 'Completed' | 'Failed', update.modelName || update.product || 'Unknown', update.jobId);
         }
       });
     });

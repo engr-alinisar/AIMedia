@@ -9,5 +9,6 @@ public record ExploreItemDto(
     DateTime CreatedAt,
     string? UserDisplayName,
     string? Zone,
-    string? Title
+    string? Title,
+    List<string>? MultiPrompts = null
 );
