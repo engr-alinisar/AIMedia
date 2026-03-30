@@ -143,7 +143,15 @@
       "Bash(curl -sL \"https://storage.googleapis.com/falserverless/bria/bria_bg_replace_fg.jpg\" -o \"bria-replace-before.jpg\")",
       "Bash(curl -sL \"https://storage.googleapis.com/falserverless/bria/bria_bg_replace_res.jpg\" -o \"bria-replace-after.jpg\")",
       "Bash(pip show:*)",
-      "Bash(grep \"\\\\.cs$\")"
+      "Bash(grep \"\\\\.cs$\")",
+      "Bash(tasklist /FI 'IMAGENAME eq dotnet.exe')",
+      "Bash(findstr dotnet:*)",
+      "Bash(dotnet run:*)",
+      "Bash(timeout 15)",
+      "Bash(findstr :5015)",
+      "Bash(taskkill /F /PID 36760)",
+      "Bash(taskkill //F //PID 36760)",
+      "Bash(taskkill //F //PID 35568)"
     ]
   }
 }

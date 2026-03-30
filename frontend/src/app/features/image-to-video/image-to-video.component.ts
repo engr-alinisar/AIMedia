@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -31,7 +31,13 @@ interface VideoModel {
   supportsAudio: boolean;
   hasAudio: boolean;
   aspectRatios: AspectRatio[];
-  endFrameRequired?: boolean;  // needs first_frame_url + last_frame_url (Veo 3.1 Fast)
+  endFrameRequired?: boolean;   // needs first_frame_url + last_frame_url (Veo 3.1 Fast)
+  supportsEndFrame?: boolean;   // optional end_image_url (Kling v3)
+  supportsNegativePrompt?: boolean;
+  supportsCfgScale?: boolean;
+  supportsMultiPrompt?: boolean;
+  supportsElements?: boolean;
+  audioTiers?: { noAudio: number; audio: number };
 }
 
 interface ModelGroup {
@@ -69,7 +75,7 @@ interface ModelGroup {
 
       <!-- Image upload -->
       <div>
-        <label class="form-label">Upload Image</label>
+        <label class="form-label">Upload Image <span class="text-red-500">*</span></label>
         <div class="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer
                     hover:border-accent hover:bg-accent-light/30 transition-colors"
              (click)="fileInput.click()"
@@ -89,7 +95,7 @@ interface ModelGroup {
         </div>
       </div>
 
-      <!-- End Frame (Veo 3.1 Fast only) -->
+      <!-- End Frame (required — shown at top level only for Veo 3.1 Fast) -->
       @if (selectedModel()?.endFrameRequired) {
         <div>
           <label class="form-label">End Frame <span class="text-red-500">*</span></label>
@@ -114,15 +120,62 @@ interface ModelGroup {
         </div>
       }
 
-      <!-- Prompt -->
-      <div>
-        <label class="form-label">Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
-        <textarea class="form-textarea h-24" [(ngModel)]="prompt"
-          spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
-          placeholder="Describe the motion or scene...&#10;Longer, multi-shot prompts work best."
-          maxlength="2500"></textarea>
-        <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2500</p>
-      </div>
+      <!-- Multi-Shot toggle (before prompt so user sees which input is needed) -->
+      @if (selectedModel()?.supportsMultiShot) {
+        <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <div>
+            <p class="text-sm font-medium text-gray-700">Multi-Shot</p>
+            <p class="text-xs text-gray-400 mt-0.5">Generate cinematic multi-scene video sequences</p>
+          </div>
+          <button type="button" (click)="multiShot.update(v => !v)"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 mt-0.5"
+                  [class.bg-accent]="multiShot()"
+                  [class.bg-gray-300]="!multiShot()">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                  [class.translate-x-6]="multiShot()"
+                  [class.translate-x-1]="!multiShot()"></span>
+          </button>
+        </div>
+      }
+
+      <!-- Prompt / Multi-Prompt -->
+      @if (selectedModel()?.supportsMultiPrompt && multiShot()) {
+        <div>
+          <label class="form-label">Multi-Prompt Segments <span class="text-red-500">*</span></label>
+          <p class="text-xs text-gray-400 mb-2">Each segment gets roughly equal time. {{ duration() }}s ÷ {{ multiPrompts().length }} segments ≈ {{ (duration() / multiPrompts().length) | number:'1.0-1' }}s each.</p>
+          @for (seg of multiPrompts(); track $index) {
+            <div class="flex gap-2 mb-2">
+              <div class="flex items-center justify-center w-6 h-6 rounded-full bg-accent/10 text-accent text-xs font-bold flex-shrink-0 mt-1">{{ $index + 1 }}</div>
+              <textarea class="form-textarea h-16 flex-1" [ngModel]="seg"
+                (ngModelChange)="updatePromptSegment($index, $event)"
+                [placeholder]="'Segment ' + ($index + 1) + ' — describe the scene...'"
+                maxlength="1000"></textarea>
+              @if (multiPrompts().length > 2) {
+                <button type="button" (click)="removePromptSegment($index)"
+                        class="flex-shrink-0 w-6 h-6 mt-1 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              }
+            </div>
+          }
+          @if (multiPrompts().length < 6) {
+            <button type="button" (click)="addPromptSegment()"
+                    class="text-xs text-accent font-medium hover:underline">+ Add segment</button>
+          }
+        </div>
+      } @else {
+        <div>
+          <label class="form-label">Prompt <span class="text-red-500">*</span></label>
+          <textarea class="form-textarea h-24" [ngModel]="prompt()"
+            (ngModelChange)="prompt.set($event)"
+            spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
+            placeholder="Describe the motion or scene...&#10;Longer, multi-shot prompts work best."
+            maxlength="2500"></textarea>
+          <p class="text-right text-xs text-gray-400 mt-1">{{ prompt().length }}/2500</p>
+        </div>
+      }
 
       <!-- Aspect Ratio -->
       <app-aspect-ratio-picker
@@ -143,24 +196,6 @@ interface ModelGroup {
         [premiumResolutions]="['1080p','768P','4k']"
         (valueChange)="resolution.set($event)" />
 
-      <!-- Multi-Shot toggle -->
-      @if (selectedModel()?.supportsMultiShot) {
-        <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
-          <div>
-            <p class="text-sm font-medium text-gray-700">Multi-Shot</p>
-            <p class="text-xs text-gray-400 mt-0.5">Generate cinematic multi-scene video sequences</p>
-          </div>
-          <button type="button" (click)="multiShot.update(v => !v)"
-                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 mt-0.5"
-                  [class.bg-accent]="multiShot()"
-                  [class.bg-gray-300]="!multiShot()">
-            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
-                  [class.translate-x-6]="multiShot()"
-                  [class.translate-x-1]="!multiShot()"></span>
-          </button>
-        </div>
-      }
-
       <!-- Generate Audio toggle -->
       @if (selectedModel()?.supportsAudio) {
         <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
@@ -177,6 +212,137 @@ interface ModelGroup {
                   [class.translate-x-1]="!generateAudio()"></span>
           </button>
         </div>
+
+      }
+
+      <!-- Advanced options -->
+      @if (selectedModel()?.supportsNegativePrompt || selectedModel()?.supportsCfgScale || selectedModel()?.supportsEndFrame || selectedModel()?.supportsElements) {
+        <button type="button" (click)="showAdvanced.update(v => !v)"
+                class="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors">
+          <svg class="w-3.5 h-3.5 transition-transform" [class.rotate-90]="showAdvanced()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+          Advanced Options
+        </button>
+        @if (showAdvanced()) {
+          <div class="space-y-4 pl-1">
+
+            <!-- End Frame (optional — Kling v3) -->
+            @if (selectedModel()?.supportsEndFrame && !selectedModel()?.endFrameRequired) {
+              <div>
+                <label class="form-label">End Frame <span class="text-gray-400 font-normal">(optional)</span></label>
+                <p class="text-xs text-gray-400 mb-2">Upload the last frame — the video will animate between start and end.</p>
+                <div class="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer
+                            hover:border-accent hover:bg-accent-light/30 transition-colors"
+                     (click)="endFileInput.click()"
+                     (dragover)="$event.preventDefault()"
+                     (drop)="onEndDrop($event)">
+                  @if (endPreviewSrc()) {
+                    <img [src]="endPreviewSrc()" class="mx-auto max-h-32 rounded object-contain mb-1"/>
+                    <p class="text-xs text-gray-400">Click to change</p>
+                  } @else {
+                    <div class="text-gray-400">
+                      <div class="text-2xl mb-1">🎬</div>
+                      <p class="text-sm">Upload end frame</p>
+                      <p class="text-xs text-gray-400 mt-0.5">JPG, PNG, WEBP</p>
+                    </div>
+                  }
+                  <input #endFileInput type="file" accept="image/*" class="hidden" (change)="onEndFile($event)"/>
+                </div>
+              </div>
+            }
+
+            <!-- Elements (characters/objects) -->
+            @if (selectedModel()?.supportsElements) {
+              <div>
+                <label class="form-label">Elements <span class="text-gray-400 font-normal">(optional)</span></label>
+                <p class="text-xs text-gray-400 mb-2">Add characters or objects. Reference in prompt as &#64;Element1, &#64;Element2, etc.</p>
+                @for (el of elements(); track elIdx; let elIdx = $index) {
+                  <div class="mb-3 p-3 rounded-lg border border-border bg-surface/50">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="flex items-center gap-2">
+                        <div class="flex items-center justify-center w-6 h-6 rounded-full bg-orange-50 text-orange-500 text-xs font-bold flex-shrink-0">{{ elIdx + 1 }}</div>
+                        <span class="text-sm font-medium text-text">&#64;Element{{ elIdx + 1 }}</span>
+                      </div>
+                      <button type="button" (click)="removeElement(elIdx)"
+                              class="w-6 h-6 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors flex-shrink-0">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <!-- Frontal Image -->
+                    <div class="mb-2">
+                      <label class="text-xs text-gray-400 mb-1 block">Frontal Image <span class="text-red-500">*</span></label>
+                      <div class="flex items-center gap-2">
+                        @if (el.frontalPreview) {
+                          <img [src]="el.frontalPreview" class="w-12 h-12 rounded-lg object-cover border border-border"/>
+                          <button type="button" (click)="frontalInputs.toArray()[elIdx]?.nativeElement?.click()"
+                                  class="text-xs text-accent hover:underline">Change</button>
+                        } @else {
+                          <div class="w-12 h-12 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-gray-300 cursor-pointer hover:border-accent transition-colors"
+                               (click)="frontalInputs.toArray()[elIdx]?.nativeElement?.click()">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                          </div>
+                          <span class="text-xs text-gray-400">Upload frontal view</span>
+                        }
+                        <input #frontalInput type="file" accept="image/*" class="hidden" (change)="onFrontalFile($event, elIdx)"/>
+                      </div>
+                    </div>
+                    <!-- Reference Images -->
+                    <div>
+                      <label class="text-xs text-gray-400 mb-1 block">Reference Images <span class="text-red-500">*</span> <span class="text-gray-500">(1 or more)</span></label>
+                      <div class="flex items-center gap-2 flex-wrap">
+                        @for (ref of el.refPreviews; track refIdx; let refIdx = $index) {
+                          <div class="relative">
+                            <img [src]="ref" class="w-10 h-10 rounded-lg object-cover border border-border"/>
+                            <button type="button" (click)="removeRefImage(refIdx, elIdx)"
+                                    class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[8px] leading-none">✕</button>
+                          </div>
+                        }
+                        @if (el.refPreviews.length < 5) {
+                          <div class="w-10 h-10 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-gray-300 cursor-pointer hover:border-accent transition-colors"
+                               (click)="refInputs.toArray()[elIdx]?.nativeElement?.click()">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                          </div>
+                        }
+                        <input #refInput type="file" accept="image/*" multiple class="hidden" (change)="onRefFiles($event, elIdx)"/>
+                      </div>
+                    </div>
+                  </div>
+                }
+                @if (elements().length < 4) {
+                  <button type="button" (click)="addElement()"
+                          class="text-xs text-accent font-medium hover:underline">+ Add element</button>
+                }
+              </div>
+            }
+
+            @if (selectedModel()?.supportsNegativePrompt) {
+              <div>
+                <label class="form-label">Negative Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
+                <input type="text" class="form-input" [(ngModel)]="negativePrompt"
+                  placeholder="blur, distort, low quality, watermark..." maxlength="500"/>
+              </div>
+            }
+            @if (selectedModel()?.supportsCfgScale) {
+              <div>
+                <label class="form-label">Prompt Guidance (CFG Scale)
+                  <span class="text-gray-400 font-normal ml-1">{{ cfgScale() | number:'1.1-1' }}</span>
+                </label>
+                <input type="range" class="w-full accent-accent" min="0" max="1" step="0.1"
+                  [ngModel]="cfgScale()" (ngModelChange)="cfgScale.set($event)"/>
+                <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
+                  <span>Creative</span><span>Strict</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
       }
 
       @if (errorMsg()) {
@@ -226,7 +392,7 @@ interface ModelGroup {
         </div>
       }
       <button class="btn-primary w-full" (click)="generate()"
-              [disabled]="(!imageUrl() && !selectedFile()) || generating() || !selectedModel()">
+              [disabled]="(!imageUrl() && !selectedFile()) || generating() || !selectedModel() || !hasValidPrompt()">
         @if (generating()) { <span class="animate-spin mr-1">⟳</span> Generating... }
         @else { ✨ Generate }
       </button>
@@ -275,6 +441,9 @@ interface ModelGroup {
   `
 })
 export class ImageToVideoComponent implements OnInit, OnDestroy {
+  @ViewChildren('frontalInput') frontalInputs!: QueryList<ElementRef<HTMLInputElement>>;
+  @ViewChildren('refInput') refInputs!: QueryList<ElementRef<HTMLInputElement>>;
+
   private gen = inject(GenerationService);
   private credits = inject(CreditsService);
   private auth = inject(AuthService);
@@ -294,17 +463,23 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
         {
           id: 'fal-ai/kling-video/v3/pro/image-to-video',
           name: 'Kling v3 Pro',
-          description: 'Multi-shot, audio, end frame, up to 15s.',
-          creditsPerSec: 18,
+          description: 'Multi-shot, audio, end frame, 3–15s.',
+          creditsPerSec: 22,
           badge: 'HOT',
           badgeColor: '#EF4444',
-          tags: ['Multi-Shot', 'Audio', 'End Frame', 'Up to 15s'],
-          durations: [5, 10, 15],
+          tags: ['Multi-Shot', 'Audio', 'End Frame', '3–15s'],
+          durations: [3, 5, 10, 15],
           resolutions: [],
           supportsMultiShot: true,
           supportsAudio: true,
           hasAudio: false,
           aspectRatios: ASPECT_RATIOS_169_916_11,
+          supportsEndFrame: true,
+          supportsNegativePrompt: true,
+          supportsCfgScale: true,
+          supportsMultiPrompt: true,
+          supportsElements: true,
+          audioTiers: { noAudio: 17, audio: 25 },
         },
         {
           id: 'fal-ai/kling-video/o3/standard/image-to-video',
@@ -516,12 +691,20 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   endPreviewSrc = signal<string>('');
   selectedEndFile = signal<File | null>(null);
 
-  prompt = '';
+  prompt = signal('');
   duration = signal(5);
   resolution = signal<string>('720p');
   multiShot = signal(false);
   generateAudio = signal(true);
   aspectRatio = signal('16:9');
+  negativePrompt = '';
+  cfgScale = signal(0.5);
+  multiPrompts = signal<string[]>(['', '']);
+  elements = signal<{
+    frontalFile: File | null; frontalPreview: string;
+    refFiles: File[]; refPreviews: string[];
+  }[]>([]);
+  showAdvanced = signal(false);
 
   generating = signal(false);
   jobStatus = signal<JobStatus | null>(null);
@@ -531,6 +714,17 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   isPublic = signal(true);
   zone = '';
 
+  hasValidPrompt = computed(() => {
+    const m = this.selectedModel();
+    if (!m) return false;
+    if (m.supportsMultiPrompt && this.multiShot()) {
+      // At least 2 segments with non-empty text
+      const filled = this.multiPrompts().filter(p => p.trim().length > 0);
+      return filled.length >= 2;
+    }
+    return this.prompt().trim().length > 0;
+  });
+
   costEstimate = computed(() => {
     const m = this.selectedModel();
     if (!m) return 0;
@@ -539,7 +733,11 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
     const resMultiplier = m.resolutions.length > 0
       ? (res === '4k' ? 2 : (res === '1080p' || res === '768P') ? 1.5 : 1)
       : 1;
-    return Math.ceil(m.creditsPerSec * dur * resMultiplier);
+    // Tiered audio pricing
+    const crPerSec = m.audioTiers
+      ? (this.generateAudio() ? m.audioTiers.audio : m.audioTiers.noAudio)
+      : m.creditsPerSec;
+    return Math.ceil(crPerSec * dur * resMultiplier);
   });
 
   private currentJobId: string | null = null;
@@ -547,7 +745,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     const qp = this.route.snapshot.queryParams;
-    if (qp['prompt']) this.prompt = qp['prompt'];
+    if (qp['prompt']) this.prompt.set(qp['prompt']);
     if (qp['model']) {
       const m = this.allModels.find(x => x.id === qp['model']);
       if (m) this.selectModel(m);
@@ -566,7 +764,12 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
     if (!m.supportsMultiShot) this.multiShot.set(false);
     if (!m.supportsAudio) this.generateAudio.set(true);
     this.aspectRatio.set(m.aspectRatios[0]?.value ?? '16:9');
-    if (!m.endFrameRequired) {
+    this.showAdvanced.set(false);
+    this.negativePrompt = '';
+    this.cfgScale.set(0.5);
+    this.multiPrompts.set(['', '']);
+    this.elements.set([]);
+    if (!m.endFrameRequired && !m.supportsEndFrame) {
       this.endImageUrl.set('');
       this.endPreviewSrc.set('');
       this.selectedEndFile.set(null);
@@ -586,6 +789,70 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
     event.preventDefault();
     const file = event.dataTransfer?.files?.[0];
     if (file) this.loadFile(file);
+  }
+
+  addPromptSegment() {
+    this.multiPrompts.update(p => [...p, '']);
+  }
+
+  removePromptSegment(i: number) {
+    this.multiPrompts.update(p => p.filter((_, idx) => idx !== i));
+  }
+
+  updatePromptSegment(i: number, val: string) {
+    this.multiPrompts.update(p => p.map((v, idx) => idx === i ? val : v));
+  }
+
+  addElement() {
+    if (this.elements().length >= 4) return;
+    this.elements.update(e => [...e, { frontalFile: null, frontalPreview: '', refFiles: [], refPreviews: [] }]);
+  }
+
+  removeElement(i: number) {
+    this.elements.update(e => e.filter((_, idx) => idx !== i));
+  }
+
+  onFrontalFile(event: Event, elIndex: number) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      this.elements.update(arr => arr.map((el, idx) =>
+        idx === elIndex ? { ...el, frontalFile: file, frontalPreview: e.target?.result as string } : el));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  onRefFiles(event: Event, elIndex: number) {
+    const files = Array.from((event.target as HTMLInputElement).files ?? []);
+    if (!files.length) return;
+    let loaded = 0;
+    const previews: string[] = [];
+    files.forEach((file, fi) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        previews[fi] = e.target?.result as string;
+        loaded++;
+        if (loaded === files.length) {
+          this.elements.update(arr => arr.map((el, idx) =>
+            idx === elIndex ? {
+              ...el,
+              refFiles: [...el.refFiles, ...files],
+              refPreviews: [...el.refPreviews, ...previews]
+            } : el));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  removeRefImage(refIndex: number, elIndex: number) {
+    this.elements.update(arr => arr.map((el, idx) =>
+      idx === elIndex ? {
+        ...el,
+        refFiles: el.refFiles.filter((_, ri) => ri !== refIndex),
+        refPreviews: el.refPreviews.filter((_, ri) => ri !== refIndex)
+      } : el));
   }
 
   private loadFile(file: File) {
@@ -617,7 +884,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
 
   generate() {
     if (!this.auth.isLoggedIn()) { this.loginModal.show(); return; }
-    if ((!this.imageUrl() && !this.selectedFile()) || this.generating() || !this.selectedModel()) return;
+    if ((!this.imageUrl() && !this.selectedFile()) || this.generating() || !this.selectedModel() || !this.hasValidPrompt()) return;
     const m = this.selectedModel()!;
     if (m.endFrameRequired && !this.endImageUrl() && !this.selectedEndFile()) {
       this.errorMsg.set('Please upload an end frame image for this model.');
@@ -629,12 +896,17 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
     this.outputUrl.set(undefined);
     this.errorMsg.set(undefined);
 
-    const submitWithUrls = (imageUrl: string, endImageUrl?: string) => {
+    const multiPromptsClean = m.supportsMultiPrompt && this.multiShot()
+      ? this.multiPrompts().filter(p => p.trim()) : [];
+
+    const submitWithUrls = (imageUrl: string, endImageUrl?: string,
+        elementPayload?: { imageUrl: string; referenceImages: string[] }[]) => {
       this.gen.generateImageToVideo({
         imageUrl,
-        endImageUrl: m.endFrameRequired ? endImageUrl : undefined,
+        endImageUrl: (m.endFrameRequired || m.supportsEndFrame) ? endImageUrl : undefined,
         modelId: m.id,
-        prompt: this.prompt || undefined,
+        prompt: multiPromptsClean.length > 0 ? undefined : (this.prompt() || undefined),
+        multiPrompts: multiPromptsClean.length > 0 ? multiPromptsClean : undefined,
         durationSeconds: m.durations.length > 0 ? this.duration() : 6,
         resolution: m.resolutions.length > 0 ? this.resolution() : undefined,
         multiShot: m.supportsMultiShot ? this.multiShot() : undefined,
@@ -642,6 +914,9 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
         aspectRatio: m.aspectRatios.length ? this.aspectRatio() : undefined,
         isPublic: this.isPublic(),
         zone: this.zone || undefined,
+        negativePrompt: m.supportsNegativePrompt && this.negativePrompt.trim() ? this.negativePrompt.trim() : undefined,
+        cfgScale: m.supportsCfgScale ? this.cfgScale() : undefined,
+        elements: elementPayload?.length ? elementPayload : undefined,
       }).subscribe({
         next: res => {
           this.currentJobId = res.jobId;
@@ -657,10 +932,42 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
       });
     };
 
+    // Upload all element files (frontal + references per element), then callback
+    const uploadElements = (cb: (payload: { imageUrl: string; referenceImages: string[] }[]) => void) => {
+      const els = this.elements().filter(e => e.frontalFile && e.refFiles.length > 0);
+      if (els.length === 0) { cb([]); return; }
+      const results: { imageUrl: string; referenceImages: string[] }[] = [];
+      const uploadNextElement = (i: number) => {
+        if (i >= els.length) { cb(results); return; }
+        const el = els[i];
+        // Upload frontal first
+        this.gen.uploadFile(el.frontalFile!).subscribe({
+          next: frontalRes => {
+            // Then upload all reference images
+            const refUrls: string[] = [];
+            const uploadNextRef = (ri: number) => {
+              if (ri >= el.refFiles.length) {
+                results.push({ imageUrl: frontalRes.url, referenceImages: refUrls });
+                uploadNextElement(i + 1);
+                return;
+              }
+              this.gen.uploadFile(el.refFiles[ri]).subscribe({
+                next: refRes => { refUrls.push(refRes.url); uploadNextRef(ri + 1); },
+                error: () => uploadNextRef(ri + 1) // skip failed ref uploads
+              });
+            };
+            uploadNextRef(0);
+          },
+          error: () => uploadNextElement(i + 1) // skip element if frontal fails
+        });
+      };
+      uploadNextElement(0);
+    };
+
     const submitWithMainImage = (imageUrl: string) => {
-      if (m.endFrameRequired && this.selectedEndFile()) {
+      if ((m.endFrameRequired || m.supportsEndFrame) && this.selectedEndFile()) {
         this.gen.uploadFile(this.selectedEndFile()!).subscribe({
-          next: res => submitWithUrls(imageUrl, res.url),
+          next: endRes => uploadElements(elUrls => submitWithUrls(imageUrl, endRes.url, elUrls)),
           error: err => {
             this.generating.set(false);
             this.jobStatus.set('Failed');
@@ -668,7 +975,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
           }
         });
       } else {
-        submitWithUrls(imageUrl, this.endImageUrl() || undefined);
+        uploadElements(elUrls => submitWithUrls(imageUrl, this.endImageUrl() || undefined, elUrls));
       }
     };
 

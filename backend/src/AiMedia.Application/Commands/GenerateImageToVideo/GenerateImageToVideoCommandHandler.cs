@@ -19,7 +19,7 @@ public class GenerateImageToVideoCommandHandler(
         var model = ModelRegistry.Get(request.ModelId)
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
-        var credits = await pricing.GetCreditsAsync(request.ModelId, request.DurationSeconds, cancellationToken);
+        var credits = await pricing.GetVideoCreditsAsync(request.ModelId, request.DurationSeconds, request.GenerateAudio, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -42,11 +42,34 @@ public class GenerateImageToVideoCommandHandler(
             ? (object)new                                    // v3: start_image_url, shot_type, audio, aspect_ratio
             {
                 start_image_url = request.ImageUrl,
-                prompt          = request.Prompt,
+                prompt          = request.MultiPrompts is { Count: > 0 } && request.MultiShot
+                                    ? (object?)null : request.Prompt,
+                multi_prompt    = request.MultiPrompts is { Count: > 0 } && request.MultiShot
+                                    ? request.MultiPrompts.Select(p => new
+                                    {
+                                        prompt   = p,
+                                        duration = (request.DurationSeconds / request.MultiPrompts.Count).ToString()
+                                    }).ToList() : null,
                 duration        = request.DurationSeconds.ToString(),
-                shot_type       = request.MultiShot ? "intelligent" : "customize",
+                shot_type       = request.MultiPrompts is { Count: > 0 } && request.MultiShot ? "customize" : (string?)null,
                 generate_audio  = request.GenerateAudio,
-                aspect_ratio    = request.AspectRatio
+                aspect_ratio    = request.AspectRatio,
+                end_image_url   = request.EndImageUrl,
+                negative_prompt = request.NegativePrompt,
+                cfg_scale       = request.CfgScale ?? 0.5f,
+                elements        = request.Elements is { Count: > 0 }
+                    ? request.Elements.Select(e =>
+                    {
+                        if (e.VideoUrl is not null)
+                            return (object)new { video_url = e.VideoUrl };
+                        // fal.ai requires reference_image_urls to be non-empty;
+                        // fall back to frontal image when user provides no references
+                        var refs = e.ReferenceImages is { Count: > 0 }
+                            ? e.ReferenceImages
+                            : new List<string> { e.ImageUrl! };
+                        return (object)new { frontal_image_url = e.ImageUrl, reference_image_urls = refs };
+                    }).ToList()
+                    : null
             }
             : isKlingV26
             ? (object)new                                    // v2.6: start_image_url, audio, aspect_ratio
@@ -63,7 +86,7 @@ public class GenerateImageToVideoCommandHandler(
                 image_url      = request.ImageUrl,
                 prompt         = request.Prompt,
                 duration       = request.DurationSeconds.ToString(),
-                shot_type      = request.MultiShot ? "intelligent" : "customize",
+                shot_type      = request.MultiShot ? "customize" : (string?)null,
                 generate_audio = request.GenerateAudio,
                 aspect_ratio   = request.AspectRatio
             }

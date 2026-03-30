@@ -17,7 +17,7 @@ public static class ModelRegistry
     private static readonly List<ModelInfo> All = new()
     {
         // Image to Video
-        new("fal-ai/kling-video/v3/pro/image-to-video",        "Kling v3 Pro",      "Latest Kling, multi-shot, audio, up to 15s",    0, 18, ProductType.ImageToVideo, ModelTier.Standard),
+        new("fal-ai/kling-video/v3/pro/image-to-video",        "Kling v3 Pro",      "Latest Kling, multi-shot, audio, up to 15s",    0, 17, ProductType.ImageToVideo, ModelTier.Standard),
         new("fal-ai/kling-video/o3/standard/image-to-video",   "Kling o3",          "New architecture, multi-shot, up to 15s",       0, 15, ProductType.ImageToVideo, ModelTier.Standard),
         new("fal-ai/kling-video/v2.6/pro/image-to-video",      "Kling v2.6 Pro",    "Improved realism with native audio",            0, 14, ProductType.ImageToVideo, ModelTier.Standard),
         new("fal-ai/kling-video/v2.5-turbo/pro/image-to-video","Kling v2.5 Turbo",          "Fast generation with strong visual fidelity",   0, 10, ProductType.ImageToVideo, ModelTier.Standard),

@@ -40,7 +40,9 @@ public class GenerationController : ControllerBase
             GetUserId(), request.ImageUrl, request.Prompt,
             request.ModelId, request.DurationSeconds, request.IsPublic,
             request.Resolution, request.MultiShot, request.GenerateAudio,
-            request.AspectRatio, request.Zone, request.EndImageUrl), ct);
+            request.AspectRatio, request.Zone, request.EndImageUrl,
+            request.NegativePrompt, request.CfgScale, request.MultiPrompts,
+            request.Elements?.Select(e => new KlingElement(e.ImageUrl, e.ReferenceImages, e.VideoUrl)).ToList()), ct);
         return Accepted(result);
     }
 
@@ -147,6 +149,11 @@ public record GenerateImageRequest(
     string? Background = null,
     string? Resolution = null);
 
+public record KlingElementRequest(
+    string? ImageUrl = null,
+    List<string>? ReferenceImages = null,
+    string? VideoUrl = null);
+
 public record GenerateImageToVideoRequest(
     string ImageUrl,
     string ModelId = "fal-ai/kling-video/v3/pro/image-to-video",
@@ -158,7 +165,11 @@ public record GenerateImageToVideoRequest(
     bool GenerateAudio = true,
     string AspectRatio = "16:9",
     string? Zone = null,
-    string? EndImageUrl = null);
+    string? EndImageUrl = null,
+    string? NegativePrompt = null,
+    float? CfgScale = null,
+    List<string>? MultiPrompts = null,
+    List<KlingElementRequest>? Elements = null);
 
 public record GenerateTextToVideoRequest(
     string Prompt,

@@ -23,6 +23,20 @@ public class ModelPricingService(
             : pricing.CreditsBase;
     }
 
+    public async Task<int> GetVideoCreditsAsync(string modelId, int durationSeconds, bool generateAudio, CancellationToken ct = default)
+    {
+        // Kling v3 Pro — tiered by audio (1.5× fal.ai cost)
+        // fal.ai: $0.112/s (no audio), $0.168/s (audio)
+        if (modelId.Contains("kling-video/v3/"))
+        {
+            var crPerSec = generateAudio ? 25 : 17;
+            return crPerSec * durationSeconds;
+        }
+
+        // All other video models: use standard DB pricing
+        return await GetCreditsAsync(modelId, durationSeconds, ct);
+    }
+
     public async Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, CancellationToken ct = default)
     {
         var pricing = await GetPricingAsync(modelId, ct);

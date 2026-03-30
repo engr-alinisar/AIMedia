@@ -53,7 +53,7 @@ public class GenerateTextToVideoCommandHandler(
                 generate_audio  = request.GenerateAudio,
                 cfg_scale       = 0.5f,
                 negative_prompt = "blur, distort, and low quality",
-                shot_type       = request.MultiShot ? "intelligent" : "customize",
+                shot_type       = request.MultiShot ? "customize" : (string?)null,
             };
         }
         else if (isHailuo23)
