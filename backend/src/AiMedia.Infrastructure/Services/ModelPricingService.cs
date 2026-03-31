@@ -41,7 +41,22 @@ public class ModelPricingService(
             return crPerSec * durationSeconds;
         }
 
-        // Veo 3.1 — tiered by resolution + audio (1.5× fal.ai cost)
+        // Veo 3.1 Fast (first-last-frame) — tiered by resolution + audio (1.5× fal.ai cost)
+        // fal.ai: 720p/1080p $0.10(no audio)/$0.15(audio), 4k $0.30/$0.35
+        if (modelId.Contains("veo3.1") && modelId.Contains("fast"))
+        {
+            var is4k = resolution == "4k";
+            var crPerSec = (is4k, generateAudio) switch
+            {
+                (false, false) => 15,   // 720p/1080p no audio
+                (false, true)  => 23,   // 720p/1080p audio
+                (true,  false) => 45,   // 4k no audio
+                (true,  true)  => 53,   // 4k audio
+            };
+            return crPerSec * durationSeconds;
+        }
+
+        // Veo 3.1 (standard image-to-video) — tiered by resolution + audio (1.5× fal.ai cost)
         // fal.ai: 720p/1080p $0.20(no audio)/$0.40(audio), 4k $0.40/$0.60
         if (modelId.Contains("veo3.1"))
         {
@@ -53,6 +68,22 @@ public class ModelPricingService(
                 (true,  false) => 60,   // 4k no audio
                 (true,  true)  => 90,   // 4k audio
             };
+            return crPerSec * durationSeconds;
+        }
+
+        // Veo 3 Fast — tiered by audio (1.5× fal.ai cost)
+        // fal.ai: $0.10/s (no audio), $0.15/s (audio)
+        if (modelId.Contains("veo3/fast"))
+        {
+            var crPerSec = generateAudio ? 23 : 15;
+            return crPerSec * durationSeconds;
+        }
+
+        // Veo 3 — tiered by audio (1.5× fal.ai cost)
+        // fal.ai: $0.20/s (no audio), $0.40/s (audio)
+        if (modelId.Contains("veo3") && !modelId.Contains("veo3.1") && !modelId.Contains("fast"))
+        {
+            var crPerSec = generateAudio ? 60 : 30;
             return crPerSec * durationSeconds;
         }
 
