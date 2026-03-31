@@ -740,7 +740,21 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
         id: m.id,
         name: m.name,
         description: m.description,
-        creditsDisplay: `${m.creditsPerSec} cr/s`,
+        creditsDisplay: (() => {
+          if (m.creditsFlat) return `${m.creditsFlat} cr`;
+          if (m.audioResolutionTiers) {
+            const vals = m.audioResolutionTiers.flatMap(t => [t.noAudio, t.audio]);
+            const min = Math.min(...vals), max = Math.max(...vals);
+            return `${min}–${max} cr/s`;
+          }
+          if (m.audioTiers) return `${m.audioTiers.noAudio}–${m.audioTiers.audio} cr/s`;
+          if (m.resolutionTiers) {
+            const vals = Object.values(m.resolutionTiers);
+            const min = Math.min(...vals), max = Math.max(...vals);
+            return `${min}–${max} cr/s`;
+          }
+          return `${m.creditsPerSec} cr/s`;
+        })(),
         badge: m.badge,
         badgeColor: m.badgeColor,
         tags: m.tags,

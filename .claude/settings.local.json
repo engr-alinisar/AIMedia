@@ -159,7 +159,10 @@
       "Bash(taskkill //F //IM dotnet.exe)",
       "Bash(taskkill //F //PID 22752)",
       "Bash(taskkill //F //IM AiMedia.API.exe)",
-      "Bash(taskkill //F //PID 18740)"
+      "Bash(taskkill //F //PID 18740)",
+      "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\frontend && npx ng build --configuration development 2>&1 | tail -5\")",
+      "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\frontend && npx tsc --noEmit 2>&1\")",
+      "Bash(cmd /c \"netstat -ano | findstr :4200\")"
     ]
   }
 }
