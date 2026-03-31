@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AiMedia.Application.Commands.SetJobVisibility;
 using AiMedia.Application.Queries.GetJob;
 using AiMedia.Application.Queries.GetJobs;
 using AiMedia.Domain.Enums;
@@ -11,6 +12,8 @@ namespace AiMedia.API.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/jobs")]
+public record SetVisibilityRequest(bool IsPublic);
+
 public class JobsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -41,6 +44,13 @@ public class JobsController : ControllerBase
         var job = await _mediator.Send(new GetJobQuery(id, GetUserId()), ct);
         if (job is null) return NotFound();
         return Ok(job);
+    }
+
+    [HttpPatch("{id:guid}/visibility")]
+    public async Task<IActionResult> SetVisibility(Guid id, [FromBody] SetVisibilityRequest request, CancellationToken ct)
+    {
+        await _mediator.Send(new SetJobVisibilityCommand(id, GetUserId(), request.IsPublic), ct);
+        return NoContent();
     }
 
     private Guid GetUserId()

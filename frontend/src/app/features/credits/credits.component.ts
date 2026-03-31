@@ -120,7 +120,7 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
       <p class="text-xs text-gray-500 leading-relaxed">
         <span class="font-semibold text-gray-600">No refund policy.</span>
         All credit purchases are final and non-refundable. We offer
-        <span class="font-semibold">100 free credits</span> to every new account so you can try the platform before purchasing.
+        <span class="font-semibold">50 free credits</span> to every new account so you can try the platform before purchasing.
       </p>
     </div>
   </div>
@@ -228,8 +228,8 @@ export class CreditsComponent implements OnInit {
 
   packs = [
     { id: 'starter', name: 'Starter', credits: 500,  price: 5,  popular: false },
-    { id: 'popular', name: 'Popular', credits: 1200, price: 10, popular: true  },
-    { id: 'pro',     name: 'Pro',     credits: 3000, price: 20, popular: false },
+    { id: 'popular', name: 'Popular', credits: 1100, price: 10, popular: true  },
+    { id: 'pro',     name: 'Pro',     credits: 2800, price: 25, popular: false },
   ];
 
   pageNumbers = computed<number[]>(() => {

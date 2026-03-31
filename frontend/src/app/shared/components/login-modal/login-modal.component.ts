@@ -75,7 +75,7 @@ import { CreditsService } from '../../../core/services/credits.service';
         <h3 class="text-lg font-bold text-gray-900 mb-2">Check your email</h3>
         <p class="text-sm text-gray-500 leading-relaxed mb-6">
           We sent a verification link to <strong class="text-gray-700">{{ regEmail }}</strong>.
-          Click it to activate your account and get 100 free credits.
+          Click it to activate your account and get 50 free credits.
         </p>
         <button (click)="switchMode('login')"
                 class="text-sm font-semibold hover:underline" style="color:#7c3aed;">
@@ -141,7 +141,7 @@ import { CreditsService } from '../../../core/services/credits.service';
           <div class="px-3 py-2.5 rounded-lg bg-red-50 text-red-700 text-sm">{{ errorMessage() }}</div>
         }
         <div class="px-3 py-2 rounded-lg text-xs text-violet-700 bg-violet-50 font-medium">
-          🎉 Get 100 free credits on signup — no credit card required
+          🎉 Get 50 free credits on signup — no credit card required
         </div>
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1.5">Full name</label>

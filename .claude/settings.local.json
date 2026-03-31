@@ -162,7 +162,11 @@
       "Bash(taskkill //F //PID 18740)",
       "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\frontend && npx ng build --configuration development 2>&1 | tail -5\")",
       "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\frontend && npx tsc --noEmit 2>&1\")",
-      "Bash(cmd /c \"netstat -ano | findstr :4200\")"
+      "Bash(cmd /c \"netstat -ano | findstr :4200\")",
+      "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\backend && dotnet build src/AiMedia.Application/AiMedia.Application.csproj -v quiet 2>&1 | tail -5\")",
+      "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\backend && dotnet build src/AiMedia.Application/AiMedia.Application.csproj -v quiet 2>&1\")",
+      "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\backend && dotnet build src/AiMedia.Infrastructure/AiMedia.Infrastructure.csproj -v quiet 2>&1\")",
+      "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\backend && dotnet build src/AiMedia.API/AiMedia.API.csproj -v quiet 2>&1\")"
     ]
   }
 }

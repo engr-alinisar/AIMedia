@@ -1,5 +1,6 @@
-import { Component, Input, Output, EventEmitter, HostListener, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ExploreService } from '../../../core/services/explore.service';
 import type { ExploreItemDto } from '../../../core/models/models';
 
 @Component({
@@ -84,6 +85,25 @@ import type { ExploreItemDto } from '../../../core/models/models';
         <p class="text-sm text-gray-400 italic">{{ noPromptLabel() }}</p>
       }
 
+      <!-- Visibility toggle (own items only) -->
+      @if (isOwner) {
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <div>
+            <p class="text-sm font-medium text-gray-700">Public visibility</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ isPublic() ? 'Visible on Explore page' : 'Hidden from Explore page' }}</p>
+          </div>
+          <button type="button" (click)="toggleVisibility()"
+                  [disabled]="togglingVisibility()"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0"
+                  [class.bg-accent]="isPublic()"
+                  [class.bg-gray-300]="!isPublic()">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                  [class.translate-x-6]="isPublic()"
+                  [class.translate-x-1]="!isPublic()"></span>
+          </button>
+        </div>
+      }
+
       <!-- Try this button -->
       <button (click)="tryThis.emit(item!)"
               class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
@@ -100,11 +120,23 @@ import type { ExploreItemDto } from '../../../core/models/models';
 })
 export class ExploreItemModalComponent implements OnInit, OnDestroy {
   @Input() item!: ExploreItemDto;
+  @Input() currentUserId: string | null = null;
   @Output() closed = new EventEmitter<void>();
   @Output() tryThis = new EventEmitter<ExploreItemDto>();
+  @Output() visibilityChanged = new EventEmitter<{ id: string; isPublic: boolean }>();
+
+  private exploreSvc = inject(ExploreService);
+
+  isPublic = signal(true);
+  togglingVisibility = signal(false);
+
+  get isOwner(): boolean {
+    return !!this.currentUserId && this.item?.ownerId === this.currentUserId;
+  }
 
   ngOnInit() {
     document.body.style.overflow = 'hidden';
+    this.isPublic.set(this.item?.isPublic ?? true);
   }
 
   ngOnDestroy() {
@@ -170,6 +202,21 @@ export class ExploreItemModalComponent implements OnInit, OnDestroy {
       BackgroundRemoval: 'Background removed', ImageToVideo: 'Image animated to video',
     };
     return labels[this.item?.product] ?? 'AI generated content';
+  }
+
+  toggleVisibility() {
+    if (this.togglingVisibility()) return;
+    const newVal = !this.isPublic();
+    this.togglingVisibility.set(true);
+    this.exploreSvc.setVisibility(this.item.id, newVal).subscribe({
+      next: () => {
+        this.isPublic.set(newVal);
+        this.item = { ...this.item, isPublic: newVal };
+        this.visibilityChanged.emit({ id: this.item.id, isPublic: newVal });
+        this.togglingVisibility.set(false);
+      },
+      error: () => this.togglingVisibility.set(false)
+    });
   }
 
   safePlay(event: Event) {

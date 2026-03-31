@@ -13,6 +13,8 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
     private readonly string _fromEmail = config["Email:FromEmail"] ?? "noreply@voicesforge.com";
     private readonly string _fromName = config["Email:FromName"] ?? "AiMedia";
     private readonly string _appUrl = (config["APP_URL"] ?? config["Email:AppUrl"] ?? "http://localhost:4200").TrimEnd('/');
+    private readonly string _supportEmail = config["Email:SupportEmail"] ?? "voicesforge@gmail.com";
+    private readonly string _logoUrl = config["Email:LogoUrl"] ?? "https://voicesforge.com/logo.svg";
 
     public async Task SendVerificationEmailAsync(string toEmail, string fullName, string token, CancellationToken ct = default)
     {
@@ -25,7 +27,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
             return;
         }
 
-        var html = BuildVerificationEmail(fullName, verifyUrl);
+        var html = BuildVerificationEmail(fullName, verifyUrl, _logoUrl);
         var payload = new
         {
             from = $"{_fromName} <{_fromEmail}>",
@@ -46,12 +48,12 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
             return;
         }
 
-        var html = BuildReceiptEmail(fullName, packName, credits, amount, orderId);
+        var html = BuildReceiptEmail(fullName, packName, credits, amount, orderId, _appUrl, _logoUrl);
         var payload = new
         {
             from = $"{_fromName} <{_fromEmail}>",
             to = new[] { toEmail },
-            subject = $"Your VoicesForge receipt — {credits:N0} credits",
+            subject = $"Your AiMedia receipt — {credits:N0} credits",
             html
         };
 
@@ -68,12 +70,12 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
         }
 
         var creditsUrl = $"{_appUrl}/credits";
-        var html = BuildLowCreditsEmail(fullName, balance, creditsUrl);
+        var html = BuildLowCreditsEmail(fullName, balance, creditsUrl, _logoUrl);
         var payload = new
         {
             from = $"{_fromName} <{_fromEmail}>",
             to = new[] { toEmail },
-            subject = "You're running low on VoicesForge credits",
+            subject = "You're running low on AiMedia credits",
             html
         };
 
@@ -90,12 +92,12 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
         }
 
         var creditsUrl = $"{_appUrl}/credits";
-        var html = BuildPaymentDeclinedEmail(fullName, creditsUrl);
+        var html = BuildPaymentDeclinedEmail(fullName, creditsUrl, _logoUrl);
         var payload = new
         {
             from = $"{_fromName} <{_fromEmail}>",
             to = new[] { toEmail },
-            subject = "Your VoicesForge payment was declined",
+            subject = "Your AiMedia payment was declined",
             html
         };
 
@@ -112,12 +114,12 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
         }
 
         var creditsUrl = $"{_appUrl}/credits";
-        var html = BuildPaymentReversedEmail(fullName, credits, creditsUrl);
+        var html = BuildPaymentReversedEmail(fullName, credits, creditsUrl, _logoUrl);
         var payload = new
         {
             from = $"{_fromName} <{_fromEmail}>",
             to = new[] { toEmail },
-            subject = "Your VoicesForge payment has been reversed",
+            subject = "Your AiMedia payment has been reversed",
             html
         };
 
@@ -127,8 +129,6 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
 
     public async Task SendContactNotificationAsync(string name, string email, string subject, string message, Guid? userId, CancellationToken ct = default)
     {
-        const string supportEmail = "voicesforge@gmail.com";
-
         if (string.IsNullOrEmpty(_apiKey))
         {
             logger.LogWarning(
@@ -137,13 +137,13 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
             return;
         }
 
-        var html = BuildContactNotificationEmail(name, email, subject, message, userId);
+        var html = BuildContactNotificationEmail(name, email, subject, message, userId, _logoUrl);
         var payload = new
         {
             from = $"{_fromName} <{_fromEmail}>",
-            to = new[] { supportEmail },
+            to = new[] { _supportEmail },
             reply_to = email,
-            subject = $"[VoicesForge Support] {subject} — from {name}",
+            subject = $"[AiMedia Support] {subject} — from {name}",
             html
         };
 
@@ -160,12 +160,12 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
         }
 
         var faqUrl = $"{_appUrl}/faq";
-        var html = BuildContactAutoReplyEmail(name, message, faqUrl);
+        var html = BuildContactAutoReplyEmail(name, message, faqUrl, _supportEmail, _logoUrl);
         var payload = new
         {
             from = $"{_fromName} <{_fromEmail}>",
             to = new[] { toEmail },
-            subject = "We received your message — VoicesForge Support",
+            subject = "We received your message — AiMedia Support",
             html
         };
 
@@ -188,7 +188,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
         }
     }
 
-    private static string BuildReceiptEmail(string fullName, string packName, int credits, decimal amount, string orderId) => $"""
+    private static string BuildReceiptEmail(string fullName, string packName, int credits, decimal amount, string orderId, string appUrl, string logoUrl) => $"""
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
@@ -201,10 +201,10 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                     <table cellpadding="0" cellspacing="0" align="center">
                       <tr>
                         <td style="vertical-align:middle;padding-right:12px;">
-                          <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="VoicesForge" style="display:block;border-radius:10px;" />
+                          <img src="{logoUrl}" width="44" height="44" alt="AiMedia" style="display:block;border-radius:10px;" />
                         </td>
                         <td style="vertical-align:middle;text-align:left;">
-                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">VoicesForge</div>
+                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">AiMedia</div>
                           <div style="color:rgba(255,255,255,0.75);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">PAYMENT RECEIPT</div>
                         </td>
                       </tr>
@@ -244,13 +244,13 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                     </table>
 
                     <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.6;">
-                      If you have any questions, reply to this email or visit <a href="https://voicesforge.com" style="color:#7c3aed;">voicesforge.com</a>.
+                      If you have any questions, reply to this email or visit <a href="{appUrl}" style="color:#7c3aed;">{appUrl}</a>.
                     </p>
                   </td>
                 </tr>
                 <tr>
                   <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-                    <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 VoicesForge. All rights reserved.</p>
+                    <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 AiMedia. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -260,7 +260,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
         </html>
         """;
 
-    private static string BuildLowCreditsEmail(string fullName, int balance, string creditsUrl) => $"""
+    private static string BuildLowCreditsEmail(string fullName, int balance, string creditsUrl, string logoUrl) => $"""
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
@@ -273,10 +273,10 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                     <table cellpadding="0" cellspacing="0" align="center">
                       <tr>
                         <td style="vertical-align:middle;padding-right:12px;">
-                          <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="VoicesForge" style="display:block;border-radius:10px;" />
+                          <img src="{logoUrl}" width="44" height="44" alt="AiMedia" style="display:block;border-radius:10px;" />
                         </td>
                         <td style="vertical-align:middle;text-align:left;">
-                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">VoicesForge</div>
+                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">AiMedia</div>
                           <div style="color:rgba(255,255,255,0.85);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">LOW CREDITS ALERT</div>
                         </td>
                       </tr>
@@ -300,7 +300,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                 </tr>
                 <tr>
                   <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-                    <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 VoicesForge. All rights reserved.</p>
+                    <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 AiMedia. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -310,111 +310,103 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
         </html>
         """;
 
-    private static string BuildPaymentDeclinedEmail(string fullName, string creditsUrl) => $"""
+    private static string BuildPaymentDeclinedEmail(string fullName, string creditsUrl, string logoUrl) => $"""
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
         <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
-            <tr><td align="center">
-              <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-                <tr>
-                  <td style="background:linear-gradient(135deg,#dc2626,#b91c1c);padding:32px 40px;text-align:center;">
-                    <table cellpadding="0" cellspacing="0" align="center">
-                      <tr>
-                        <td style="vertical-align:middle;padding-right:12px;">
-                          <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="VoicesForge" style="display:block;border-radius:10px;" />
-                        </td>
-                        <td style="vertical-align:middle;text-align:left;">
-                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">VoicesForge</div>
-                          <div style="color:rgba(255,255,255,0.85);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">PAYMENT DECLINED</div>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:40px;">
-                    <h2 style="margin:0 0 12px;color:#111827;font-size:22px;font-weight:600;">Your payment was declined</h2>
-                    <p style="margin:0 0 24px;color:#6b7280;font-size:15px;line-height:1.6;">
-                      Hi {fullName},<br><br>
-                      Unfortunately your recent payment attempt was declined. No credits were added to your account and you have not been charged.
-                    </p>
-                    <p style="margin:0 0 24px;color:#6b7280;font-size:15px;line-height:1.6;">
-                      Please try again with a different payment method or contact your bank for more details.
-                    </p>
-                    <div style="text-align:center;margin:32px 0;">
-                      <a href="{creditsUrl}" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;">
-                        Try Again
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-                    <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 VoicesForge. All rights reserved.</p>
-                  </td>
-                </tr>
-              </table>
-            </td></tr>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+            <tr>
+              <td style="background:linear-gradient(135deg,#dc2626,#b91c1c);padding:32px 40px;text-align:center;">
+                <table cellpadding="0" cellspacing="0" align="center">
+                  <tr>
+                    <td style="vertical-align:middle;padding-right:12px;">
+                      <img src="{logoUrl}" width="44" height="44" alt="AiMedia" style="display:block;border-radius:10px;" />
+                    </td>
+                    <td style="vertical-align:middle;text-align:left;">
+                      <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">AiMedia</div>
+                      <div style="color:rgba(255,255,255,0.85);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">PAYMENT DECLINED</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:40px;">
+                <h2 style="margin:0 0 12px;color:#111827;font-size:22px;font-weight:600;">Your payment was declined</h2>
+                <p style="margin:0 0 24px;color:#6b7280;font-size:15px;line-height:1.6;">
+                  Hi {fullName},<br><br>
+                  Unfortunately your recent payment attempt was declined. No credits were added to your account and you have not been charged.
+                </p>
+                <p style="margin:0 0 24px;color:#6b7280;font-size:15px;line-height:1.6;">
+                  Please try again with a different payment method or contact your bank for more details.
+                </p>
+                <div style="text-align:center;margin:32px 0;">
+                  <a href="{creditsUrl}" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;">
+                    Try Again
+                  </a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+                <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 AiMedia. All rights reserved.</p>
+              </td>
+            </tr>
           </table>
         </body>
         </html>
         """;
 
-    private static string BuildPaymentReversedEmail(string fullName, int credits, string creditsUrl) => $"""
+    private static string BuildPaymentReversedEmail(string fullName, int credits, string creditsUrl, string logoUrl) => $"""
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
         <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
-            <tr><td align="center">
-              <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-                <tr>
-                  <td style="background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:32px 40px;text-align:center;">
-                    <table cellpadding="0" cellspacing="0" align="center">
-                      <tr>
-                        <td style="vertical-align:middle;padding-right:12px;">
-                          <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="VoicesForge" style="display:block;border-radius:10px;" />
-                        </td>
-                        <td style="vertical-align:middle;text-align:left;">
-                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">VoicesForge</div>
-                          <div style="color:rgba(255,255,255,0.85);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">PAYMENT REVERSED</div>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:40px;">
-                    <h2 style="margin:0 0 12px;color:#111827;font-size:22px;font-weight:600;">Your payment has been reversed</h2>
-                    <p style="margin:0 0 24px;color:#6b7280;font-size:15px;line-height:1.6;">
-                      Hi {fullName},<br><br>
-                      A payment reversal has been processed on your account. <strong>{credits:N0} credits</strong> have been removed from your balance.
-                    </p>
-                    <p style="margin:0 0 24px;color:#6b7280;font-size:15px;line-height:1.6;">
-                      If you believe this is an error, please contact us and we'll resolve it immediately.
-                    </p>
-                    <div style="text-align:center;margin:32px 0;">
-                      <a href="{creditsUrl}" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;">
-                        View Balance
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-                    <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 VoicesForge. All rights reserved.</p>
-                  </td>
-                </tr>
-              </table>
-            </td></tr>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+            <tr>
+              <td style="background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:32px 40px;text-align:center;">
+                <table cellpadding="0" cellspacing="0" align="center">
+                  <tr>
+                    <td style="vertical-align:middle;padding-right:12px;">
+                      <img src="{logoUrl}" width="44" height="44" alt="AiMedia" style="display:block;border-radius:10px;" />
+                    </td>
+                    <td style="vertical-align:middle;text-align:left;">
+                      <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">AiMedia</div>
+                      <div style="color:rgba(255,255,255,0.85);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">PAYMENT REVERSED</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:40px;">
+                <h2 style="margin:0 0 12px;color:#111827;font-size:22px;font-weight:600;">Your payment has been reversed</h2>
+                <p style="margin:0 0 24px;color:#6b7280;font-size:15px;line-height:1.6;">
+                  Hi {fullName},<br><br>
+                  A payment reversal has been processed on your account. <strong>{credits:N0} credits</strong> have been removed from your balance.
+                </p>
+                <p style="margin:0 0 24px;color:#6b7280;font-size:15px;line-height:1.6;">
+                  If you believe this is an error, please contact us and we'll resolve it immediately.
+                </p>
+                <div style="text-align:center;margin:32px 0;">
+                  <a href="{creditsUrl}" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;">
+                    View Balance
+                  </a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+                <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 AiMedia. All rights reserved.</p>
+              </td>
+            </tr>
           </table>
         </body>
         </html>
         """;
 
-    private static string BuildContactNotificationEmail(string name, string email, string subject, string message, Guid? userId)
+    private static string BuildContactNotificationEmail(string name, string email, string subject, string message, Guid? userId, string logoUrl)
     {
         var userStatus = userId.HasValue
             ? $"<span style=\"display:inline-block;background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;\">Registered User ({userId})</span>"
@@ -435,10 +427,10 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                     <table cellpadding="0" cellspacing="0" align="center">
                       <tr>
                         <td style="vertical-align:middle;padding-right:12px;">
-                          <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="VoicesForge" style="display:block;border-radius:10px;" />
+                          <img src="{logoUrl}" width="44" height="44" alt="AiMedia" style="display:block;border-radius:10px;" />
                         </td>
                         <td style="vertical-align:middle;text-align:left;">
-                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">VoicesForge</div>
+                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">AiMedia</div>
                           <div style="color:rgba(255,255,255,0.75);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">SUPPORT REQUEST</div>
                         </td>
                       </tr>
@@ -483,7 +475,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                 </tr>
                 <tr>
                   <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-                    <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 VoicesForge. All rights reserved.</p>
+                    <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 AiMedia. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -494,7 +486,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
         """;
     }
 
-    private static string BuildContactAutoReplyEmail(string name, string message, string faqUrl)
+    private static string BuildContactAutoReplyEmail(string name, string message, string faqUrl, string supportEmail, string logoUrl)
     {
         var escapedMessage = System.Net.WebUtility.HtmlEncode(message).Replace("\n", "<br>");
 
@@ -511,10 +503,10 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                     <table cellpadding="0" cellspacing="0" align="center">
                       <tr>
                         <td style="vertical-align:middle;padding-right:12px;">
-                          <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="VoicesForge" style="display:block;border-radius:10px;" />
+                          <img src="{logoUrl}" width="44" height="44" alt="AiMedia" style="display:block;border-radius:10px;" />
                         </td>
                         <td style="vertical-align:middle;text-align:left;">
-                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">VoicesForge</div>
+                          <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">AiMedia</div>
                           <div style="color:rgba(255,255,255,0.75);font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;">SUPPORT</div>
                         </td>
                       </tr>
@@ -545,13 +537,13 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                     </div>
 
                     <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.6;">
-                      If your issue is urgent, you can also reach us directly at <a href="mailto:voicesforge@gmail.com" style="color:#7c3aed;">voicesforge@gmail.com</a>.
+                      If your issue is urgent, you can also reach us directly at <a href="mailto:{supportEmail}" style="color:#7c3aed;">{supportEmail}</a>.
                     </p>
                   </td>
                 </tr>
                 <tr>
                   <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-                    <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 VoicesForge. All rights reserved.</p>
+                    <p style="margin:0;color:#9ca3af;font-size:12px;">© 2026 AiMedia. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -562,7 +554,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
         """;
     }
 
-    private static string BuildVerificationEmail(string fullName, string verifyUrl) => $"""
+    private static string BuildVerificationEmail(string fullName, string verifyUrl, string logoUrl) => $"""
         <!DOCTYPE html>
         <html>
         <head>
@@ -580,7 +572,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                       <table cellpadding="0" cellspacing="0" align="center">
                         <tr>
                           <td style="vertical-align:middle;padding-right:12px;">
-                            <img src="https://voicesforge.com/logo.svg" width="44" height="44" alt="AiMedia" style="display:block;border-radius:10px;" />
+                            <img src="{logoUrl}" width="44" height="44" alt="AiMedia" style="display:block;border-radius:10px;" />
                           </td>
                           <td style="vertical-align:middle;text-align:left;">
                             <div style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">AiMedia</div>
@@ -596,7 +588,7 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
                       <h2 style="margin:0 0 12px;color:#111827;font-size:22px;font-weight:600;">Verify your email address</h2>
                       <p style="margin:0 0 24px;color:#6b7280;font-size:15px;line-height:1.6;">
                         Hi {fullName},<br><br>
-                        Thanks for signing up! Click the button below to verify your email address and activate your account with <strong>100 free credits</strong>.
+                        Thanks for signing up! Click the button below to verify your email address and activate your account with <strong>50 free credits</strong>.
                       </p>
                       <div style="text-align:center;margin:32px 0;">
                         <a href="{verifyUrl}"

@@ -785,8 +785,8 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   autoFix = signal(false);
   multiPrompts = signal<string[]>(['', '']);
   elements = signal<{
-    frontalFile: File | null; frontalPreview: string;
-    refFiles: File[]; refPreviews: string[];
+    frontalFile: File | null; frontalPreview: string; frontalUrl?: string;
+    refFiles: File[]; refPreviews: string[]; refUrls?: string[];
   }[]>([]);
   showAdvanced = signal(false);
 
@@ -872,6 +872,28 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
       } catch { /* ignore parse errors */ }
     }
     if (qp['prompt']) this.prompt.set(qp['prompt']);
+    // Restore input image from explore
+    if (qp['imageUrl']) {
+      this.imageUrl.set(qp['imageUrl']);
+      this.previewSrc.set(qp['imageUrl']);
+    }
+    // Restore elements (Kling v3) from explore
+    if (qp['elements']) {
+      try {
+        const parsed: { frontalImageUrl?: string; referenceImageUrls?: string[] }[] = JSON.parse(qp['elements']);
+        if (parsed.length > 0) {
+          this.elements.set(parsed.map(e => ({
+            frontalFile: null,
+            frontalPreview: e.frontalImageUrl ?? '',
+            frontalUrl: e.frontalImageUrl,
+            refFiles: [],
+            refPreviews: e.referenceImageUrls ?? [],
+            refUrls: e.referenceImageUrls,
+          })));
+          this.showAdvanced.set(true);
+        }
+      } catch { /* ignore parse errors */ }
+    }
     // Show output from explore
     if (qp['outputUrl']) this.outputUrl.set(qp['outputUrl']);
   }
@@ -941,7 +963,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
 
   addElement() {
     if (this.elements().length >= 4) return;
-    this.elements.update(e => [...e, { frontalFile: null, frontalPreview: '', refFiles: [], refPreviews: [] }]);
+    this.elements.update(e => [...e, { frontalFile: null, frontalPreview: '', frontalUrl: undefined, refFiles: [], refPreviews: [], refUrls: undefined }]);
   }
 
   removeElement(i: number) {
@@ -1072,33 +1094,47 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
     };
 
     // Upload all element files (frontal + references per element), then callback
+    // Elements may already have URLs (restored from Explore) — skip upload in that case
     const uploadElements = (cb: (payload: { imageUrl: string; referenceImages: string[] }[]) => void) => {
-      const els = this.elements().filter(e => e.frontalFile && e.refFiles.length > 0);
+      const els = this.elements().filter(e => (e.frontalFile || e.frontalUrl) && (e.refFiles.length > 0 || e.refUrls?.length));
       if (els.length === 0) { cb([]); return; }
       const results: { imageUrl: string; referenceImages: string[] }[] = [];
       const uploadNextElement = (i: number) => {
         if (i >= els.length) { cb(results); return; }
         const el = els[i];
-        // Upload frontal first
-        this.gen.uploadFile(el.frontalFile!).subscribe({
-          next: frontalRes => {
-            // Then upload all reference images
-            const refUrls: string[] = [];
-            const uploadNextRef = (ri: number) => {
-              if (ri >= el.refFiles.length) {
-                results.push({ imageUrl: frontalRes.url, referenceImages: refUrls });
-                uploadNextElement(i + 1);
-                return;
-              }
-              this.gen.uploadFile(el.refFiles[ri]).subscribe({
-                next: refRes => { refUrls.push(refRes.url); uploadNextRef(ri + 1); },
-                error: () => uploadNextRef(ri + 1) // skip failed ref uploads
-              });
-            };
-            uploadNextRef(0);
-          },
-          error: () => uploadNextElement(i + 1) // skip element if frontal fails
-        });
+
+        const afterFrontal = (frontalUrl: string) => {
+          // If refs already uploaded, use them directly
+          if (el.refUrls?.length) {
+            results.push({ imageUrl: frontalUrl, referenceImages: el.refUrls });
+            uploadNextElement(i + 1);
+            return;
+          }
+          // Otherwise upload ref files
+          const refUrls: string[] = [];
+          const uploadNextRef = (ri: number) => {
+            if (ri >= el.refFiles.length) {
+              results.push({ imageUrl: frontalUrl, referenceImages: refUrls });
+              uploadNextElement(i + 1);
+              return;
+            }
+            this.gen.uploadFile(el.refFiles[ri]).subscribe({
+              next: refRes => { refUrls.push(refRes.url); uploadNextRef(ri + 1); },
+              error: () => uploadNextRef(ri + 1)
+            });
+          };
+          uploadNextRef(0);
+        };
+
+        // If frontal already uploaded, skip upload
+        if (el.frontalUrl) {
+          afterFrontal(el.frontalUrl);
+        } else {
+          this.gen.uploadFile(el.frontalFile!).subscribe({
+            next: frontalRes => afterFrontal(frontalRes.url),
+            error: () => uploadNextElement(i + 1)
+          });
+        }
       };
       uploadNextElement(0);
     };

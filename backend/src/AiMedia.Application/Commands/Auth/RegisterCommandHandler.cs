@@ -21,7 +21,7 @@ public class RegisterCommandHandler(IAppDbContext db, IEmailService emailService
 
         // Check if this email was ever used (including deleted accounts) — no free credits if so
         var everUsed = await db.Users.AnyAsync(u => u.Email == emailLower, cancellationToken);
-        var startingCredits = everUsed ? 0 : 100;
+        var startingCredits = everUsed ? 0 : 50;
 
         // Generate secure verification token
         var tokenBytes = RandomNumberGenerator.GetBytes(32);

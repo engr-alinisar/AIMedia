@@ -10,5 +10,14 @@ public record ExploreItemDto(
     string? UserDisplayName,
     string? Zone,
     string? Title,
-    List<string>? MultiPrompts = null
+    List<string>? MultiPrompts = null,
+    string? InputImageUrl = null,
+    List<ExploreElementDto>? InputElements = null,
+    Guid? OwnerId = null,
+    bool IsPublic = true
+);
+
+public record ExploreElementDto(
+    string? FrontalImageUrl,
+    List<string>? ReferenceImageUrls
 );

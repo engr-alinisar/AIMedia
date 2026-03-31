@@ -39,7 +39,7 @@ import { AuthService } from '../../core/auth/auth.service';
         </div>
         <h2 class="text-lg font-semibold text-gray-900">Email verified!</h2>
         <p class="text-sm text-gray-500">Your account is now active. You've been logged in automatically.</p>
-        <p class="text-sm font-medium text-purple-600">🎉 100 free credits added to your account!</p>
+        <p class="text-sm font-medium text-purple-600">🎉 50 free credits added to your account!</p>
         <button class="btn-primary w-full mt-2" (click)="goToDashboard()">Go to Dashboard</button>
       }
 

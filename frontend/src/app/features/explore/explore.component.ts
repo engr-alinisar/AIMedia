@@ -10,6 +10,7 @@ import type { ExploreItemDto } from '../../core/models/models';
 interface FilterItem {
   label: string;
   value: string | null;
+  myJobsOnly?: boolean;
 }
 
 @Component({
@@ -30,16 +31,16 @@ interface FilterItem {
   <div class="bg-white border-b border-border sticky top-0 z-10">
     <div class="max-w-7xl mx-auto px-4 lg:px-8 py-3">
       <div class="flex flex-wrap gap-2">
-        @for (f of filters; track f.value) {
-          <button (click)="setFilter(f.value)"
+        @for (f of visibleFilters(); track f.value) {
+          <button (click)="setFilter(f)"
                   class="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap"
-                  [class.bg-accent]="activeFilter() === f.value"
-                  [class.text-white]="activeFilter() === f.value"
-                  [class.border-accent]="activeFilter() === f.value"
-                  [class.bg-white]="activeFilter() !== f.value"
-                  [class.text-gray-600]="activeFilter() !== f.value"
-                  [class.border-border]="activeFilter() !== f.value"
-                  [class.hover:bg-gray-50]="activeFilter() !== f.value">
+                  [class.bg-accent]="isActiveFilter(f)"
+                  [class.text-white]="isActiveFilter(f)"
+                  [class.border-accent]="isActiveFilter(f)"
+                  [class.bg-white]="!isActiveFilter(f)"
+                  [class.text-gray-600]="!isActiveFilter(f)"
+                  [class.border-border]="!isActiveFilter(f)"
+                  [class.hover:bg-gray-50]="!isActiveFilter(f)">
             {{ f.label }}
           </button>
         }
@@ -71,8 +72,13 @@ interface FilterItem {
     @else if (items().length === 0) {
       <div class="flex flex-col items-center justify-center py-24 text-center">
         <div class="text-5xl mb-4">🔍</div>
-        <h3 class="text-lg font-semibold text-gray-700">No public creations yet</h3>
-        <p class="text-sm text-gray-400 mt-1 max-w-xs">Be the first to share your AI-generated media with the community!</p>
+        @if (myJobsOnly()) {
+          <h3 class="text-lg font-semibold text-gray-700">No creations yet</h3>
+          <p class="text-sm text-gray-400 mt-1 max-w-xs">Start generating to see your creations here.</p>
+        } @else {
+          <h3 class="text-lg font-semibold text-gray-700">No public creations yet</h3>
+          <p class="text-sm text-gray-400 mt-1 max-w-xs">Be the first to share your AI-generated media with the community!</p>
+        }
       </div>
     }
 
@@ -124,6 +130,16 @@ interface FilterItem {
                 <img [src]="item.outputUrl" [alt]="item.prompt || 'AI generated image'"
                      class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                      loading="lazy"/>
+              }
+
+              <!-- Private badge -->
+              @if (isOwnItem(item) && !item.isPublic) {
+                <div class="absolute top-2 left-2 px-1.5 py-0.5 bg-gray-800/70 text-white text-[10px] font-medium rounded-full flex items-center gap-1">
+                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21"/>
+                  </svg>
+                  Private
+                </div>
               }
 
               <!-- Hover expand hint -->
@@ -208,7 +224,9 @@ interface FilterItem {
 @if (selectedItem()) {
   <app-explore-item-modal
     [item]="selectedItem()!"
+    [currentUserId]="currentUserId()"
     (closed)="selectedItem.set(null)"
+    (visibilityChanged)="onVisibilityChanged($event)"
     (tryThis)="tryThis($event); selectedItem.set(null)">
   </app-explore-item-modal>
 }
@@ -222,6 +240,7 @@ export class ExploreComponent implements OnInit {
 
   filters: FilterItem[] = [
     { label: 'All',             value: null },
+    { label: '👤 My Jobs',      value: null, myJobsOnly: true },
     { label: 'Cinematic',       value: 'Cinematic' },
     { label: 'Character',       value: 'Character' },
     { label: 'Viral',           value: 'Viral' },
@@ -249,7 +268,15 @@ export class ExploreComponent implements OnInit {
   totalCount = signal(0);
   pageSize = 20;
   activeFilter = signal<string | null>(null);
+  myJobsOnly = signal(false);
   selectedItem = signal<ExploreItemDto | null>(null);
+
+  currentUserId = computed<string | null>(() => this.auth.user()?.id ?? null);
+
+  // Only show "My Jobs" filter when logged in
+  visibleFilters = computed(() =>
+    this.filters.filter(f => !f.myJobsOnly || this.auth.isLoggedIn())
+  );
 
   totalPages = computed(() => Math.ceil(this.totalCount() / this.pageSize));
 
@@ -270,8 +297,18 @@ export class ExploreComponent implements OnInit {
     this.load();
   }
 
-  setFilter(value: string | null) {
-    this.activeFilter.set(value);
+  isActiveFilter(f: FilterItem): boolean {
+    return f.myJobsOnly ? this.myJobsOnly() : (this.activeFilter() === f.value && !this.myJobsOnly());
+  }
+
+  setFilter(f: FilterItem) {
+    if (f.myJobsOnly) {
+      this.myJobsOnly.set(true);
+      this.activeFilter.set(null);
+    } else {
+      this.myJobsOnly.set(false);
+      this.activeFilter.set(f.value);
+    }
     this.currentPage.set(1);
     this.load();
   }
@@ -283,9 +320,24 @@ export class ExploreComponent implements OnInit {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  isOwnItem(item: ExploreItemDto): boolean {
+    return !!this.currentUserId() && item.ownerId === this.currentUserId();
+  }
+
+  onVisibilityChanged(event: { id: string; isPublic: boolean }) {
+    // Update the item in the list reactively
+    this.items.update(list =>
+      list.map(i => i.id === event.id ? { ...i, isPublic: event.isPublic } : i)
+    );
+    // Update selectedItem if open
+    if (this.selectedItem()?.id === event.id) {
+      this.selectedItem.update(i => i ? { ...i, isPublic: event.isPublic } : null);
+    }
+  }
+
   private load() {
     this.loading.set(true);
-    this.exploreSvc.getExplore(this.currentPage(), this.pageSize, this.activeFilter() ?? undefined).subscribe({
+    this.exploreSvc.getExplore(this.currentPage(), this.pageSize, this.activeFilter() ?? undefined, this.myJobsOnly()).subscribe({
       next: result => {
         this.items.set(result.items);
         this.totalCount.set(result.totalCount);
@@ -353,10 +405,6 @@ export class ExploreComponent implements OnInit {
   }
 
   tryThis(item: ExploreItemDto) {
-    if (!this.auth.isLoggedIn()) {
-      this.loginModal.show();
-      return;
-    }
     const routes: Record<string, string> = {
       ImageGen: '/image-gen', ImageToVideo: '/image-to-video', TextToVideo: '/text-to-video',
       Voice: '/voice', Transcription: '/transcription', BackgroundRemoval: '/background-removal',
@@ -368,6 +416,8 @@ export class ExploreComponent implements OnInit {
     if (item.modelId) queryParams['model'] = item.modelId;
     if (item.outputUrl) queryParams['outputUrl'] = item.outputUrl;
     if (item.multiPrompts?.length) queryParams['multiPrompts'] = JSON.stringify(item.multiPrompts);
+    if (item.inputImageUrl) queryParams['imageUrl'] = item.inputImageUrl;
+    if (item.inputElements?.length) queryParams['elements'] = JSON.stringify(item.inputElements);
     this.router.navigate([route], { queryParams });
   }
 }

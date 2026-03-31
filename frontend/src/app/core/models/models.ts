@@ -113,6 +113,10 @@ export interface ExploreItemDto {
   zone?: string;
   title?: string;
   multiPrompts?: string[];
+  inputImageUrl?: string;
+  inputElements?: { frontalImageUrl?: string; referenceImageUrls?: string[] }[];
+  ownerId?: string;
+  isPublic?: boolean;
 }
 
 // Credit costs mirrored from CreditCalculator.cs

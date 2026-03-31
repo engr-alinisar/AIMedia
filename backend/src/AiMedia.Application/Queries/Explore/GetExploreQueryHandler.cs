@@ -13,7 +13,13 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
     {
         var query = db.GenerationJobs
             .Include(j => j.User)
-            .Where(j => j.IsPublic && j.Status == JobStatus.Completed && j.OutputR2Key != null);
+            .Where(j => j.Status == JobStatus.Completed && j.OutputR2Key != null);
+
+        // "My Jobs" filter: show all own jobs (public + private); otherwise show only public
+        if (request.MyJobsOnly && request.UserId.HasValue)
+            query = query.Where(j => j.UserId == request.UserId.Value);
+        else
+            query = query.Where(j => j.IsPublic);
 
         if (!string.IsNullOrWhiteSpace(request.Zone))
         {
@@ -33,6 +39,8 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
             string? prompt = null;
             List<string>? multiPrompts = null;
 
+            string? inputImageUrl = null;
+            List<ExploreElementDto>? inputElements = null;
             if (j.FalInput != null)
             {
                 try
@@ -55,6 +63,38 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
                                 multiPrompts.Add(segPrompt.GetString() ?? "");
                         }
                         if (multiPrompts.Count == 0) multiPrompts = null;
+                    }
+
+                    // Extract input image URL (image-to-video models use different field names)
+                    foreach (var key in new[] { "image_url", "start_image_url", "first_frame_url" })
+                    {
+                        if (root.TryGetProperty(key, out var imgProp))
+                        {
+                            inputImageUrl = imgProp.GetString();
+                            break;
+                        }
+                    }
+
+                    // Extract Kling elements (frontal + reference images)
+                    if (root.TryGetProperty("elements", out var elsProp) && elsProp.ValueKind == JsonValueKind.Array)
+                    {
+                        inputElements = new List<ExploreElementDto>();
+                        foreach (var el in elsProp.EnumerateArray())
+                        {
+                            var frontal = el.TryGetProperty("frontal_image_url", out var fp) ? fp.GetString() : null;
+                            List<string>? refs = null;
+                            if (el.TryGetProperty("reference_image_urls", out var rp) && rp.ValueKind == JsonValueKind.Array)
+                            {
+                                refs = rp.EnumerateArray()
+                                    .Select(r => r.GetString())
+                                    .Where(r => r != null)
+                                    .Select(r => r!)
+                                    .ToList();
+                            }
+                            if (frontal != null)
+                                inputElements.Add(new ExploreElementDto(frontal, refs));
+                        }
+                        if (inputElements.Count == 0) inputElements = null;
                     }
                 }
                 catch (JsonException) { }
@@ -79,7 +119,11 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
                 displayName,
                 j.Zone,
                 j.Title,
-                multiPrompts
+                multiPrompts,
+                inputImageUrl,
+                inputElements,
+                j.UserId,
+                j.IsPublic
             );
         }).ToList();
 

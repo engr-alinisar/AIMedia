@@ -41,7 +41,7 @@ import { AuthService } from '../../core/auth/auth.service';
           </svg>
         </div>
         <h2 class="text-lg font-semibold text-gray-900">Check your email</h2>
-        <p class="text-sm text-gray-500">We sent a verification link to <strong>{{ email }}</strong>. Click the link to activate your account and get your 100 free credits.</p>
+        <p class="text-sm text-gray-500">We sent a verification link to <strong>{{ email }}</strong>. Click the link to activate your account and get your 50 free credits.</p>
         <p class="text-xs text-gray-400">Link expires in 24 hours. Check your spam folder if you don't see it.</p>
         <a routerLink="/auth/login" class="btn-primary w-full block text-center mt-2">Back to Sign In</a>
       </div>
