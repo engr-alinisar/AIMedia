@@ -41,6 +41,21 @@ public class ModelPricingService(
             return crPerSec * durationSeconds;
         }
 
+        // Veo 3.1 — tiered by resolution + audio (1.5× fal.ai cost)
+        // fal.ai: 720p/1080p $0.20(no audio)/$0.40(audio), 4k $0.40/$0.60
+        if (modelId.Contains("veo3.1"))
+        {
+            var is4k = resolution == "4k";
+            var crPerSec = (is4k, generateAudio) switch
+            {
+                (false, false) => 30,   // 720p/1080p no audio
+                (false, true)  => 60,   // 720p/1080p audio
+                (true,  false) => 60,   // 4k no audio
+                (true,  true)  => 90,   // 4k audio
+            };
+            return crPerSec * durationSeconds;
+        }
+
         // Hailuo 2.0 — tiered by resolution (1.5× fal.ai cost)
         // fal.ai: $0.045/s (768P), $0.017/s (512P)
         if (modelId.Contains("hailuo-02"))

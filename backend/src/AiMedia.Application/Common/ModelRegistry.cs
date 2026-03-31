@@ -23,9 +23,8 @@ public static class ModelRegistry
         new("fal-ai/kling-video/v2.5-turbo/pro/image-to-video","Kling v2.5 Turbo",          "Fast generation with strong visual fidelity",   0, 11, ProductType.ImageToVideo, ModelTier.Standard),
         new("fal-ai/minimax/hailuo-02/standard/image-to-video","Hailuo 2.0 Standard",      "Dual-resolution image-to-video with end frame", 0, 7,  ProductType.ImageToVideo, ModelTier.Standard),
         new("fal-ai/minimax/hailuo-2.3/pro/image-to-video",    "Hailuo 2.3 Pro",           "Highest quality MiniMax character consistency",  74, 0, ProductType.ImageToVideo, ModelTier.Premium),
-        new("fal-ai/wan/v2.2-a14b/image-to-video",             "WAN 2.2",                  "Fast open-source model, good for simple motion", 0, 5,  ProductType.ImageToVideo, ModelTier.Free),
         new("fal-ai/veo3.1/image-to-video",                    "Veo 3.1",      "Latest Veo with audio and up to 4K",           0, 30, ProductType.ImageToVideo, ModelTier.Premium),
-        new("fal-ai/veo3.1/fast/first-last-frame-to-video",   "Veo 3.1 Fast", "First & last frame with audio and 4K",        0, 20, ProductType.ImageToVideo, ModelTier.Premium),
+        new("fal-ai/veo3.1/fast/first-last-frame-to-video",   "Veo 3.1 Fast", "First & last frame with audio and 4K",        0, 30, ProductType.ImageToVideo, ModelTier.Premium),
         new("fal-ai/veo3/fast",                                "Veo 3 Fast",   "Speed-optimised Veo 3 with audio",            0, 20, ProductType.ImageToVideo, ModelTier.Premium),
         new("fal-ai/veo3/image-to-video",                      "Veo 3",        "Google's best model, ultra-realistic video",  0, 30, ProductType.ImageToVideo, ModelTier.Premium),
 

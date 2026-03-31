@@ -39,8 +39,11 @@ interface VideoModel {
   supportsMultiPrompt?: boolean;
   supportsElements?: boolean;
   supportsPromptOptimizer?: boolean;
+  supportsSeed?: boolean;
+  supportsAutoFix?: boolean;
   audioTiers?: { noAudio: number; audio: number };
   resolutionTiers?: Record<string, number>;  // e.g. { '768P': 7, '512P': 3 }
+  audioResolutionTiers?: { res: string; noAudio: number; audio: number }[];  // combo tiers
 }
 
 interface ModelGroup {
@@ -227,7 +230,7 @@ interface ModelGroup {
       }
 
       <!-- Advanced options -->
-      @if (selectedModel()?.supportsNegativePrompt || selectedModel()?.supportsCfgScale || selectedModel()?.supportsEndFrame || selectedModel()?.supportsElements || selectedModel()?.supportsPromptOptimizer) {
+      @if (selectedModel()?.supportsNegativePrompt || selectedModel()?.supportsCfgScale || selectedModel()?.supportsEndFrame || selectedModel()?.supportsElements || selectedModel()?.supportsPromptOptimizer || selectedModel()?.supportsSeed || selectedModel()?.supportsAutoFix) {
         <button type="button" (click)="showAdvanced.update(v => !v)"
                 class="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors">
           <svg class="w-3.5 h-3.5 transition-transform" [class.rotate-90]="showAdvanced()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -365,6 +368,30 @@ interface ModelGroup {
                   <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
                         [class.translate-x-6]="promptOptimizer()"
                         [class.translate-x-1]="!promptOptimizer()"></span>
+                </button>
+              </div>
+            }
+            @if (selectedModel()?.supportsSeed) {
+              <div>
+                <label class="form-label">Seed <span class="text-gray-400 font-normal">(optional)</span></label>
+                <input type="number" class="form-input" placeholder="Leave empty for random"
+                  [ngModel]="seed()" (ngModelChange)="seed.set($event || null)" min="0"/>
+                <p class="text-xs text-gray-400 mt-1">Same seed + same prompt = same result. Useful for reproducibility.</p>
+              </div>
+            }
+            @if (selectedModel()?.supportsAutoFix) {
+              <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                  <p class="text-sm font-medium text-gray-700">Auto Fix</p>
+                  <p class="text-xs text-gray-400 mt-0.5">Automatically rewrite prompts that fail moderation or validation</p>
+                </div>
+                <button type="button" (click)="autoFix.update(v => !v)"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 mt-0.5"
+                        [class.bg-accent]="autoFix()"
+                        [class.bg-gray-300]="!autoFix()">
+                  <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                        [class.translate-x-6]="autoFix()"
+                        [class.translate-x-1]="!autoFix()"></span>
                 </button>
               </div>
             }
@@ -611,7 +638,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
           id: 'fal-ai/veo3.1/image-to-video',
           name: 'Veo 3.1',
           description: 'Latest Google Veo — audio + up to 4K resolution.',
-          creditsPerSec: 35,
+          creditsPerSec: 30,
           badge: 'NEW',
           badgeColor: '#1a73e8',
           tags: ['Audio', 'Up to 4K'],
@@ -621,12 +648,20 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
           supportsAudio: true,
           hasAudio: false,
           aspectRatios: ASPECT_RATIOS_AUTO_169_916,
+          supportsNegativePrompt: true,
+          supportsSeed: true,
+          supportsAutoFix: true,
+          audioResolutionTiers: [
+            { res: '720p',  noAudio: 30, audio: 60 },
+            { res: '1080p', noAudio: 30, audio: 60 },
+            { res: '4k',    noAudio: 60, audio: 90 },
+          ],
         },
         {
           id: 'fal-ai/veo3.1/fast/first-last-frame-to-video',
           name: 'Veo 3.1 Fast',
           description: 'Animate between a first & last frame with audio.',
-          creditsPerSec: 20,
+          creditsPerSec: 30,
           badge: 'FAST',
           badgeColor: '#2563EB',
           tags: ['First+Last Frame', 'Audio', 'Up to 4K'],
@@ -637,6 +672,11 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
           hasAudio: false,
           aspectRatios: ASPECT_RATIOS_AUTO_169_916,
           endFrameRequired: true,
+          audioResolutionTiers: [
+            { res: '720p',  noAudio: 30, audio: 60 },
+            { res: '1080p', noAudio: 30, audio: 60 },
+            { res: '4k',    noAudio: 60, audio: 90 },
+          ],
         },
         {
           id: 'fal-ai/veo3/fast',
@@ -665,27 +705,6 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
           supportsAudio: true,
           hasAudio: false,
           aspectRatios: ASPECT_RATIOS_AUTO_169_916,
-        },
-      ],
-    },
-    {
-      id: 'wan',
-      name: 'WAN',
-      tagline: 'Fast open-source generation',
-      icon: 'W', iconBg: '#8B5CF6', iconUrl: '/assets/icons/wan.png', tags: ['Open Source', 'Fast'],
-      subModels: [
-        {
-          id: 'fal-ai/wan/v2.2-a14b/image-to-video',
-          name: 'WAN 2.2',
-          description: 'Fast open-source model, great for quick previews.',
-          creditsPerSec: 5,
-          tags: ['Open Source', 'Fast'],
-          durations: [5],
-          resolutions: [],
-          supportsMultiShot: false,
-          supportsAudio: false,
-          hasAudio: false,
-          aspectRatios: ASPECT_RATIOS_169_916_11,
         },
       ],
     },
@@ -737,6 +756,8 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   negativePrompt = '';
   cfgScale = signal(0.5);
   promptOptimizer = signal(true);
+  seed = signal<number | null>(null);
+  autoFix = signal(false);
   multiPrompts = signal<string[]>(['', '']);
   elements = signal<{
     frontalFile: File | null; frontalPreview: string;
@@ -785,6 +806,13 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
     // Resolution-tiered pricing (e.g. Hailuo 2.0: 768P vs 512P)
     if (m.resolutionTiers) {
       const crPerSec = m.resolutionTiers[res] ?? m.creditsPerSec;
+      return Math.ceil(crPerSec * dur);
+    }
+
+    // Audio + resolution combo tiers (e.g. Veo 3.1: 720p/1080p vs 4k × audio)
+    if (m.audioResolutionTiers) {
+      const tier = m.audioResolutionTiers.find(t => t.res === res) ?? m.audioResolutionTiers[0];
+      const crPerSec = this.generateAudio() ? tier.audio : tier.noAudio;
       return Math.ceil(crPerSec * dur);
     }
 
@@ -1001,6 +1029,8 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
         cfgScale: m.supportsCfgScale ? this.cfgScale() : undefined,
         elements: elementPayload?.length ? elementPayload : undefined,
         promptOptimizer: m.supportsPromptOptimizer ? this.promptOptimizer() : undefined,
+        seed: m.supportsSeed ? (this.seed() ?? undefined) : undefined,
+        autoFix: m.supportsAutoFix ? this.autoFix() : undefined,
       }).subscribe({
         next: res => {
           this.currentJobId = res.jobId;

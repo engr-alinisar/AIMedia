@@ -121,14 +121,17 @@ public class GenerateImageToVideoCommandHandler(
                 generate_audio  = request.GenerateAudio
             }
             : isVeo31
-            ? (object)new                                    // Veo 3.1: image_url, duration "Xs", resolution, aspect_ratio, audio
+            ? (object)new                                    // Veo 3.1: image_url, duration, resolution, audio, neg prompt, seed, auto_fix
             {
-                image_url      = request.ImageUrl,
-                prompt         = request.Prompt,
-                duration       = $"{request.DurationSeconds}s",
-                resolution     = request.Resolution,
-                aspect_ratio   = request.AspectRatio,
-                generate_audio = request.GenerateAudio
+                image_url       = request.ImageUrl,
+                prompt          = request.Prompt,
+                duration        = $"{request.DurationSeconds}s",
+                resolution      = request.Resolution,
+                aspect_ratio    = request.AspectRatio,
+                generate_audio  = request.GenerateAudio,
+                negative_prompt = request.NegativePrompt,
+                seed            = request.Seed,
+                auto_fix        = request.AutoFix
             }
             : isVeo3Fast
             ? (object)new                                    // Veo 3 Fast: same shape as Veo 3, faster/cheaper

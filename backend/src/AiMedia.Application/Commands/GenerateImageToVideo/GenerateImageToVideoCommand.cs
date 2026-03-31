@@ -25,4 +25,6 @@ public record GenerateImageToVideoCommand(
     float? CfgScale = null,
     List<string>? MultiPrompts = null,
     List<KlingElement>? Elements = null,
-    bool PromptOptimizer = true) : IRequest<GenerationResponse>;
+    bool PromptOptimizer = true,
+    int? Seed = null,
+    bool AutoFix = false) : IRequest<GenerationResponse>;

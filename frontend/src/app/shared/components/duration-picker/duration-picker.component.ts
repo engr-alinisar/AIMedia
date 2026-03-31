@@ -37,7 +37,7 @@ import { CommonModule } from '@angular/common';
   `,
   styles: [`
     .slider-wrap {
-      padding: 12px 0 24px;
+      padding: 12px 0 8px;
       user-select: none;
     }
     .slider-track {

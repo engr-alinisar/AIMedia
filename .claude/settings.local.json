@@ -156,7 +156,10 @@
       "Bash(taskkill //F //PID 3140)",
       "Bash(findstr LISTENING)",
       "Bash(taskkill //F //PID 31264)",
-      "Bash(taskkill //F //IM dotnet.exe)"
+      "Bash(taskkill //F //IM dotnet.exe)",
+      "Bash(taskkill //F //PID 22752)",
+      "Bash(taskkill //F //IM AiMedia.API.exe)",
+      "Bash(taskkill //F //PID 18740)"
     ]
   }
 }
