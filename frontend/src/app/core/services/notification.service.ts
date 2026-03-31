@@ -1,5 +1,6 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import type { JobStatusUpdate, ProductType } from '../models/models';
+import { AuthService } from '../auth/auth.service';
 
 export interface AppNotification {
   id: string;
@@ -12,12 +13,25 @@ export interface AppNotification {
   read: boolean;
 }
 
-const STORAGE_KEY = 'aimedia_notifications';
 const MAX_NOTIFICATIONS = 50;
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
-  private _notifications = signal<AppNotification[]>(this.loadFromStorage());
+  private auth = inject(AuthService);
+  private _notifications = signal<AppNotification[]>([]);
+
+  constructor() {
+    // Reload notifications whenever the logged-in user changes (login / logout / switch account)
+    effect(() => {
+      const user = this.auth.user();
+      this._notifications.set(user ? this.loadFromStorage(user.id) : []);
+    });
+  }
+
+  private get storageKey(): string {
+    const userId = this.auth.user()?.id;
+    return userId ? `aimedia_notifications_${userId}` : 'aimedia_notifications';
+  }
 
   readonly notifications = this._notifications.asReadonly();
   readonly unreadCount = computed(() => this._notifications().filter(n => !n.read).length);
@@ -67,18 +81,18 @@ export class NotificationService {
 
   clearAll() {
     this._notifications.set([]);
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(this.storageKey);
   }
 
-  private loadFromStorage(): AppNotification[] {
+  private loadFromStorage(userId: string): AppNotification[] {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(`aimedia_notifications_${userId}`);
       return raw ? JSON.parse(raw) : [];
     } catch { return []; }
   }
 
   private saveToStorage(notifications: AppNotification[]) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications)); }
+    try { localStorage.setItem(this.storageKey, JSON.stringify(notifications)); }
     catch { /* storage full */ }
   }
 }
