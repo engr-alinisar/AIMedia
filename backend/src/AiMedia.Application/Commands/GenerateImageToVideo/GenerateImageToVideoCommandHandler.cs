@@ -19,7 +19,7 @@ public class GenerateImageToVideoCommandHandler(
         var model = ModelRegistry.Get(request.ModelId)
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
-        var credits = await pricing.GetVideoCreditsAsync(request.ModelId, request.DurationSeconds, request.GenerateAudio, cancellationToken);
+        var credits = await pricing.GetVideoCreditsAsync(request.ModelId, request.DurationSeconds, request.GenerateAudio, request.Resolution, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -165,14 +165,14 @@ public class GenerateImageToVideoCommandHandler(
                 prompt           = request.Prompt,
                 duration         = request.DurationSeconds.ToString(),
                 resolution       = request.Resolution ?? "768P",
-                prompt_optimizer = true
+                prompt_optimizer = request.PromptOptimizer
             }
             : isHailuo23
             ? (object)new                                    // Hailuo 2.3 Pro: prompt + image_url + optimizer
             {
                 image_url        = request.ImageUrl,
                 prompt           = request.Prompt,
-                prompt_optimizer = true
+                prompt_optimizer = request.PromptOptimizer
             }
             : (object)new                                    // legacy MiniMax v01 fallback
             {

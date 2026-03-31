@@ -42,7 +42,8 @@ public class GenerationController : ControllerBase
             request.Resolution, request.MultiShot, request.GenerateAudio,
             request.AspectRatio, request.Zone, request.EndImageUrl,
             request.NegativePrompt, request.CfgScale, request.MultiPrompts,
-            request.Elements?.Select(e => new KlingElement(e.ImageUrl, e.ReferenceImages, e.VideoUrl)).ToList()), ct);
+            request.Elements?.Select(e => new KlingElement(e.ImageUrl, e.ReferenceImages, e.VideoUrl)).ToList(),
+            request.PromptOptimizer), ct);
         return Accepted(result);
     }
 
@@ -169,7 +170,8 @@ public record GenerateImageToVideoRequest(
     string? NegativePrompt = null,
     float? CfgScale = null,
     List<string>? MultiPrompts = null,
-    List<KlingElementRequest>? Elements = null);
+    List<KlingElementRequest>? Elements = null,
+    bool PromptOptimizer = true);
 
 public record GenerateTextToVideoRequest(
     string Prompt,

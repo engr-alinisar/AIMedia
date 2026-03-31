@@ -36,7 +36,7 @@ export class GenerationService {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image`, payload);
   }
 
-  generateImageToVideo(payload: { imageUrl: string; endImageUrl?: string; modelId: string; prompt?: string; durationSeconds?: number; resolution?: string; multiShot?: boolean; generateAudio?: boolean; aspectRatio?: string; isPublic?: boolean; zone?: string; negativePrompt?: string; cfgScale?: number; multiPrompts?: string[]; elements?: { imageUrl?: string; referenceImages?: string[]; videoUrl?: string }[] }) {
+  generateImageToVideo(payload: { imageUrl: string; endImageUrl?: string; modelId: string; prompt?: string; durationSeconds?: number; resolution?: string; multiShot?: boolean; generateAudio?: boolean; aspectRatio?: string; isPublic?: boolean; zone?: string; negativePrompt?: string; cfgScale?: number; multiPrompts?: string[]; elements?: { imageUrl?: string; referenceImages?: string[]; videoUrl?: string }[]; promptOptimizer?: boolean }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image-to-video`, payload);
   }
 

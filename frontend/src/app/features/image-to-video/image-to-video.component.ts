@@ -22,6 +22,7 @@ interface VideoModel {
   name: string;
   description: string;
   creditsPerSec: number;
+  creditsFlat?: number;     // flat cost per generation (no duration scaling)
   badge?: string;
   badgeColor?: string;
   tags: string[];
@@ -37,7 +38,9 @@ interface VideoModel {
   supportsCfgScale?: boolean;
   supportsMultiPrompt?: boolean;
   supportsElements?: boolean;
+  supportsPromptOptimizer?: boolean;
   audioTiers?: { noAudio: number; audio: number };
+  resolutionTiers?: Record<string, number>;  // e.g. { '768P': 7, '512P': 3 }
 }
 
 interface ModelGroup {
@@ -188,6 +191,14 @@ interface ModelGroup {
         [durations]="availableDurations()"
         [value]="duration()"
         (valueChange)="duration.set($event)" />
+      @if (availableDurations().length === 0) {
+        <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-100">
+          <svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/>
+          </svg>
+          <span class="text-xs text-indigo-600">This model generates a fixed <strong>5s</strong> video.</span>
+        </div>
+      }
 
       <!-- Resolution -->
       <app-resolution-picker
@@ -216,7 +227,7 @@ interface ModelGroup {
       }
 
       <!-- Advanced options -->
-      @if (selectedModel()?.supportsNegativePrompt || selectedModel()?.supportsCfgScale || selectedModel()?.supportsEndFrame || selectedModel()?.supportsElements) {
+      @if (selectedModel()?.supportsNegativePrompt || selectedModel()?.supportsCfgScale || selectedModel()?.supportsEndFrame || selectedModel()?.supportsElements || selectedModel()?.supportsPromptOptimizer) {
         <button type="button" (click)="showAdvanced.update(v => !v)"
                 class="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors">
           <svg class="w-3.5 h-3.5 transition-transform" [class.rotate-90]="showAdvanced()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -339,6 +350,22 @@ interface ModelGroup {
                 <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
                   <span>Creative</span><span>Strict</span>
                 </div>
+              </div>
+            }
+            @if (selectedModel()?.supportsPromptOptimizer) {
+              <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                  <p class="text-sm font-medium text-gray-700">Prompt Optimizer</p>
+                  <p class="text-xs text-gray-400 mt-0.5">Let the model enhance your prompt for better results</p>
+                </div>
+                <button type="button" (click)="promptOptimizer.update(v => !v)"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 mt-0.5"
+                        [class.bg-accent]="promptOptimizer()"
+                        [class.bg-gray-300]="!promptOptimizer()">
+                  <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                        [class.translate-x-6]="promptOptimizer()"
+                        [class.translate-x-1]="!promptOptimizer()"></span>
+                </button>
               </div>
             }
           </div>
@@ -544,7 +571,8 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
           id: 'fal-ai/minimax/hailuo-2.3/pro/image-to-video',
           name: 'Hailuo 2.3 Pro',
           description: 'Latest MiniMax Pro — highest quality character consistency.',
-          creditsPerSec: 20,
+          creditsPerSec: 0,
+          creditsFlat: 74,
           badge: 'NEW',
           badgeColor: '#059669',
           tags: ['Pro', 'Character Consistency'],
@@ -554,12 +582,14 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
           supportsAudio: false,
           hasAudio: false,
           aspectRatios: [],
+          supportsPromptOptimizer: true,
         },
         {
           id: 'fal-ai/minimax/hailuo-02/standard/image-to-video',
           name: 'Hailuo 2.0',
           description: 'Dual-resolution image-to-video with end frame.',
-          creditsPerSec: 9,
+          creditsPerSec: 7,
+          resolutionTiers: { '768P': 7, '512P': 3 },
           tags: ['End Frame', '512P / 768P'],
           durations: [6, 10],
           resolutions: ['512P', '768P'],
@@ -567,6 +597,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
           supportsAudio: false,
           hasAudio: false,
           aspectRatios: [],
+          supportsPromptOptimizer: true,
         },
       ],
     },
@@ -705,6 +736,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   aspectRatio = signal('16:9');
   negativePrompt = '';
   cfgScale = signal(0.5);
+  promptOptimizer = signal(true);
   multiPrompts = signal<string[]>(['', '']);
   elements = signal<{
     frontalFile: File | null; frontalPreview: string;
@@ -745,8 +777,17 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
   costEstimate = computed(() => {
     const m = this.selectedModel();
     if (!m) return 0;
+    // Flat-rate models (no duration options, e.g. Hailuo 2.3 Pro)
+    if (m.durations.length === 0 && m.creditsFlat) return m.creditsFlat;
     const dur = m.durations.length > 0 ? this.duration() : 6;
     const res = this.resolution();
+
+    // Resolution-tiered pricing (e.g. Hailuo 2.0: 768P vs 512P)
+    if (m.resolutionTiers) {
+      const crPerSec = m.resolutionTiers[res] ?? m.creditsPerSec;
+      return Math.ceil(crPerSec * dur);
+    }
+
     const resMultiplier = m.resolutions.length > 0
       ? (res === '4k' ? 2 : (res === '1080p' || res === '768P') ? 1.5 : 1)
       : 1;
@@ -959,6 +1000,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
         negativePrompt: m.supportsNegativePrompt && this.negativePrompt.trim() ? this.negativePrompt.trim() : undefined,
         cfgScale: m.supportsCfgScale ? this.cfgScale() : undefined,
         elements: elementPayload?.length ? elementPayload : undefined,
+        promptOptimizer: m.supportsPromptOptimizer ? this.promptOptimizer() : undefined,
       }).subscribe({
         next: res => {
           this.currentJobId = res.jobId;

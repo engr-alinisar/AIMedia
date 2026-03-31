@@ -23,7 +23,7 @@ public class ModelPricingService(
             : pricing.CreditsBase;
     }
 
-    public async Task<int> GetVideoCreditsAsync(string modelId, int durationSeconds, bool generateAudio, CancellationToken ct = default)
+    public async Task<int> GetVideoCreditsAsync(string modelId, int durationSeconds, bool generateAudio, string? resolution = null, CancellationToken ct = default)
     {
         // Kling v3 Pro — tiered by audio (1.5× fal.ai cost)
         // fal.ai: $0.112/s (no audio), $0.168/s (audio)
@@ -38,6 +38,14 @@ public class ModelPricingService(
         if (modelId.Contains("kling-video/o3/"))
         {
             var crPerSec = generateAudio ? 17 : 13;
+            return crPerSec * durationSeconds;
+        }
+
+        // Hailuo 2.0 — tiered by resolution (1.5× fal.ai cost)
+        // fal.ai: $0.045/s (768P), $0.017/s (512P)
+        if (modelId.Contains("hailuo-02"))
+        {
+            var crPerSec = resolution == "512P" ? 3 : 7;
             return crPerSec * durationSeconds;
         }
 
