@@ -19,7 +19,7 @@ import type { ExploreItemDto } from '../../../core/models/models';
 
     <!-- Close button -->
     <button (click)="closed.emit()"
-            class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors">
+            class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 border border-gray-300 flex items-center justify-center transition-colors shadow-sm">
       <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
       </svg>

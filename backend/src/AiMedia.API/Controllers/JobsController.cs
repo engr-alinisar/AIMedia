@@ -9,11 +9,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AiMedia.API.Controllers;
 
+public record SetVisibilityRequest(bool IsPublic);
+
 [Authorize]
 [ApiController]
 [Route("api/jobs")]
-public record SetVisibilityRequest(bool IsPublic);
-
 public class JobsController : ControllerBase
 {
     private readonly IMediator _mediator;
