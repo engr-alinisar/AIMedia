@@ -67,7 +67,7 @@ public class ProcessWebhookCommandHandler(
                 job.ErrorMessage = "Failed to store output.";
                 job.CompletedAt = DateTime.UtcNow;
                 await db.SaveChangesAsync(cancellationToken);
-                await creditService.ReleaseAsync(job.UserId, job.Id, job.CreditsReserved, "Output storage failed", cancellationToken);
+                await creditService.ReleaseAsync(job.UserId, job.Id, job.CreditsReserved, $"{job.Product} ({modelName}) — failed (storage error)", cancellationToken);
                 await publisher.Publish(new JobFailedEvent(job.Id, job.UserId, job.CreditsReserved, job.ErrorMessage, productName, modelName), cancellationToken);
                 return;
             }
@@ -78,7 +78,7 @@ public class ProcessWebhookCommandHandler(
             job.CompletedAt = DateTime.UtcNow;
             await db.SaveChangesAsync(cancellationToken);
 
-            await creditService.DeductAsync(job.UserId, job.Id, job.CreditsReserved, $"Job completed: {job.Product}", cancellationToken);
+            await creditService.DeductAsync(job.UserId, job.Id, job.CreditsReserved, $"{job.Product} ({modelName}) — completed", cancellationToken);
             await publisher.Publish(new JobCompletedEvent(job.Id, job.UserId, r2Key, job.CreditsCharged, productName, modelName), cancellationToken);
 
             // Low credit warning — send once when balance drops below 50 (reset when user tops up)
@@ -108,7 +108,7 @@ public class ProcessWebhookCommandHandler(
             job.CompletedAt = DateTime.UtcNow;
             await db.SaveChangesAsync(cancellationToken);
 
-            await creditService.ReleaseAsync(job.UserId, job.Id, job.CreditsReserved, "Job failed - credits refunded", cancellationToken);
+            await creditService.ReleaseAsync(job.UserId, job.Id, job.CreditsReserved, $"{job.Product} ({modelName}) — failed (refunded)", cancellationToken);
             await publisher.Publish(new JobFailedEvent(job.Id, job.UserId, job.CreditsReserved, job.ErrorMessage, productName, modelName), cancellationToken);
         }
     }

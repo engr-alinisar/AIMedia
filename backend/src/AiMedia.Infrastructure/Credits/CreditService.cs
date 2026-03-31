@@ -90,20 +90,32 @@ public class CreditService(IAppDbContext db, ILogger<CreditService> logger) : IC
             .Select(u => new { u.CreditBalance })
             .FirstOrDefaultAsync(cancellationToken);
 
-        var tx = new CreditTransaction
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Type = TransactionType.Refund,
-            Amount = credits,
-            BalanceAfter = user?.CreditBalance ?? 0,
-            Description = description,
-            JobId = jobId,
-            CreatedAt = DateTime.UtcNow
-        };
+        // Convert existing Reservation → Refund (positive amount, balance restored)
+        var updated = await ((DbContext)(object)db).Database.ExecuteSqlRawAsync(
+            """
+            UPDATE credit_transactions
+            SET type = {0}, amount = {1}, balance_after = {2}, description = {3}
+            WHERE job_id = {4} AND user_id = {5} AND type = {6}
+            """,
+            (int)TransactionType.Refund, credits, user?.CreditBalance ?? 0, description, jobId, userId, (int)TransactionType.Reservation);
 
-        ((DbContext)(object)db).Set<CreditTransaction>().Add(tx);
-        await db.SaveChangesAsync(cancellationToken);
+        // Fallback: create new row if no reservation found (edge case)
+        if (updated == 0)
+        {
+            var tx = new CreditTransaction
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Type = TransactionType.Refund,
+                Amount = credits,
+                BalanceAfter = user?.CreditBalance ?? 0,
+                Description = description,
+                JobId = jobId,
+                CreatedAt = DateTime.UtcNow
+            };
+            ((DbContext)(object)db).Set<CreditTransaction>().Add(tx);
+            await db.SaveChangesAsync(cancellationToken);
+        }
 
         logger.LogInformation("Released {Credits} credits for user {UserId} job {JobId}", credits, userId, jobId);
     }

@@ -74,27 +74,43 @@ public class ModelPricingService(
 
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        var existingList = await db.ModelPricings
-            .Select(p => p.ModelId)
-            .ToListAsync(ct);
-        var existing = existingList.ToHashSet();
+        var existingMap = await db.ModelPricings
+            .ToDictionaryAsync(p => p.ModelId, ct);
 
-        var toInsert = ModelRegistry.AllModels
-            .Where(m => !existing.Contains(m.Id))
-            .Select(m => new ModelPricing
+        var inserted = 0;
+        var updated = 0;
+
+        foreach (var m in ModelRegistry.AllModels)
+        {
+            if (existingMap.TryGetValue(m.Id, out var existing))
             {
-                ModelId = m.Id,
-                CreditsBase = m.CreditsBase,
-                CreditsPerSecond = m.CreditsPerSecond,
-                UpdatedAt = DateTime.UtcNow
-            })
-            .ToList();
+                // Update if pricing changed in code
+                if (existing.CreditsBase != m.CreditsBase || existing.CreditsPerSecond != m.CreditsPerSecond)
+                {
+                    existing.CreditsBase = m.CreditsBase;
+                    existing.CreditsPerSecond = m.CreditsPerSecond;
+                    existing.UpdatedAt = DateTime.UtcNow;
+                    updated++;
+                }
+            }
+            else
+            {
+                db.ModelPricings.Add(new ModelPricing
+                {
+                    ModelId = m.Id,
+                    CreditsBase = m.CreditsBase,
+                    CreditsPerSecond = m.CreditsPerSecond,
+                    UpdatedAt = DateTime.UtcNow
+                });
+                inserted++;
+            }
+        }
 
-        if (toInsert.Count == 0) return;
-
-        db.ModelPricings.AddRange(toInsert);
-        await db.SaveChangesAsync(ct);
-        logger.LogInformation("Seeded pricing for {Count} models", toInsert.Count);
+        if (inserted > 0 || updated > 0)
+        {
+            await db.SaveChangesAsync(ct);
+            logger.LogInformation("Seeded pricing: {Inserted} new, {Updated} updated", inserted, updated);
+        }
     }
 
     private async Task<ModelPricing> GetPricingAsync(string modelId, CancellationToken ct)
