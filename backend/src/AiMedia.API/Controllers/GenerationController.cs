@@ -50,10 +50,17 @@ public class GenerationController : ControllerBase
     [HttpPost("text-to-video")]
     public async Task<IActionResult> TextToVideo([FromBody] GenerateTextToVideoRequest request, CancellationToken ct)
     {
+        var hasPrompt = !string.IsNullOrWhiteSpace(request.Prompt);
+        var hasSegments = request.MultiPrompts is { Count: > 1 };
+        if (!hasPrompt && !hasSegments)
+            return BadRequest(new { error = "Either prompt or at least 2 multi-prompt segments are required." });
+
         var result = await _mediator.Send(new GenerateTextToVideoCommand(
             GetUserId(), request.Prompt, request.ModelId,
             request.DurationSeconds, request.AspectRatio, request.IsPublic,
-            request.Resolution, request.MultiShot, request.GenerateAudio, request.Zone), ct);
+            request.Resolution, request.MultiShot, request.GenerateAudio, request.Zone,
+            request.NegativePrompt, request.CfgScale, request.MultiPrompts, request.PromptOptimizer,
+            request.Seed, request.AutoFix), ct);
         return Accepted(result);
     }
 
@@ -176,7 +183,7 @@ public record GenerateImageToVideoRequest(
     bool AutoFix = false);
 
 public record GenerateTextToVideoRequest(
-    string Prompt,
+    string? Prompt = null,
     string ModelId = "fal-ai/kling-video/v3/pro/text-to-video",
     int DurationSeconds = 5,
     string AspectRatio = "16:9",
@@ -184,7 +191,13 @@ public record GenerateTextToVideoRequest(
     string Resolution = "720p",
     bool MultiShot = false,
     bool GenerateAudio = true,
-    string? Zone = null);
+    string? Zone = null,
+    string? NegativePrompt = null,
+    float? CfgScale = null,
+    List<string>? MultiPrompts = null,
+    bool PromptOptimizer = true,
+    int? Seed = null,
+    bool AutoFix = false);
 
 public record GenerateVoiceRequest(
     string Text,

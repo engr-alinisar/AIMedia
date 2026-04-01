@@ -565,6 +565,7 @@ export class ImageToVideoComponent implements OnInit, OnDestroy {
           supportsAudio: true,
           hasAudio: false,
           aspectRatios: ASPECT_RATIOS_169_916_11,
+          supportsNegativePrompt: true,
         },
         {
           id: 'fal-ai/kling-video/v2.5-turbo/pro/image-to-video',

@@ -197,7 +197,7 @@ interface FilterItem {
                   class="px-3 py-1.5 text-sm border border-border rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
             Previous
           </button>
-          @for (p of pageNumbers(); track p) {
+          @for (p of pageNumbers(); track $index) {
             @if (p === -1) {
               <span class="px-2 text-gray-400">...</span>
             } @else {

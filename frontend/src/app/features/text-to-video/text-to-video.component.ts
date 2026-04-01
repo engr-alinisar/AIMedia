@@ -32,6 +32,13 @@ interface TtvModel {
   supportsAudio: boolean;     // show generate_audio toggle
   audioDefault: boolean;
   supportsPromptOptimizer: boolean; // Hailuo models
+  supportsMultiPrompt: boolean;     // multi-shot with explicit segments (Kling v3/o3)
+  supportsNegativePrompt: boolean;  // negative prompt field
+  supportsCfgScale: boolean;        // CFG scale slider
+  supportsSeed?: boolean;           // seed input
+  supportsAutoFix?: boolean;        // auto-fix toggle
+  audioTiers?: { noAudio: number; audio: number }; // audio-dependent credit tiers
+  audioResolutionTiers?: { res: string; noAudio: number; audio: number }[]; // res+audio combo tiers
 }
 
 interface TtvGroup {
@@ -67,46 +74,14 @@ interface TtvGroup {
         [selectedId]="selectedModel()?.id ?? null"
         (modelSelect)="onModelSelect($event)" />
 
-      <!-- Prompt -->
-      <div>
-        <label class="form-label">Prompt</label>
-        <textarea class="form-textarea h-32" [(ngModel)]="prompt"
-          spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
-          placeholder="Describe your video scene in detail..." maxlength="2500"></textarea>
-        <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2500</p>
-      </div>
-
-      <!-- Aspect Ratio -->
-      @if ((selectedModel()?.aspectRatios?.length ?? 0) > 0) {
-        <app-aspect-ratio-picker
-          [ratios]="selectedModel()!.aspectRatios"
-          [value]="aspectRatio()"
-          (valueChange)="aspectRatio.set($event)" />
-      }
-
-      <!-- Duration -->
-      @if ((selectedModel()?.durations?.length ?? 0) > 0) {
-        <app-duration-picker
-          [durations]="selectedModel()!.durations"
-          [value]="duration()"
-          (valueChange)="duration.set($event)" />
-      }
-
-      <!-- Resolution -->
-      <app-resolution-picker
-        [resolutions]="selectedModel()?.resolutions ?? []"
-        [value]="resolution()"
-        [premiumResolutions]="['1080p','4k']"
-        (valueChange)="resolution.set($event)" />
-
-      <!-- Multi-Shot toggle (Kling v3 / o3) -->
+      <!-- Multi-Shot toggle (before prompt so user sees which input mode is active) -->
       @if (selectedModel()?.supportsMultiShot) {
         <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
           <div>
             <p class="text-sm font-medium text-gray-700">Multi-Shot</p>
             <p class="text-xs text-gray-400 mt-0.5">Generate cinematic multi-scene video sequences</p>
           </div>
-          <button type="button" (click)="multiShot.update(v => !v)"
+          <button type="button" (click)="multiShot.update(v => !v); clampDuration()"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 mt-0.5"
                   [class.bg-accent]="multiShot()"
                   [class.bg-gray-300]="!multiShot()">
@@ -117,7 +92,83 @@ interface TtvGroup {
         </div>
       }
 
-      <!-- Generate Audio toggle (Kling, Veo) -->
+      <!-- Prompt / Multi-Prompt segments -->
+      @if (selectedModel()?.supportsMultiPrompt && multiShot()) {
+        <div>
+          <label class="form-label">Multi-Prompt Segments <span class="text-red-500">*</span></label>
+          <p class="text-xs text-gray-400 mb-2">
+            Each segment gets roughly equal time.
+            {{ availableDurations().length > 0 ? availableDurations()[0] : duration() }}s ÷ {{ multiPrompts().length }} segments
+            ≈ {{ ((availableDurations().length > 0 ? availableDurations()[0] : duration()) / multiPrompts().length) | number:'1.0-1' }}s each.
+          </p>
+          @for (seg of multiPrompts(); track $index) {
+            <div class="flex gap-2 mb-2">
+              <div class="flex items-center justify-center w-6 h-6 rounded-full bg-accent/10 text-accent text-xs font-bold flex-shrink-0 mt-1">
+                {{ $index + 1 }}
+              </div>
+              <textarea class="form-textarea h-16 flex-1"
+                [ngModel]="seg"
+                (ngModelChange)="updatePromptSegment($index, $event)"
+                [placeholder]="'Segment ' + ($index + 1) + ' — describe the scene...'"
+                maxlength="1000"></textarea>
+              @if (multiPrompts().length > 2) {
+                <button type="button" (click)="removePromptSegment($index)"
+                        class="flex-shrink-0 w-6 h-6 mt-1 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              }
+            </div>
+          }
+          @if (multiPrompts().length < 6) {
+            <button type="button" (click)="addPromptSegment()"
+                    class="text-xs text-accent font-medium hover:underline">+ Add segment</button>
+          }
+        </div>
+      } @else {
+        <!-- Single prompt -->
+        <div>
+          <label class="form-label">Prompt</label>
+          <textarea class="form-textarea h-32" [(ngModel)]="prompt"
+            spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
+            placeholder="Describe your video scene in detail..." maxlength="2500"></textarea>
+          <p class="text-right text-xs text-gray-400 mt-1">{{ prompt.length }}/2500</p>
+        </div>
+      }
+
+      <!-- Aspect Ratio -->
+      @if ((selectedModel()?.aspectRatios?.length ?? 0) > 0) {
+        <app-aspect-ratio-picker
+          [ratios]="selectedModel()!.aspectRatios"
+          [value]="aspectRatio()"
+          (valueChange)="aspectRatio.set($event)" />
+      }
+
+      <!-- Duration -->
+      @if (availableDurations().length > 0) {
+        <app-duration-picker
+          [durations]="availableDurations()"
+          [value]="duration()"
+          (valueChange)="duration.set($event)" />
+      }
+      @if ((selectedModel()?.durations?.length ?? 0) === 0) {
+        <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-100">
+          <svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/>
+          </svg>
+          <span class="text-xs text-indigo-600">This model generates a fixed <strong>5s</strong> video.</span>
+        </div>
+      }
+
+      <!-- Resolution -->
+      <app-resolution-picker
+        [resolutions]="selectedModel()?.resolutions ?? []"
+        [value]="resolution()"
+        [premiumResolutions]="['1080p','4k']"
+        (valueChange)="resolution.set($event)" />
+
+      <!-- Generate Audio toggle -->
       @if (selectedModel()?.supportsAudio) {
         <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
           <div>
@@ -133,6 +184,81 @@ interface TtvGroup {
                   [class.translate-x-1]="!generateAudio()"></span>
           </button>
         </div>
+      }
+
+      <!-- Advanced Options -->
+      @if (selectedModel()?.supportsNegativePrompt || selectedModel()?.supportsCfgScale || selectedModel()?.supportsPromptOptimizer || selectedModel()?.supportsSeed || selectedModel()?.supportsAutoFix) {
+        <button type="button" (click)="showAdvanced.update(v => !v)"
+                class="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors">
+          <svg class="w-3.5 h-3.5 transition-transform" [class.rotate-90]="showAdvanced()"
+               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+          Advanced Options
+        </button>
+        @if (showAdvanced()) {
+          <div class="space-y-4 pl-1">
+            @if (selectedModel()?.supportsNegativePrompt) {
+              <div>
+                <label class="form-label">Negative Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
+                <input type="text" class="form-input" [(ngModel)]="negativePrompt"
+                  placeholder="blur, distort, low quality, watermark..." maxlength="500"/>
+              </div>
+            }
+            @if (selectedModel()?.supportsCfgScale) {
+              <div>
+                <label class="form-label">Prompt Guidance (CFG Scale)
+                  <span class="text-gray-400 font-normal ml-1">{{ cfgScale() | number:'1.1-1' }}</span>
+                </label>
+                <input type="range" class="w-full accent-accent" min="0" max="1" step="0.1"
+                  [ngModel]="cfgScale()" (ngModelChange)="cfgScale.set(+$event)"/>
+                <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
+                  <span>Creative</span><span>Strict</span>
+                </div>
+              </div>
+            }
+            @if (selectedModel()?.supportsPromptOptimizer) {
+              <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                  <p class="text-sm font-medium text-gray-700">Prompt Optimizer</p>
+                  <p class="text-xs text-gray-400 mt-0.5">Let the model enhance your prompt for better results</p>
+                </div>
+                <button type="button" (click)="promptOptimizer.update(v => !v)"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 mt-0.5"
+                        [class.bg-accent]="promptOptimizer()"
+                        [class.bg-gray-300]="!promptOptimizer()">
+                  <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                        [class.translate-x-6]="promptOptimizer()"
+                        [class.translate-x-1]="!promptOptimizer()"></span>
+                </button>
+              </div>
+            }
+            @if (selectedModel()?.supportsSeed) {
+              <div>
+                <label class="form-label">Seed <span class="text-gray-400 font-normal">(optional)</span></label>
+                <input type="number" class="form-input" placeholder="Leave empty for random"
+                  [ngModel]="seed()" (ngModelChange)="seed.set($event || null)" min="0"/>
+                <p class="text-xs text-gray-400 mt-1">Same seed + same prompt = same result. Useful for reproducibility.</p>
+              </div>
+            }
+            @if (selectedModel()?.supportsAutoFix) {
+              <div class="flex items-start justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                  <p class="text-sm font-medium text-gray-700">Auto Fix</p>
+                  <p class="text-xs text-gray-400 mt-0.5">Automatically rewrite prompts that fail moderation or validation</p>
+                </div>
+                <button type="button" (click)="autoFix.update(v => !v)"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 mt-0.5"
+                        [class.bg-accent]="autoFix()"
+                        [class.bg-gray-300]="!autoFix()">
+                  <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                        [class.translate-x-6]="autoFix()"
+                        [class.translate-x-1]="!autoFix()"></span>
+                </button>
+              </div>
+            }
+          </div>
+        }
       }
 
       @if (errorMsg()) {
@@ -182,7 +308,7 @@ interface TtvGroup {
         </div>
       }
       <button class="btn-primary w-full" (click)="generate()"
-              [disabled]="!prompt.trim() || generating() || !selectedModel()">
+              [disabled]="!hasValidPrompt() || generating() || !selectedModel()">
         @if (generating()) { <span class="animate-spin mr-1">⟳</span> Generating... }
         @else { ✨ Generate }
       </button>
@@ -246,48 +372,55 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
           id: 'fal-ai/kling-video/v3/pro/text-to-video',
           name: 'Kling v3 Pro',
           description: 'Latest Kling — up to 15s, multi-shot, native audio.',
-          creditsPerSec: 18, creditsFlat: 0,
+          creditsPerSec: 17, creditsFlat: 0,
           badge: 'HOT', badgeColor: '#EF4444',
-          tags: ['Multi-Shot', 'Audio', '3–15s'],
+          tags: ['Multi-Shot', 'Audio', '3–15s', '17–25 cr/s'],
           durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
           resolutions: [],
           aspectRatios: ASPECT_RATIOS_169_916_11,
           supportsMultiShot: true, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+          supportsMultiPrompt: true, supportsNegativePrompt: true, supportsCfgScale: true,
+          audioTiers: { noAudio: 17, audio: 25 },
         },
         {
           id: 'fal-ai/kling-video/o3/pro/text-to-video',
           name: 'Kling o3 Pro',
           description: 'New o3 architecture — multi-shot, up to 15s, native audio.',
-          creditsPerSec: 15, creditsFlat: 0,
+          creditsPerSec: 17, creditsFlat: 0,
           badge: 'NEW', badgeColor: '#7C3AED',
-          tags: ['Multi-Shot', 'Audio', '3–15s'],
+          tags: ['Multi-Shot', 'Audio', '3–15s', '17–21 cr/s'],
           durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
           resolutions: [],
           aspectRatios: ASPECT_RATIOS_169_916_11,
           supportsMultiShot: true, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+          supportsMultiPrompt: true, supportsNegativePrompt: true, supportsCfgScale: false,
+          audioTiers: { noAudio: 17, audio: 21 },
         },
         {
           id: 'fal-ai/kling-video/v2.6/pro/text-to-video',
           name: 'Kling v2.6 Pro',
           description: 'Improved realism with native audio generation.',
-          creditsPerSec: 14, creditsFlat: 0,
-          tags: ['Audio', '5–10s'],
+          creditsPerSec: 11, creditsFlat: 0,
+          tags: ['Audio', '5–10s', '11–21 cr/s'],
           durations: [5, 10],
           resolutions: [],
           aspectRatios: ASPECT_RATIOS_169_916_11,
           supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+          supportsMultiPrompt: false, supportsNegativePrompt: true, supportsCfgScale: true,
+          audioTiers: { noAudio: 11, audio: 21 },
         },
         {
           id: 'fal-ai/kling-video/v2.5-turbo/pro/text-to-video',
           name: 'Kling v2.5 Turbo',
-          description: 'Fast generation with strong visual fidelity and audio.',
-          creditsPerSec: 10, creditsFlat: 0,
+          description: 'Fast generation with strong visual fidelity.',
+          creditsPerSec: 11, creditsFlat: 0,
           badge: 'FAST', badgeColor: '#2563EB',
-          tags: ['Fast', 'Audio', '5–10s'],
+          tags: ['Fast', '5–10s', '11 cr/s'],
           durations: [5, 10],
           resolutions: [],
           aspectRatios: ASPECT_RATIOS_169_916_11,
-          supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+          supportsMultiShot: false, supportsAudio: false, audioDefault: false, supportsPromptOptimizer: false,
+          supportsMultiPrompt: false, supportsNegativePrompt: true, supportsCfgScale: true,
         },
       ],
     },
@@ -310,6 +443,7 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
           resolutions: [],
           aspectRatios: [],
           supportsMultiShot: false, supportsAudio: false, audioDefault: false, supportsPromptOptimizer: true,
+          supportsMultiPrompt: false, supportsNegativePrompt: false, supportsCfgScale: false,
         },
         {
           id: 'fal-ai/minimax/hailuo-02/standard/text-to-video',
@@ -321,6 +455,7 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
           resolutions: [],
           aspectRatios: [],
           supportsMultiShot: false, supportsAudio: false, audioDefault: false, supportsPromptOptimizer: true,
+          supportsMultiPrompt: false, supportsNegativePrompt: false, supportsCfgScale: false,
         },
       ],
     },
@@ -335,68 +470,68 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
           id: 'fal-ai/veo3.1',
           name: 'Veo 3.1',
           description: 'Latest Google Veo — up to 4K with native audio.',
-          creditsPerSec: 35, creditsFlat: 0,
+          creditsPerSec: 30, creditsFlat: 0,
           badge: 'NEW', badgeColor: '#1a73e8',
-          tags: ['Audio', 'Up to 4K'],
+          tags: ['Audio', 'Up to 4K', '30–90 cr/s'],
           durations: [4, 6, 8],
           resolutions: ['720p', '1080p', '4k'],
           aspectRatios: ASPECT_RATIOS_169_916,
           supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+          supportsMultiPrompt: false, supportsNegativePrompt: true, supportsCfgScale: false,
+          supportsSeed: true, supportsAutoFix: true,
+          audioResolutionTiers: [
+            { res: '720p',  noAudio: 30, audio: 60 },
+            { res: '1080p', noAudio: 30, audio: 60 },
+            { res: '4k',    noAudio: 60, audio: 90 },
+          ],
         },
         {
           id: 'fal-ai/veo3.1/fast',
           name: 'Veo 3.1 Fast',
           description: 'Faster Veo 3.1 — 4K and audio at lower cost.',
-          creditsPerSec: 20, creditsFlat: 0,
+          creditsPerSec: 15, creditsFlat: 0,
           badge: 'FAST', badgeColor: '#2563EB',
-          tags: ['Audio', 'Up to 4K', 'Fast'],
+          tags: ['Audio', 'Up to 4K', 'Fast', '15–53 cr/s'],
           durations: [4, 6, 8],
           resolutions: ['720p', '1080p', '4k'],
           aspectRatios: ASPECT_RATIOS_169_916,
           supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+          supportsMultiPrompt: false, supportsNegativePrompt: true, supportsCfgScale: false,
+          supportsSeed: true, supportsAutoFix: true,
+          audioResolutionTiers: [
+            { res: '720p',  noAudio: 15, audio: 23 },
+            { res: '1080p', noAudio: 15, audio: 23 },
+            { res: '4k',    noAudio: 45, audio: 53 },
+          ],
         },
         {
           id: 'fal-ai/veo3',
           name: 'Veo 3',
           description: 'Google Veo 3 — cinematic realism with synchronized audio.',
           creditsPerSec: 30, creditsFlat: 0,
-          tags: ['Audio', '1080p'],
+          tags: ['Audio', '1080p', '30–60 cr/s'],
           durations: [4, 6, 8],
           resolutions: ['720p', '1080p'],
           aspectRatios: ASPECT_RATIOS_169_916,
           supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
+          supportsMultiPrompt: false, supportsNegativePrompt: true, supportsCfgScale: false,
+          supportsSeed: true, supportsAutoFix: true,
+          audioTiers: { noAudio: 30, audio: 60 },
         },
         {
           id: 'fal-ai/veo3/fast',
           name: 'Veo 3 Fast',
           description: 'Speed-optimised Veo 3 with audio — lower cost.',
-          creditsPerSec: 20, creditsFlat: 0,
+          creditsPerSec: 15, creditsFlat: 0,
           badge: 'FAST', badgeColor: '#2563EB',
-          tags: ['Audio', 'Fast'],
+          tags: ['Audio', 'Fast', '15–23 cr/s'],
           durations: [4, 6, 8],
           resolutions: ['720p', '1080p'],
           aspectRatios: ASPECT_RATIOS_169_916,
           supportsMultiShot: false, supportsAudio: true, audioDefault: true, supportsPromptOptimizer: false,
-        },
-      ],
-    },
-    {
-      id: 'wan',
-      name: 'WAN',
-      tagline: 'Fast open-source generation',
-      icon: 'W', iconBg: '#8B5CF6', iconUrl: '/assets/icons/wan.png',
-      tags: ['Open Source', 'Fast'],
-      subModels: [
-        {
-          id: 'fal-ai/wan/v2.2-a14b/text-to-video',
-          name: 'WAN 2.2',
-          description: 'Fast open-source model — great for quick previews.',
-          creditsPerSec: 5, creditsFlat: 0,
-          tags: ['Open Source', 'Fast'],
-          durations: [5],
-          resolutions: ['480p', '580p', '720p'],
-          aspectRatios: ASPECT_RATIOS_169_916_11,
-          supportsMultiShot: false, supportsAudio: false, audioDefault: false, supportsPromptOptimizer: false,
+          supportsMultiPrompt: false, supportsNegativePrompt: true, supportsCfgScale: false,
+          supportsSeed: true, supportsAutoFix: true,
+          audioTiers: { noAudio: 15, audio: 23 },
         },
       ],
     },
@@ -421,7 +556,13 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
         id: m.id,
         name: m.name,
         description: m.description,
-        creditsDisplay: m.creditsFlat > 0 ? `${m.creditsFlat} cr` : `${m.creditsPerSec} cr/s`,
+        creditsDisplay: m.creditsFlat > 0
+          ? `${m.creditsFlat} cr`
+          : m.audioResolutionTiers
+            ? `${m.audioResolutionTiers[0].noAudio}–${m.audioResolutionTiers[m.audioResolutionTiers.length - 1].audio} cr/s`
+            : m.audioTiers
+              ? `${m.audioTiers.noAudio}–${m.audioTiers.audio} cr/s`
+              : `${m.creditsPerSec} cr/s`,
         badge: m.badge,
         badgeColor: m.badgeColor,
         tags: m.tags,
@@ -439,6 +580,16 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   multiShot = signal(false);
   generateAudio = signal(true);
 
+  // Multi-prompt segments (Kling v3/o3 multi-shot)
+  multiPrompts = signal<string[]>(['', '']);
+  // Advanced options
+  negativePrompt = '';
+  cfgScale = signal(0.5);
+  promptOptimizer = signal(true);
+  seed = signal<number | null>(null);
+  autoFix = signal(false);
+  showAdvanced = signal(false);
+
   generating = signal(false);
   jobStatus = signal<JobStatus | null>(null);
   outputUrl = signal<string | undefined>(undefined);
@@ -446,12 +597,41 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   isPublic = signal(true);
   zone = '';
 
+  /** Filter durations so each multi-prompt segment gets at least 3s */
+  availableDurations = computed(() => {
+    const m = this.selectedModel();
+    if (!m || m.durations.length === 0) return m?.durations ?? [];
+    if (!m.supportsMultiPrompt || !this.multiShot()) return m.durations;
+    const minDur = this.multiPrompts().length * 3;
+    const filtered = m.durations.filter(d => d >= minDur);
+    return filtered.length > 0 ? filtered : [m.durations[m.durations.length - 1]];
+  });
+
+  hasValidPrompt = computed(() => {
+    const m = this.selectedModel();
+    if (!m) return false;
+    if (m.supportsMultiPrompt && this.multiShot()) {
+      return this.multiPrompts().filter(p => p.trim().length > 0).length >= 2;
+    }
+    return this.prompt.trim().length > 0;
+  });
+
   costEstimate = computed(() => {
     const m = this.selectedModel();
     if (!m) return 0;
     if (m.creditsFlat > 0) return m.creditsFlat;
     const dur = m.durations.length > 0 ? this.duration() : 1;
     const res = this.resolution();
+    // Audio + resolution combo tiers (Veo 3.1)
+    if (m.audioResolutionTiers) {
+      const tier = m.audioResolutionTiers.find(t => t.res === res) ?? m.audioResolutionTiers[0];
+      return (this.generateAudio() ? tier.audio : tier.noAudio) * dur;
+    }
+    // Audio-tiered pricing (Kling v3, o3, Veo 3/3 Fast)
+    if (m.audioTiers) {
+      const crPerSec = this.generateAudio() ? m.audioTiers.audio : m.audioTiers.noAudio;
+      return crPerSec * dur;
+    }
     const resMult = m.resolutions.length > 0
       ? (res === '4k' ? 2 : res === '1080p' ? 1.5 : 1)
       : 1;
@@ -483,24 +663,65 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
     if (m.resolutions.length > 0) this.resolution.set(m.resolutions[0]);
     this.generateAudio.set(m.audioDefault);
     if (!m.supportsMultiShot) this.multiShot.set(false);
+    this.multiPrompts.set(['', '']);
+    this.negativePrompt = '';
+    this.cfgScale.set(0.5);
+    this.promptOptimizer.set(true);
+    this.seed.set(null);
+    this.autoFix.set(false);
+    this.showAdvanced.set(false);
+  }
+
+  addPromptSegment() {
+    this.multiPrompts.update(p => [...p, '']);
+    this.clampDuration();
+  }
+
+  removePromptSegment(i: number) {
+    this.multiPrompts.update(p => p.filter((_, idx) => idx !== i));
+    this.clampDuration();
+  }
+
+  updatePromptSegment(i: number, val: string) {
+    this.multiPrompts.update(p => p.map((v, idx) => idx === i ? val : v));
+  }
+
+  /** Ensure selected duration stays valid after segment count changes */
+  clampDuration() {
+    setTimeout(() => {
+      const avail = this.availableDurations();
+      if (avail.length > 0 && !avail.includes(this.duration())) {
+        this.duration.set(avail[0]);
+      }
+    });
   }
 
   generate() {
     if (!this.auth.isLoggedIn()) { this.loginModal.show(); return; }
-    if (!this.prompt.trim() || this.generating() || !this.selectedModel()) return;
+    if (!this.hasValidPrompt() || this.generating() || !this.selectedModel()) return;
     this.generating.set(true);
     this.jobStatus.set('Queued');
     this.outputUrl.set(undefined);
     this.errorMsg.set(undefined);
     const m = this.selectedModel()!;
+
+    const multiPromptsClean = m.supportsMultiPrompt && this.multiShot()
+      ? this.multiPrompts().filter(p => p.trim()) : [];
+
     this.gen.generateTextToVideo({
-      prompt: this.prompt,
+      prompt: multiPromptsClean.length > 0 ? undefined : this.prompt,
+      multiPrompts: multiPromptsClean.length > 0 ? multiPromptsClean : undefined,
       modelId: m.id,
       durationSeconds: m.durations.length > 0 ? this.duration() : 1,
       aspectRatio: m.aspectRatios.length > 0 ? this.aspectRatio() : '16:9',
       resolution: m.resolutions.length > 0 ? this.resolution() : undefined,
       multiShot: m.supportsMultiShot ? this.multiShot() : undefined,
       generateAudio: m.supportsAudio ? this.generateAudio() : undefined,
+      negativePrompt: m.supportsNegativePrompt && this.negativePrompt.trim() ? this.negativePrompt.trim() : undefined,
+      cfgScale: m.supportsCfgScale ? this.cfgScale() : undefined,
+      promptOptimizer: m.supportsPromptOptimizer ? this.promptOptimizer() : undefined,
+      seed: m.supportsSeed ? (this.seed() ?? undefined) : undefined,
+      autoFix: m.supportsAutoFix ? this.autoFix() : undefined,
       isPublic: this.isPublic(),
       zone: this.zone || undefined,
     }).subscribe({

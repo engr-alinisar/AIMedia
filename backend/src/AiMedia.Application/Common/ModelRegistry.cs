@@ -29,10 +29,10 @@ public static class ModelRegistry
         new("fal-ai/veo3/image-to-video",                      "Veo 3",        "Google's best model, ultra-realistic video",  0, 30, ProductType.ImageToVideo, ModelTier.Premium),
 
         // Text to Video
-        new("fal-ai/kling-video/v3/pro/text-to-video",        "Kling v3 Pro",       "Cinematic multi-shot text-to-video with audio",        0, 18, ProductType.TextToVideo, ModelTier.Standard),
-        new("fal-ai/kling-video/o3/pro/text-to-video",         "Kling o3 Pro",       "New o3 architecture — multi-shot, up to 15s",          0, 15, ProductType.TextToVideo, ModelTier.Standard),
-        new("fal-ai/kling-video/v2.6/pro/text-to-video",       "Kling v2.6 Pro",     "Improved realism with native audio generation",        0, 14, ProductType.TextToVideo, ModelTier.Standard),
-        new("fal-ai/kling-video/v2.5-turbo/pro/text-to-video", "Kling v2.5 Turbo",   "Fast generation with strong visual fidelity",          0, 10, ProductType.TextToVideo, ModelTier.Standard),
+        new("fal-ai/kling-video/v3/pro/text-to-video",        "Kling v3 Pro",       "Cinematic multi-shot text-to-video with audio",        0, 17, ProductType.TextToVideo, ModelTier.Standard),
+        new("fal-ai/kling-video/o3/pro/text-to-video",         "Kling o3 Pro",       "New o3 architecture — multi-shot, up to 15s",          0, 17, ProductType.TextToVideo, ModelTier.Standard),
+        new("fal-ai/kling-video/v2.6/pro/text-to-video",       "Kling v2.6 Pro",     "Improved realism with native audio generation",        0, 11, ProductType.TextToVideo, ModelTier.Standard),
+        new("fal-ai/kling-video/v2.5-turbo/pro/text-to-video", "Kling v2.5 Turbo",   "Fast generation with strong visual fidelity",          0, 11, ProductType.TextToVideo, ModelTier.Standard),
         new("fal-ai/minimax/hailuo-2.3/pro/text-to-video",     "Hailuo 2.3 Pro",     "Highest quality MiniMax with optimized prompts",       74, 0, ProductType.TextToVideo, ModelTier.Premium),
         new("fal-ai/minimax/hailuo-02/standard/text-to-video", "Hailuo 2.0 Standard","MiniMax with duration control up to 10s",             0,  7, ProductType.TextToVideo, ModelTier.Standard),
         new("fal-ai/veo3",                                     "Veo 3",              "Google Veo 3 — cinematic realism with audio",          0, 30, ProductType.TextToVideo, ModelTier.Premium),

@@ -72,13 +72,14 @@ public class GenerateImageToVideoCommandHandler(
                     : null
             }
             : isKlingV26
-            ? (object)new                                    // v2.6: start_image_url, audio, aspect_ratio
+            ? (object)new                                    // v2.6: start_image_url, audio, aspect_ratio, negative_prompt
             {
                 start_image_url = request.ImageUrl,
                 prompt          = request.Prompt,
                 duration        = request.DurationSeconds.ToString(),
                 generate_audio  = request.GenerateAudio,
-                aspect_ratio    = request.AspectRatio
+                aspect_ratio    = request.AspectRatio,
+                negative_prompt = request.NegativePrompt
             }
             : isKlingO3
             ? (object)new                                    // o3: image_url, shot_type, audio, multi_prompt, end_image

@@ -34,10 +34,18 @@ public class ModelPricingService(
         }
 
         // Kling o3 — tiered by audio (1.5× fal.ai cost)
-        // fal.ai: $0.084/s (no audio), $0.112/s (audio)
+        // fal.ai: $0.112/s (no audio), $0.14/s (audio)
         if (modelId.Contains("kling-video/o3/"))
         {
-            var crPerSec = generateAudio ? 17 : 13;
+            var crPerSec = generateAudio ? 21 : 17;
+            return crPerSec * durationSeconds;
+        }
+
+        // Kling v2.6 — tiered by audio (1.5× fal.ai cost)
+        // fal.ai: $0.07/s (no audio), $0.14/s (audio)
+        if (modelId.Contains("kling-video/v2.6/"))
+        {
+            var crPerSec = generateAudio ? 21 : 11;
             return crPerSec * durationSeconds;
         }
 

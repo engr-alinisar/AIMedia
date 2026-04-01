@@ -21,7 +21,6 @@ public class GenerateTextToVideoCommandHandler(
         var isKlingV3   = isKling && request.ModelId.Contains("/v3/");
         var isKlingO3   = isKling && request.ModelId.Contains("/o3/");
         var isKlingV26  = isKling && request.ModelId.Contains("/v2.6/");
-        var isKlingV25  = isKling && request.ModelId.Contains("/v2.5-turbo/");
         var isHailuo23  = request.ModelId.Contains("hailuo-2.3");
         var isHailuo2   = request.ModelId.Contains("hailuo-02");
         var isVeo31Fast = request.ModelId.Contains("veo3.1") && request.ModelId.Contains("/fast");
@@ -33,7 +32,7 @@ public class GenerateTextToVideoCommandHandler(
         var model = ModelRegistry.Get(request.ModelId)
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
-        var credits = await pricing.GetCreditsAsync(request.ModelId, request.DurationSeconds, cancellationToken);
+        var credits = await pricing.GetVideoCreditsAsync(request.ModelId, request.DurationSeconds, request.GenerateAudio, request.Resolution, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -42,18 +41,83 @@ public class GenerateTextToVideoCommandHandler(
 
         object input;
 
-        if (isKling)
+        if (isKlingV3)
         {
-            // Kling v3/o3: full range 3–15s; v2.6/v2.5: 5 or 10s — all use string duration
+            var hasSegments = request.MultiPrompts is { Count: > 1 };
+            input = new
+            {
+                prompt          = hasSegments ? (string?)null : request.Prompt,
+                multi_prompt    = hasSegments
+                    ? request.MultiPrompts!.Select(p => new
+                    {
+                        prompt   = p,
+                        duration = (request.DurationSeconds / request.MultiPrompts!.Count).ToString()
+                    }).ToList()
+                    : (object?)null,
+                duration        = request.DurationSeconds.ToString(),
+                shot_type       = hasSegments ? "customize"
+                                : request.MultiShot ? "intelligent"
+                                : (string?)null,
+                generate_audio  = request.GenerateAudio,
+                aspect_ratio    = request.AspectRatio,
+                negative_prompt = !string.IsNullOrWhiteSpace(request.NegativePrompt)
+                                    ? request.NegativePrompt
+                                    : "blur, distort, and low quality",
+                cfg_scale       = request.CfgScale ?? 0.5f,
+            };
+        }
+        else if (isKlingO3)
+        {
+            // o3: supports negative_prompt but not cfg_scale
+            var hasSegments = request.MultiPrompts is { Count: > 1 };
+            input = new
+            {
+                prompt          = hasSegments ? (string?)null : request.Prompt,
+                multi_prompt    = hasSegments
+                    ? request.MultiPrompts!.Select(p => new
+                    {
+                        prompt   = p,
+                        duration = (request.DurationSeconds / request.MultiPrompts!.Count).ToString()
+                    }).ToList()
+                    : (object?)null,
+                duration        = request.DurationSeconds.ToString(),
+                shot_type       = hasSegments ? "customize"
+                                : request.MultiShot ? "intelligent"
+                                : (string?)null,
+                generate_audio  = request.GenerateAudio,
+                aspect_ratio    = request.AspectRatio,
+                negative_prompt = !string.IsNullOrWhiteSpace(request.NegativePrompt)
+                                    ? request.NegativePrompt
+                                    : "blur, distort, and low quality",
+            };
+        }
+        else if (isKlingV26)
+        {
+            // v2.6: audio + aspect_ratio + negative_prompt + cfg_scale
+            input = new
+            {
+                prompt          = request.Prompt,
+                duration        = request.DurationSeconds.ToString(),
+                generate_audio  = request.GenerateAudio,
+                aspect_ratio    = request.AspectRatio,
+                negative_prompt = !string.IsNullOrWhiteSpace(request.NegativePrompt)
+                                    ? request.NegativePrompt
+                                    : "blur, distort, and low quality",
+                cfg_scale       = request.CfgScale ?? 0.5f,
+            };
+        }
+        else if (isKling)
+        {
+            // v2.5-turbo: aspect_ratio + duration + negative_prompt + cfg_scale (no audio)
             input = new
             {
                 prompt          = request.Prompt,
                 duration        = request.DurationSeconds.ToString(),
                 aspect_ratio    = request.AspectRatio,
-                generate_audio  = request.GenerateAudio,
-                cfg_scale       = 0.5f,
-                negative_prompt = "blur, distort, and low quality",
-                shot_type       = request.MultiShot ? "customize" : (string?)null,
+                negative_prompt = !string.IsNullOrWhiteSpace(request.NegativePrompt)
+                                    ? request.NegativePrompt
+                                    : "blur, distort, and low quality",
+                cfg_scale       = request.CfgScale ?? 0.5f,
             };
         }
         else if (isHailuo23)
@@ -62,7 +126,7 @@ public class GenerateTextToVideoCommandHandler(
             input = new
             {
                 prompt           = request.Prompt,
-                prompt_optimizer = true,
+                prompt_optimizer = request.PromptOptimizer,
             };
         }
         else if (isHailuo2)
@@ -77,7 +141,7 @@ public class GenerateTextToVideoCommandHandler(
         }
         else if (isVeo31Fast || isVeo31 || isVeo3Fast || isVeo3)
         {
-            // All Veo models: duration as "Xs", aspect_ratio, resolution, generate_audio
+            // All Veo models: duration as "Xs", aspect_ratio, resolution, audio, negative_prompt, seed, auto_fix
             input = new
             {
                 prompt          = request.Prompt,
@@ -85,6 +149,11 @@ public class GenerateTextToVideoCommandHandler(
                 aspect_ratio    = request.AspectRatio,
                 resolution      = request.Resolution,
                 generate_audio  = request.GenerateAudio,
+                negative_prompt = !string.IsNullOrWhiteSpace(request.NegativePrompt)
+                                    ? request.NegativePrompt
+                                    : (string?)null,
+                seed            = request.Seed,
+                auto_fix        = request.AutoFix,
             };
         }
         else if (isWan)

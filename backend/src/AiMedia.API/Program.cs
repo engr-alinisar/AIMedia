@@ -120,7 +120,7 @@ try
                 ?? builder.Configuration["AllowedOrigins"]?.Split(',')
                 ?? ["http://localhost:4200"];
             policy.WithOrigins(origins)
-                  .WithHeaders("Content-Type", "Authorization", "X-Requested-With")
+                  .WithHeaders("Content-Type", "Authorization", "X-Requested-With", "X-SignalR-User-Agent")
                   .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                   .AllowCredentials(); // Required for SignalR
         });

@@ -5,7 +5,7 @@ namespace AiMedia.Application.Commands.GenerateTextToVideo;
 
 public record GenerateTextToVideoCommand(
     Guid UserId,
-    string Prompt,
+    string? Prompt,
     string ModelId,
     int DurationSeconds = 5,
     string AspectRatio = "16:9",
@@ -13,4 +13,10 @@ public record GenerateTextToVideoCommand(
     string Resolution = "720p",
     bool MultiShot = false,
     bool GenerateAudio = true,
-    string? Zone = null) : IRequest<GenerationResponse>;
+    string? Zone = null,
+    string? NegativePrompt = null,
+    float? CfgScale = null,
+    List<string>? MultiPrompts = null,
+    bool PromptOptimizer = true,
+    int? Seed = null,
+    bool AutoFix = false) : IRequest<GenerationResponse>;
