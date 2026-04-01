@@ -16,29 +16,31 @@ public class ProcessPayPalWebhookCommandHandler(
 {
     public async Task<bool> Handle(ProcessPayPalWebhookCommand request, CancellationToken ct)
     {
-        // Verify PayPal signature when WebhookId is configured
-        if (!string.IsNullOrEmpty(request.WebhookId))
+        if (string.IsNullOrEmpty(request.WebhookId))
         {
-            try
-            {
-                var valid = await paypal.VerifyWebhookSignatureAsync(
-                    request.WebhookId, request.TransmissionId, request.TransmissionTime,
-                    request.CertUrl, request.AuthAlgo, request.TransmissionSig,
-                    request.RawBody, ct);
+            logger.LogError("PayPal webhook verification skipped because WebhookId is not configured. Rejecting TransmissionId {TransmissionId}", request.TransmissionId);
+            return false;
+        }
 
-                if (!valid)
-                {
-                    logger.LogWarning("PayPal webhook signature verification failed for TransmissionId {TransmissionId}", request.TransmissionId);
-                    return false;
-                }
+        try
+        {
+            var valid = await paypal.VerifyWebhookSignatureAsync(
+                request.WebhookId, request.TransmissionId, request.TransmissionTime,
+                request.CertUrl, request.AuthAlgo, request.TransmissionSig,
+                request.RawBody, ct);
 
-                logger.LogInformation("PayPal webhook signature verified for TransmissionId {TransmissionId}", request.TransmissionId);
-            }
-            catch (Exception ex)
+            if (!valid)
             {
-                logger.LogError(ex, "PayPal webhook signature verification threw an exception — processing anyway");
-                // Don't return false — continue processing to avoid losing events due to verification errors
+                logger.LogWarning("PayPal webhook signature verification failed for TransmissionId {TransmissionId}", request.TransmissionId);
+                return false;
             }
+
+            logger.LogInformation("PayPal webhook signature verified for TransmissionId {TransmissionId}", request.TransmissionId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "PayPal webhook signature verification threw an exception for TransmissionId {TransmissionId}. Rejecting event and allowing retry.", request.TransmissionId);
+            throw;
         }
 
         JsonDocument doc;
@@ -68,25 +70,23 @@ public class ProcessPayPalWebhookCommandHandler(
         };
     }
 
-    // ── COMPLETED ────────────────────────────────────────────────────────────
-
     private async Task<bool> HandleCompletedAsync(JsonElement resource, CancellationToken ct)
     {
         var captureId = resource.TryGetProperty("id", out var cid) ? cid.GetString() ?? "" : "";
         var customId  = resource.TryGetProperty("custom_id", out var cust) ? cust.GetString() ?? "" : "";
 
-        logger.LogInformation("PayPal COMPLETED — captureId: {CaptureId}, customId: {CustomId}", captureId, customId);
+        logger.LogInformation("PayPal COMPLETED captureId {CaptureId}, customId {CustomId}", captureId, customId);
 
         if (!TryParseCustomId(customId, out var userId, out var pack))
         {
-            logger.LogError("PayPal COMPLETED — failed to parse customId '{CustomId}'. Resource: {Resource}", customId, resource.GetRawText());
+            logger.LogError("PayPal COMPLETED failed to parse customId '{CustomId}'. Resource: {Resource}", customId, resource.GetRawText());
             return false;
         }
 
         var tag = $"[paypal:{captureId}]";
         if (await db.CreditTransactions.AnyAsync(t => t.Description.Contains(tag), ct))
         {
-            logger.LogInformation("PayPal capture {CaptureId} already processed — skipping", captureId);
+            logger.LogInformation("PayPal capture {CaptureId} already processed, skipping", captureId);
             return true;
         }
 
@@ -110,16 +110,14 @@ public class ProcessPayPalWebhookCommandHandler(
         return true;
     }
 
-    // ── DECLINED ─────────────────────────────────────────────────────────────
-
     private async Task<bool> HandleDeclinedAsync(JsonElement resource, CancellationToken ct)
     {
         var customId = resource.TryGetProperty("custom_id", out var cust) ? cust.GetString() ?? "" : "";
 
         if (!TryParseCustomId(customId, out var userId, out _))
         {
-            logger.LogWarning("PayPal DECLINED webhook missing or invalid custom_id — cannot notify user");
-            return true; // Not a fatal error, just no custom_id
+            logger.LogWarning("PayPal DECLINED webhook missing or invalid custom_id, cannot notify user");
+            return true;
         }
 
         logger.LogWarning("PayPal payment DECLINED for user {UserId}", userId);
@@ -134,15 +132,10 @@ public class ProcessPayPalWebhookCommandHandler(
         return true;
     }
 
-    // ── REVERSED / REFUNDED ──────────────────────────────────────────────────
-
     private async Task<bool> HandleReversedOrRefundedAsync(JsonElement resource, string reason, CancellationToken ct)
     {
-        // For REVERSED: resource.id is the original capture ID
-        // For REFUNDED: find original capture from resource.links[rel="up"]
         var captureId = resource.TryGetProperty("id", out var cid) ? cid.GetString() ?? "" : "";
 
-        // Try to find capture ID from links (REFUNDED case)
         if (resource.TryGetProperty("links", out var links))
         {
             foreach (var link in links.EnumerateArray())
@@ -151,7 +144,6 @@ public class ProcessPayPalWebhookCommandHandler(
                 if (rel == "up")
                 {
                     var href = link.TryGetProperty("href", out var h) ? h.GetString() ?? "" : "";
-                    // href is like https://api.paypal.com/v2/payments/captures/{captureId}
                     var parts = href.TrimEnd('/').Split('/');
                     if (parts.Length > 0)
                         captureId = parts[^1];
@@ -160,7 +152,6 @@ public class ProcessPayPalWebhookCommandHandler(
             }
         }
 
-        // Look up original transaction by capture ID
         var tag = $"[paypal:{captureId}]";
         var originalTx = await db.CreditTransactions
             .Where(t => t.Description.Contains(tag) && t.Amount > 0)
@@ -172,18 +163,17 @@ public class ProcessPayPalWebhookCommandHandler(
             return true;
         }
 
-        // Check idempotency — don't deduct twice
         var reversalTag = $"[paypal:{reason}:{captureId}]";
         if (await db.CreditTransactions.AnyAsync(t => t.Description.Contains(reversalTag), ct))
         {
-            logger.LogInformation("PayPal {Reason} {CaptureId} already processed — skipping", reason, captureId);
+            logger.LogInformation("PayPal {Reason} {CaptureId} already processed, skipping", reason, captureId);
             return true;
         }
 
         await credits.AddCreditsAsync(
             originalTx.UserId,
             -originalTx.Amount,
-            $"Payment {reason} — {originalTx.Amount} credits removed {reversalTag}",
+            $"Payment {reason} - {originalTx.Amount} credits removed {reversalTag}",
             ct);
 
         logger.LogInformation("PayPal {Reason}: -{Credits} credits from user {UserId}", reason, originalTx.Amount, originalTx.UserId);
@@ -197,8 +187,6 @@ public class ProcessPayPalWebhookCommandHandler(
 
         return true;
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private bool TryParseCustomId(string customId, out Guid userId, out (string Label, int Credits, decimal Price) pack)
     {
