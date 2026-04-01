@@ -98,7 +98,7 @@ import type { ExploreItemDto } from '../../core/models/models';
     <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-5 border"
          style="background:#f5f3ff; border-color:#ddd6fe; color:#6d28d9;">
       <span class="w-2 h-2 rounded-full animate-pulse" style="background:#7c3aed;"></span>
-      100 free credits on signup — no credit card required
+      50 free credits on signup — no credit card required
     </div>
     <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
       Create stunning <span style="color:#7c3aed;">AI media</span> in seconds
@@ -107,14 +107,16 @@ import type { ExploreItemDto } from '../../core/models/models';
       Generate images, videos, voice, and more — powered by cutting-edge AI. Pick a tool and start creating.
     </p>
     <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-      <button (click)="loginModal.show('register')"
-              class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]"
-              style="background: linear-gradient(135deg, #7c3aed, #4f46e5);">
-        Start for Free
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
-        </svg>
-      </button>
+      @if (!auth.isLoggedIn()) {
+        <button (click)="loginModal.show('register')"
+                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]"
+                style="background: linear-gradient(135deg, #7c3aed, #4f46e5);">
+          Start for Free
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      }
       <a routerLink="/explore"
          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold text-gray-700 border-2 border-gray-200 bg-white hover:border-gray-300 transition-colors">
         Browse Community Work

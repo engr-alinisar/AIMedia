@@ -1,12 +1,13 @@
 import { Component, Input, Output, EventEmitter, HostListener, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ExploreService } from '../../../core/services/explore.service';
 import type { ExploreItemDto } from '../../../core/models/models';
 
 @Component({
   selector: 'app-explore-item-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
 <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
      (click)="onBackdropClick($event)">
@@ -85,8 +86,9 @@ import type { ExploreItemDto } from '../../../core/models/models';
         <p class="text-sm text-gray-400 italic">{{ noPromptLabel() }}</p>
       }
 
-      <!-- Visibility toggle (own items only) -->
+      <!-- Owner-only controls -->
       @if (isOwner) {
+        <!-- Visibility toggle -->
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
           <div>
             <p class="text-sm font-medium text-gray-700">Public visibility</p>
@@ -101,6 +103,35 @@ import type { ExploreItemDto } from '../../../core/models/models';
                   [class.translate-x-6]="isPublic()"
                   [class.translate-x-1]="!isPublic()"></span>
           </button>
+        </div>
+
+        <!-- Tag / Zone dropdown -->
+        <div class="p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <p class="text-sm font-medium text-gray-700">Tag</p>
+              <p class="text-xs text-gray-400 mt-0.5">Helps others discover your creation on Explore</p>
+            </div>
+            @if (togglingZone()) {
+              <svg class="w-4 h-4 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+            }
+          </div>
+          <select [ngModel]="selectedZone()"
+                  (ngModelChange)="changeZone($event)"
+                  [disabled]="togglingZone()"
+                  class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent disabled:opacity-50">
+            <option [ngValue]="null">— No tag —</option>
+            @for (group of zoneGroups; track group.label) {
+              <optgroup [label]="group.label">
+                @for (z of group.zones; track z) {
+                  <option [value]="z">{{ z }}</option>
+                }
+              </optgroup>
+            }
+          </select>
         </div>
       }
 
@@ -124,11 +155,25 @@ export class ExploreItemModalComponent implements OnInit, OnDestroy {
   @Output() closed = new EventEmitter<void>();
   @Output() tryThis = new EventEmitter<ExploreItemDto>();
   @Output() visibilityChanged = new EventEmitter<{ id: string; isPublic: boolean }>();
+  @Output() zoneChanged = new EventEmitter<{ id: string; zone: string | null }>();
 
   private exploreSvc = inject(ExploreService);
 
   isPublic = signal(true);
   togglingVisibility = signal(false);
+  selectedZone = signal<string | null>(null);
+  togglingZone = signal(false);
+
+  readonly zoneGroups = [
+    {
+      label: 'Visual',
+      zones: ['Cinematic', 'Character', 'Viral', 'Dramatic', 'Cool', 'Playful', 'Fantasy', 'Dark', 'Anime'],
+    },
+    {
+      label: 'Audio & Voice',
+      zones: ['Narration', 'Podcast', 'Character Voice', 'Storytelling', 'Kids', 'Meditation', 'News', 'Entertainment'],
+    },
+  ];
 
   get isOwner(): boolean {
     return !!this.currentUserId && this.item?.ownerId === this.currentUserId;
@@ -137,6 +182,7 @@ export class ExploreItemModalComponent implements OnInit, OnDestroy {
   ngOnInit() {
     document.body.style.overflow = 'hidden';
     this.isPublic.set(this.item?.isPublic ?? true);
+    this.selectedZone.set(this.item?.zone ?? null);
   }
 
   ngOnDestroy() {
@@ -216,6 +262,20 @@ export class ExploreItemModalComponent implements OnInit, OnDestroy {
         this.togglingVisibility.set(false);
       },
       error: () => this.togglingVisibility.set(false)
+    });
+  }
+
+  changeZone(zone: string | null) {
+    if (this.togglingZone()) return;
+    this.togglingZone.set(true);
+    this.exploreSvc.setZone(this.item.id, zone).subscribe({
+      next: () => {
+        this.selectedZone.set(zone);
+        this.item = { ...this.item, zone: zone ?? undefined };
+        this.zoneChanged.emit({ id: this.item.id, zone });
+        this.togglingZone.set(false);
+      },
+      error: () => this.togglingZone.set(false)
     });
   }
 

@@ -17,4 +17,8 @@ export class ExploreService {
   setVisibility(jobId: string, isPublic: boolean) {
     return this.http.patch(`${environment.apiUrl}/api/jobs/${jobId}/visibility`, { isPublic });
   }
+
+  setZone(jobId: string, zone: string | null) {
+    return this.http.patch(`${environment.apiUrl}/api/jobs/${jobId}/zone`, { zone });
+  }
 }

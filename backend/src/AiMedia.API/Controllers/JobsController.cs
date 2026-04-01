@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using AiMedia.Application.Commands.SetJobVisibility;
+using AiMedia.Application.Commands.SetJobZone;
 using AiMedia.Application.Queries.GetJob;
 using AiMedia.Application.Queries.GetJobs;
 using AiMedia.Domain.Enums;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AiMedia.API.Controllers;
 
 public record SetVisibilityRequest(bool IsPublic);
+public record SetZoneRequest(string? Zone);
 
 [Authorize]
 [ApiController]
@@ -50,6 +52,13 @@ public class JobsController : ControllerBase
     public async Task<IActionResult> SetVisibility(Guid id, [FromBody] SetVisibilityRequest request, CancellationToken ct)
     {
         await _mediator.Send(new SetJobVisibilityCommand(id, GetUserId(), request.IsPublic), ct);
+        return NoContent();
+    }
+
+    [HttpPatch("{id:guid}/zone")]
+    public async Task<IActionResult> SetZone(Guid id, [FromBody] SetZoneRequest request, CancellationToken ct)
+    {
+        await _mediator.Send(new SetJobZoneCommand(id, GetUserId(), request.Zone), ct);
         return NoContent();
     }
 

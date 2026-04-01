@@ -31,7 +31,7 @@ interface FilterItem {
   <div class="bg-white border-b border-border sticky top-0 z-10">
     <div class="max-w-7xl mx-auto px-4 lg:px-8 py-3">
       <div class="flex flex-wrap gap-2">
-        @for (f of visibleFilters(); track f.value) {
+        @for (f of visibleFilters(); track f.label) {
           <button (click)="setFilter(f)"
                   class="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap"
                   [class.bg-accent]="isActiveFilter(f)"
@@ -86,7 +86,7 @@ interface FilterItem {
     @else {
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         @for (item of items(); track item.id) {
-          <div class="bg-white rounded-xl border border-border overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer"
+          <div class="bg-white rounded-xl border border-border overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer flex flex-col"
                (click)="selectedItem.set(item)">
 
             <!-- Media thumbnail -->
@@ -154,7 +154,7 @@ interface FilterItem {
             </div>
 
             <!-- Card body -->
-            <div class="p-3 space-y-2">
+            <div class="p-3 flex flex-col flex-1 gap-2">
               <!-- Product badge + user -->
               <div class="flex items-center justify-between gap-1">
                 <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded"
@@ -163,21 +163,23 @@ interface FilterItem {
                 <span class="text-[10px] text-gray-400 truncate">{{ item.userDisplayName }}</span>
               </div>
 
-              <!-- Title (audio) or Prompt -->
-              @if (isAudio(item) && item.title) {
-                <p class="text-xs font-semibold text-gray-800 line-clamp-1">{{ item.title }}</p>
-                @if (item.prompt) {
-                  <p class="text-xs text-gray-500 line-clamp-1 leading-relaxed">{{ item.prompt }}</p>
+              <!-- Title (audio) or Prompt — grows to fill available space -->
+              <div class="flex-1">
+                @if (isAudio(item) && item.title) {
+                  <p class="text-xs font-semibold text-gray-800 line-clamp-1">{{ item.title }}</p>
+                  @if (item.prompt) {
+                    <p class="text-xs text-gray-500 line-clamp-1 leading-relaxed mt-1">{{ item.prompt }}</p>
+                  }
+                } @else if (item.prompt) {
+                  <p class="text-xs text-gray-600 line-clamp-2 leading-relaxed">{{ item.prompt }}</p>
+                } @else {
+                  <p class="text-xs text-gray-400 italic">{{ noPromptLabel(item.product) }}</p>
                 }
-              } @else if (item.prompt) {
-                <p class="text-xs text-gray-600 line-clamp-2 leading-relaxed">{{ item.prompt }}</p>
-              } @else {
-                <p class="text-xs text-gray-400 italic">{{ noPromptLabel(item.product) }}</p>
-              }
+              </div>
 
-              <!-- Try this button -->
+              <!-- Try this button — always pinned to bottom -->
               <button (click)="$event.stopPropagation(); tryThis(item)"
-                      class="w-full flex items-center justify-center gap-1 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent/90 transition-colors">
+                      class="mt-auto w-full flex items-center justify-center gap-1 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent/90 transition-colors">
                 Try this
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
@@ -227,6 +229,7 @@ interface FilterItem {
     [currentUserId]="currentUserId()"
     (closed)="selectedItem.set(null)"
     (visibilityChanged)="onVisibilityChanged($event)"
+    (zoneChanged)="onZoneChanged($event)"
     (tryThis)="tryThis($event); selectedItem.set(null)">
   </app-explore-item-modal>
 }
@@ -325,13 +328,20 @@ export class ExploreComponent implements OnInit {
   }
 
   onVisibilityChanged(event: { id: string; isPublic: boolean }) {
-    // Update the item in the list reactively
     this.items.update(list =>
       list.map(i => i.id === event.id ? { ...i, isPublic: event.isPublic } : i)
     );
-    // Update selectedItem if open
     if (this.selectedItem()?.id === event.id) {
       this.selectedItem.update(i => i ? { ...i, isPublic: event.isPublic } : null);
+    }
+  }
+
+  onZoneChanged(event: { id: string; zone: string | null }) {
+    this.items.update(list =>
+      list.map(i => i.id === event.id ? { ...i, zone: event.zone ?? undefined } : i)
+    );
+    if (this.selectedItem()?.id === event.id) {
+      this.selectedItem.update(i => i ? { ...i, zone: event.zone ?? undefined } : null);
     }
   }
 
