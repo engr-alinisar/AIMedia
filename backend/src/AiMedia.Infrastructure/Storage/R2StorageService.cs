@@ -4,21 +4,27 @@ using Amazon.S3.Model;
 using AiMedia.Application.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Net;
 
 namespace AiMedia.Infrastructure.Storage;
 
 public class R2StorageService : IStorageService
 {
+    private static readonly string[] DefaultAllowedDownloadHosts = ["fal.media", "fal.run"];
     private readonly AmazonS3Client _client;
     private readonly string _bucketName;
     private readonly string _publicBaseUrl;
     private readonly ILogger<R2StorageService> _logger;
     private readonly HttpClient _httpClient;
+    private readonly string[] _allowedDownloadHosts;
 
     public R2StorageService(IConfiguration config, ILogger<R2StorageService> logger, HttpClient httpClient)
     {
         _logger = logger;
         _httpClient = httpClient;
+        _allowedDownloadHosts = config.GetSection("FalAi:AllowedDownloadHosts").Get<string[]>()
+            ?? config["FAL_ALLOWED_DOWNLOAD_HOSTS"]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            ?? DefaultAllowedDownloadHosts;
 
         // Support both Cloudflare__R2__* (Railway nested) and CF_R2_* (flat env var) naming conventions
         _bucketName = Get(config, "Cloudflare:R2:BucketName", "CF_R2_BUCKET_NAME") ?? "ai-media-outputs";
@@ -86,6 +92,23 @@ public class R2StorageService : IStorageService
 
     public async Task<Stream> DownloadAsync(string url, CancellationToken cancellationToken = default)
     {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            throw new InvalidOperationException("Output URL is not a valid absolute URI.");
+
+        if (!string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Only HTTPS output URLs are allowed.");
+
+        if (IPAddress.TryParse(uri.Host, out _))
+            throw new InvalidOperationException("Direct IP output URLs are not allowed.");
+
+        if (!_allowedDownloadHosts.Any(allowedHost =>
+                string.Equals(uri.Host, allowedHost, StringComparison.OrdinalIgnoreCase) ||
+                uri.Host.EndsWith($".{allowedHost}", StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException($"Output URL host '{uri.Host}' is not in the allowed download host list.");
+        }
+
+        _logger.LogInformation("Downloading output from approved host {Host}", uri.Host);
         var response = await _httpClient.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
         // Copy to memory stream so the underlying connection can be released
