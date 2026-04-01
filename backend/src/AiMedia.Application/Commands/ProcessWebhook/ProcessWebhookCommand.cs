@@ -3,6 +3,7 @@ using MediatR;
 namespace AiMedia.Application.Commands.ProcessWebhook;
 
 public record ProcessWebhookCommand(
+    Guid JobId,
     string FalRequestId,
     string Status,
     string? OutputUrl,

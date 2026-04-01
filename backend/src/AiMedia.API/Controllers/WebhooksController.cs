@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using AiMedia.Application.Common;
 using AiMedia.Application.Commands.Payments;
 using AiMedia.Application.Commands.ProcessWebhook;
 using AiMedia.FalAi.Models;
@@ -41,8 +42,28 @@ public class WebhooksController(
     [HttpPost("fal")]
     public async Task<IActionResult> FalWebhook(CancellationToken ct)
     {
+        var jobIdRaw = Request.Query["jobId"].ToString();
+        var token = Request.Query["token"].ToString();
+        logger.LogInformation(
+            "Received fal webhook request for jobId {JobId}. Token present: {HasToken}. Remote IP: {RemoteIp}",
+            jobIdRaw,
+            !string.IsNullOrWhiteSpace(token),
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+        var webhookSecret = config["FalAi:WebhookSecret"]
+            ?? config["FAL_WEBHOOK_SECRET"]
+            ?? config["Jwt:Secret"];
+
+        if (!Guid.TryParse(jobIdRaw, out var jobId) ||
+            string.IsNullOrWhiteSpace(webhookSecret) ||
+            !FalWebhookSecurity.IsValid(jobId, token, webhookSecret))
+        {
+            logger.LogWarning("Rejected fal webhook with invalid signature for jobId {JobId}", jobIdRaw);
+            return Unauthorized();
+        }
+
         Request.EnableBuffering();
         var rawBody = await new StreamReader(Request.Body, Encoding.UTF8).ReadToEndAsync(ct);
+        logger.LogInformation("Accepted fal webhook for job {JobId}. Payload length: {PayloadLength}", jobId, rawBody.Length);
 
         // Return 200 immediately — fal.ai will retry if we take too long
         Response.StatusCode = 200;
@@ -79,10 +100,10 @@ public class WebhooksController(
         var status = payload.Status;
         var errorMessage = payload.Error?.Message;
         jobs.Enqueue<IMediator>(m => m.Send(
-            new ProcessWebhookCommand(requestId, status, outputUrl, errorMessage, rawBody, outputText),
+            new ProcessWebhookCommand(jobId, requestId, status, outputUrl, errorMessage, rawBody, outputText),
             CancellationToken.None));
 
-        logger.LogInformation("Fal webhook enqueued for RequestId {RequestId}", payload.RequestId);
+        logger.LogInformation("Fal webhook enqueued for job {JobId} and RequestId {RequestId}", jobId, payload.RequestId);
         return new EmptyResult();
     }
 }

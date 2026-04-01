@@ -19,7 +19,7 @@ public class ProcessWebhookCommandHandler(
     public async Task Handle(ProcessWebhookCommand request, CancellationToken cancellationToken)
     {
         var job = await db.GenerationJobs
-            .FirstOrDefaultAsync(j => j.FalRequestId == request.FalRequestId, cancellationToken);
+            .FirstOrDefaultAsync(j => j.Id == request.JobId && j.FalRequestId == request.FalRequestId, cancellationToken);
 
         if (job == null) return;
 

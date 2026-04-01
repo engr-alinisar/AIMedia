@@ -114,7 +114,7 @@ public class GenerateImageCommandHandler(
             falSubmit = await falClient.SubmitJobAsync(
                 request.ModelId,
                 input,
-                $"{falClient.WebhookBaseUrl}/api/webhooks/fal?jobId={jobId}",
+                falClient.BuildWebhookUrl(jobId),
                 cancellationToken);
         }
         catch

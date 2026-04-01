@@ -40,7 +40,7 @@ public class PollStuckJobsJob(
                 {
                     logger.LogWarning("PollStuckJobs: job {JobId} has no FalStatusUrl — marking as failed", job.Id);
                     await mediator.Send(
-                        new ProcessWebhookCommand(job.FalRequestId, "ERROR", null, "Job status unavailable — please retry.", null), ct);
+                        new ProcessWebhookCommand(job.Id, job.FalRequestId, "ERROR", null, "Job status unavailable — please retry.", null), ct);
                     continue;
                 }
 
@@ -74,14 +74,14 @@ public class PollStuckJobsJob(
                         }
 
                         await mediator.Send(
-                            new ProcessWebhookCommand(job.FalRequestId, falStatus, outputUrl, errorMessage, null, outputText), ct);
+                            new ProcessWebhookCommand(job.Id, job.FalRequestId, falStatus, outputUrl, errorMessage, null, outputText), ct);
                     }
                     else
                     {
                         falStatus = "ERROR";
                         errorMessage = "Job failed on fal.ai (detected by poll)";
                         await mediator.Send(
-                            new ProcessWebhookCommand(job.FalRequestId, falStatus, null, errorMessage, null), ct);
+                            new ProcessWebhookCommand(job.Id, job.FalRequestId, falStatus, null, errorMessage, null), ct);
                     }
 
                     logger.LogInformation("PollStuckJobs: processed job {JobId} with status {Status}", job.Id, status.Status);

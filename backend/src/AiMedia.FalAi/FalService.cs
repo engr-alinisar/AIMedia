@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AiMedia.Application.Common;
 using AiMedia.Application.Interfaces;
 using AiMedia.FalAi.Models;
 using Microsoft.Extensions.Logging;
@@ -11,6 +12,7 @@ public class FalService : IFalClient
 {
     private readonly HttpClient _http;
     private readonly ILogger<FalService> _logger;
+    private readonly string _webhookSecret;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -27,6 +29,10 @@ public class FalService : IFalClient
         WebhookBaseUrl = configuration["FalAi:WebhookBaseUrl"]
                       ?? configuration["FAL_WEBHOOK_BASE_URL"]
                       ?? "http://localhost:5015";
+        _webhookSecret = configuration["FalAi:WebhookSecret"]
+                      ?? configuration["FAL_WEBHOOK_SECRET"]
+                      ?? configuration["Jwt:Secret"]
+                      ?? throw new InvalidOperationException("FalAi:WebhookSecret or FAL_WEBHOOK_SECRET must be configured.");
     }
 
     /// <summary>
@@ -41,7 +47,7 @@ public class FalService : IFalClient
     {
         var url = $"https://queue.fal.run/{endpoint}?fal_webhook={Uri.EscapeDataString(webhookUrl)}";
 
-        _logger.LogInformation("Submitting job to fal.ai endpoint {Endpoint}", endpoint);
+        _logger.LogInformation("Submitting job to fal.ai endpoint {Endpoint} with webhook {WebhookUrl}", endpoint, webhookUrl);
 
         var response = await _http.PostAsJsonAsync(url, input, JsonOptions, ct);
         if (!response.IsSuccessStatusCode)
@@ -99,6 +105,14 @@ public class FalService : IFalClient
     }
 
     // IFalClient implementation
+
+    public string BuildWebhookUrl(Guid jobId)
+    {
+        var token = FalWebhookSecurity.ComputeToken(jobId, _webhookSecret);
+        var webhookUrl = $"{WebhookBaseUrl.TrimEnd('/')}/api/webhooks/fal?jobId={jobId:D}&token={token}";
+        _logger.LogInformation("Built fal webhook URL for job {JobId}: {WebhookUrl}", jobId, webhookUrl);
+        return webhookUrl;
+    }
 
     public async Task<FalSubmitResult> SubmitJobAsync(
         string endpoint, object input, string webhookUrl,

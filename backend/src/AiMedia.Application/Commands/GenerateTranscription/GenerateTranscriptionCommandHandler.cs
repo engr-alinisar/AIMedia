@@ -83,7 +83,7 @@ public class GenerateTranscriptionCommandHandler(
         FalSubmitResult falSubmit;
         try
         {
-            falSubmit = await falClient.SubmitJobAsync(request.ModelId, input, $"{falClient.WebhookBaseUrl}/api/webhooks/fal?jobId={jobId}", cancellationToken);
+            falSubmit = await falClient.SubmitJobAsync(request.ModelId, input, falClient.BuildWebhookUrl(jobId), cancellationToken);
         }
         catch
         {

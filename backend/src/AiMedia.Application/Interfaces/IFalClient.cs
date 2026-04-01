@@ -3,6 +3,7 @@ namespace AiMedia.Application.Interfaces;
 public interface IFalClient
 {
     string WebhookBaseUrl { get; }
+    string BuildWebhookUrl(Guid jobId);
     Task<FalSubmitResult> SubmitJobAsync(string endpoint, object input, string webhookUrl, CancellationToken cancellationToken = default);
     Task<FalJobStatusResult> GetJobStatusAsync(string statusUrl, CancellationToken cancellationToken = default);
     Task<string?> GetResultUrlAsync(string responseUrl, CancellationToken ct = default);
