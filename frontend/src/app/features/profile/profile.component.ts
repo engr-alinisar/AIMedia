@@ -1,4 +1,4 @@
-import { Component, signal, inject, OnInit, computed } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -85,7 +85,7 @@ import { AuthService } from '../../core/auth/auth.service';
       <div class="relative">
         <input [type]="showNewPw() ? 'text' : 'password'"
                [(ngModel)]="newPassword"
-               placeholder="At least 8 characters"
+               placeholder="Create a new password"
                class="w-full px-3 py-2 pr-10 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent" />
         <button type="button" (click)="showNewPw.update(v => !v)"
                 class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
@@ -102,6 +102,28 @@ import { AuthService } from '../../core/auth/auth.service';
           </svg>
         </button>
       </div>
+
+      <!-- Password requirements — shown once user starts typing -->
+      @if (newPassword.length > 0) {
+        <ul class="mt-2 space-y-1">
+          @for (rule of newPasswordRules; track rule.label) {
+            <li class="flex items-center gap-1.5 text-xs"
+                [class.text-green-600]="rule.met"
+                [class.text-gray-400]="!rule.met">
+              @if (rule.met) {
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+              } @else {
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" stroke-width="2"/>
+                </svg>
+              }
+              {{ rule.label }}
+            </li>
+          }
+        </ul>
+      }
     </div>
 
     <div>
@@ -226,6 +248,16 @@ export class ProfileComponent implements OnInit {
   showConfirmPw = signal(false);
   showDeletePw = signal(false);
 
+  get newPasswordRules() {
+    return [
+      { label: 'At least 8 characters',      met: this.newPassword.length >= 8 },
+      { label: 'One uppercase letter (A–Z)',  met: /[A-Z]/.test(this.newPassword) },
+      { label: 'One lowercase letter (a–z)',  met: /[a-z]/.test(this.newPassword) },
+      { label: 'One number (0–9)',            met: /[0-9]/.test(this.newPassword) },
+      { label: 'One special character',       met: /[^A-Za-z0-9]/.test(this.newPassword) },
+    ];
+  }
+
   // Delete account state
   showDeleteConfirm = signal(false);
   deletePassword = '';
@@ -264,8 +296,9 @@ export class ProfileComponent implements OnInit {
       this.passwordError.set('Please enter your current password.');
       return;
     }
-    if (this.newPassword.length < 8) {
-      this.passwordError.set('New password must be at least 8 characters.');
+    const unmet = this.newPasswordRules.filter(r => !r.met);
+    if (unmet.length > 0) {
+      this.passwordError.set(unmet[0].label + ' is required.');
       return;
     }
     if (this.newPassword !== this.confirmPassword) {

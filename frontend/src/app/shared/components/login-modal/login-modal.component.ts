@@ -1,4 +1,4 @@
-import { Component, inject, signal, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -41,7 +41,6 @@ import { CreditsService } from '../../../core/services/credits.service';
         <span style="font-size:15px;font-weight:700;color:#111827;">Ai<span style="color:#7c3aed;">Media</span></span>
       </div>
 
-      <!-- Tab switcher -->
       @if (!registered()) {
         <div class="flex bg-gray-100 rounded-xl p-1">
           <button (click)="switchMode('login')"
@@ -100,7 +99,8 @@ import { CreditsService } from '../../../core/services/credits.service';
           <label class="block text-xs font-medium text-gray-700 mb-1.5">Password</label>
           <div class="relative">
             <input [type]="showPw() ? 'text' : 'password'"
-                   [(ngModel)]="password" name="password" required autocomplete="current-password"
+                   [ngModel]="password()" (ngModelChange)="password.set($event)"
+                   name="password" required autocomplete="current-password"
                    placeholder="Your password"
                    class="w-full px-3 py-2.5 pr-10 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all"/>
             <button type="button" (click)="showPw.update(v => !v)"
@@ -118,7 +118,7 @@ import { CreditsService } from '../../../core/services/credits.service';
             </button>
           </div>
         </div>
-        <button type="submit" [disabled]="loading() || !email || !password"
+        <button type="submit" [disabled]="loading() || !email || !password()"
                 class="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style="background:#7c3aed;">
           @if (loading()) {
@@ -147,20 +147,23 @@ import { CreditsService } from '../../../core/services/credits.service';
           <label class="block text-xs font-medium text-gray-700 mb-1.5">Full name</label>
           <input type="text" [(ngModel)]="fullName" name="fullName" autocomplete="name"
                  placeholder="Your name"
+                 (ngModelChange)="errorMessage.set('')"
                  class="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all"/>
         </div>
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1.5">Email address</label>
           <input type="email" [(ngModel)]="email" name="email" required autocomplete="email"
                  placeholder="you@example.com"
+                 (ngModelChange)="errorMessage.set('')"
                  class="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all"/>
         </div>
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1.5">Password</label>
           <div class="relative">
             <input [type]="showPw() ? 'text' : 'password'"
-                   [(ngModel)]="password" name="password" required autocomplete="new-password"
-                   placeholder="Min. 8 characters"
+                   [ngModel]="password()" (ngModelChange)="password.set($event); errorMessage.set('')"
+                   name="password" required autocomplete="new-password"
+                   placeholder="Create a password"
                    class="w-full px-3 py-2.5 pr-10 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all"/>
             <button type="button" (click)="showPw.update(v => !v)"
                     class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -176,8 +179,31 @@ import { CreditsService } from '../../../core/services/credits.service';
               </svg>
             </button>
           </div>
+
+          <!-- Live password rules — visible as soon as user starts typing -->
+          @if (password().length > 0) {
+            <ul class="mt-2.5 space-y-1.5">
+              @for (rule of passwordRules(); track rule.label) {
+                <li class="flex items-center gap-2 text-xs transition-colors duration-150"
+                    [class.text-green-600]="rule.met"
+                    [class.text-gray-400]="!rule.met">
+                  @if (rule.met) {
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  } @else {
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="8" stroke-width="1.5"/>
+                    </svg>
+                  }
+                  <span>{{ rule.label }}</span>
+                </li>
+              }
+            </ul>
+          }
         </div>
-        <button type="submit" [disabled]="loading() || !email || !password"
+
+        <button type="submit" [disabled]="loading() || !email || !password()"
                 class="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style="background:#7c3aed;">
           @if (loading()) {
@@ -203,13 +229,22 @@ export class LoginModalComponent {
   private creditsService = inject(CreditsService);
 
   email = '';
-  password = '';
+  password = signal('');
   fullName = '';
   regEmail = '';
   loading = signal(false);
   errorMessage = signal('');
   showPw = signal(false);
   registered = signal(false);
+
+  // Reacts to every keystroke because `password` is a signal
+  passwordRules = computed(() => [
+    { label: 'At least 8 characters',      met: this.password().length >= 8 },
+    { label: 'One uppercase letter (A–Z)',  met: /[A-Z]/.test(this.password()) },
+    { label: 'One lowercase letter (a–z)',  met: /[a-z]/.test(this.password()) },
+    { label: 'One number (0–9)',            met: /[0-9]/.test(this.password()) },
+    { label: 'One special character',       met: /[^A-Za-z0-9]/.test(this.password()) },
+  ]);
 
   @HostListener('document:keydown.escape')
   onEscape() { this.close(); }
@@ -228,17 +263,17 @@ export class LoginModalComponent {
     this.modalSvc.hide();
     this.errorMessage.set('');
     this.email = '';
-    this.password = '';
+    this.password.set('');
     this.fullName = '';
     this.loading.set(false);
     this.registered.set(false);
   }
 
   login() {
-    if (this.loading() || !this.email || !this.password) return;
+    if (this.loading() || !this.email || !this.password()) return;
     this.loading.set(true);
     this.errorMessage.set('');
-    this.authService.login(this.email, this.password).subscribe({
+    this.authService.login(this.email, this.password()).subscribe({
       next: () => {
         this.creditsService.loadBalance().subscribe();
         this.close();
@@ -251,10 +286,12 @@ export class LoginModalComponent {
   }
 
   register() {
-    if (this.loading() || !this.email || !this.password) return;
+    if (this.loading() || !this.email || !this.password()) return;
+    const unmet = this.passwordRules().filter(r => !r.met);
+    if (unmet.length > 0) { this.errorMessage.set(unmet[0].label + ' is required.'); return; }
     this.loading.set(true);
     this.errorMessage.set('');
-    this.authService.register(this.email, this.password, this.fullName || undefined).subscribe({
+    this.authService.register(this.email, this.password(), this.fullName || undefined).subscribe({
       next: () => {
         this.regEmail = this.email;
         this.loading.set(false);

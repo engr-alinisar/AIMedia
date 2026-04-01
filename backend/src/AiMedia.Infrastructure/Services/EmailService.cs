@@ -22,8 +22,8 @@ public class EmailService(IConfiguration config, ILogger<EmailService> logger, H
 
         if (string.IsNullOrEmpty(_apiKey))
         {
-            // Development fallback — log the link so it can be tested without email setup
-            logger.LogWarning("RESEND_API_KEY not configured. Verification link for {Email}: {Url}", toEmail, verifyUrl);
+            // Development fallback — log that email was skipped, never log the token/URL
+            logger.LogWarning("RESEND_API_KEY not configured. Verification email skipped for {Email}. Set SkipEmailVerification=true in dev to bypass.", toEmail);
             return;
         }
 

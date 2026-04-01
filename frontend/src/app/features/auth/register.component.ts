@@ -1,4 +1,4 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
@@ -32,8 +32,8 @@ import { AuthService } from '../../core/auth/auth.service';
       <h1 class="text-2xl font-bold text-white">Create account</h1>
       <p class="text-gray-400 text-sm mt-1">Start creating AI media today</p>
     </div>
+
     @if (verified()) {
-      <!-- Email sent state -->
       <div class="card p-8 text-center space-y-4">
         <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
           <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,21 +50,32 @@ import { AuthService } from '../../core/auth/auth.service';
         @if (error()) {
           <div class="p-3 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700">{{ error() }}</div>
         }
+
         <div>
           <label class="form-label">Full Name</label>
-          <input type="text" class="form-input" [(ngModel)]="fullName" placeholder="John Doe" autocomplete="name"/>
+          <input type="text" class="form-input" [(ngModel)]="fullName" placeholder="John Doe" autocomplete="name"
+                 (ngModelChange)="error.set('')"/>
         </div>
+
         <div>
           <label class="form-label">Email</label>
-          <input type="email" class="form-input" [(ngModel)]="email" placeholder="you@example.com" autocomplete="email"/>
+          <input type="email" class="form-input" [(ngModel)]="email" placeholder="you@example.com" autocomplete="email"
+                 (ngModelChange)="error.set('')"/>
         </div>
+
         <div>
           <label class="form-label">Password</label>
           <div class="relative">
-            <input [type]="showPassword() ? 'text' : 'password'" class="form-input pr-10"
-                   [(ngModel)]="password" placeholder="Min 8 characters"
-                   autocomplete="new-password" (keyup.enter)="register()"/>
-            <button type="button" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-200"
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
+              class="form-input pr-10"
+              [ngModel]="password()"
+              (ngModelChange)="password.set($event); error.set('')"
+              placeholder="Create a password"
+              autocomplete="new-password"
+              (keyup.enter)="register()"/>
+            <button type="button"
+                    class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-200"
                     (click)="showPassword.set(!showPassword())">
               @if (showPassword()) {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,20 +84,48 @@ import { AuthService } from '../../core/auth/auth.service';
                 </svg>
               } @else {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                 </svg>
               }
             </button>
           </div>
+
+          <!-- Live password rules — visible as soon as user starts typing -->
+          @if (password().length > 0) {
+            <ul class="mt-2.5 space-y-1.5">
+              @for (rule of passwordRules(); track rule.label) {
+                <li class="flex items-center gap-2 text-xs transition-colors duration-150"
+                    [class.text-green-400]="rule.met"
+                    [class.text-gray-500]="!rule.met">
+                  @if (rule.met) {
+                    <!-- Checkmark -->
+                    <svg class="w-3.5 h-3.5 shrink-0 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  } @else {
+                    <!-- Empty circle -->
+                    <svg class="w-3.5 h-3.5 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="8" stroke-width="1.5"/>
+                    </svg>
+                  }
+                  <span>{{ rule.label }}</span>
+                </li>
+              }
+            </ul>
+          }
         </div>
+
         <button class="btn-primary w-full mt-2" (click)="register()" [disabled]="loading()">
-          @if (loading()) { <span class="animate-spin inline-block mr-1">⟳</span> Creating account... }
-          @else { Create account }
+          @if (loading()) {
+            <span class="animate-spin inline-block mr-1">⟳</span> Creating account...
+          } @else {
+            Create account
+          }
         </button>
       </div>
+
       <p class="text-center text-sm text-gray-400 mt-4">
         Already have an account?
         <a routerLink="/auth/login" class="text-accent hover:underline">Sign in</a>
@@ -100,16 +139,30 @@ export class RegisterComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
 
-  fullName = ''; email = ''; password = '';
+  fullName = '';
+  email = '';
+  password = signal('');
   loading = signal(false);
   error = signal('');
   showPassword = signal(false);
   verified = signal(false);
 
+  // Reacts to every keystroke because `password` is a signal
+  passwordRules = computed(() => [
+    { label: 'At least 8 characters',     met: this.password().length >= 8 },
+    { label: 'One uppercase letter (A–Z)', met: /[A-Z]/.test(this.password()) },
+    { label: 'One lowercase letter (a–z)', met: /[a-z]/.test(this.password()) },
+    { label: 'One number (0–9)',           met: /[0-9]/.test(this.password()) },
+    { label: 'One special character',      met: /[^A-Za-z0-9]/.test(this.password()) },
+  ]);
+
   register() {
-    if (!this.email || !this.password) { this.error.set('Email and password are required.'); return; }
-    this.loading.set(true); this.error.set('');
-    this.auth.register(this.email, this.password, this.fullName || undefined).subscribe({
+    if (!this.email || !this.password()) { this.error.set('Email and password are required.'); return; }
+    const unmet = this.passwordRules().filter(r => !r.met);
+    if (unmet.length > 0) { this.error.set(unmet[0].label + ' is required.'); return; }
+    this.loading.set(true);
+    this.error.set('');
+    this.auth.register(this.email, this.password(), this.fullName || undefined).subscribe({
       next: () => { this.loading.set(false); this.verified.set(true); },
       error: err => {
         this.loading.set(false);

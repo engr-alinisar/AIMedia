@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using AiMedia.Application.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -16,8 +17,7 @@ public class ChangePasswordCommandHandler(IAppDbContext db, ILogger<ChangePasswo
         if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
             throw new UnauthorizedAccessException("Current password is incorrect.");
 
-        if (request.NewPassword.Length < 8)
-            throw new InvalidOperationException("New password must be at least 8 characters.");
+        ValidatePassword(request.NewPassword);
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
 
@@ -26,5 +26,19 @@ public class ChangePasswordCommandHandler(IAppDbContext db, ILogger<ChangePasswo
         logger.LogInformation("Password changed for user {UserId}", request.UserId);
 
         return Unit.Value;
+    }
+
+    private static void ValidatePassword(string password)
+    {
+        if (password.Length < 8)
+            throw new ArgumentException("Password must be at least 8 characters.");
+        if (!Regex.IsMatch(password, "[A-Z]"))
+            throw new ArgumentException("Password must contain at least one uppercase letter.");
+        if (!Regex.IsMatch(password, "[a-z]"))
+            throw new ArgumentException("Password must contain at least one lowercase letter.");
+        if (!Regex.IsMatch(password, "[0-9]"))
+            throw new ArgumentException("Password must contain at least one digit.");
+        if (!Regex.IsMatch(password, "[^A-Za-z0-9]"))
+            throw new ArgumentException("Password must contain at least one special character.");
     }
 }

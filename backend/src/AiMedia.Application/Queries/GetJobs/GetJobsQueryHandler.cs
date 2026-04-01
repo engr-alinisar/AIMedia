@@ -9,6 +9,9 @@ public class GetJobsQueryHandler(IAppDbContext db, IStorageService storage) : IR
 {
     public async Task<PagedResult<JobDto>> Handle(GetJobsQuery request, CancellationToken cancellationToken)
     {
+        var pageSize = Math.Clamp(request.PageSize, 1, 100);
+        var page = Math.Max(request.Page, 1);
+
         var query = db.GenerationJobs
             .Where(j => j.UserId == request.UserId);
 
@@ -28,8 +31,8 @@ public class GetJobsQueryHandler(IAppDbContext db, IStorageService storage) : IR
 
         var total = await orderedQuery.CountAsync(cancellationToken);
         var jobs = await orderedQuery
-            .Skip((request.Page - 1) * request.PageSize)
-            .Take(request.PageSize)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
 
         return new PagedResult<JobDto>
@@ -49,8 +52,8 @@ public class GetJobsQueryHandler(IAppDbContext db, IStorageService storage) : IR
                 CompletedAt = j.CompletedAt
             }).ToList(),
             TotalCount = total,
-            Page = request.Page,
-            PageSize = request.PageSize
+            Page = page,
+            PageSize = pageSize
         };
     }
 }

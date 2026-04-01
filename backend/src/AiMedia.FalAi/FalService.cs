@@ -31,7 +31,6 @@ public class FalService : IFalClient
                       ?? "http://localhost:5015";
         _webhookSecret = configuration["FalAi:WebhookSecret"]
                       ?? configuration["FAL_WEBHOOK_SECRET"]
-                      ?? configuration["Jwt:Secret"]
                       ?? throw new InvalidOperationException("FalAi:WebhookSecret or FAL_WEBHOOK_SECRET must be configured.");
     }
 

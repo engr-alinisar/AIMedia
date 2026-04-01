@@ -13,11 +13,14 @@ public class LoginCommandHandler(IAppDbContext db, IJwtService jwtService, IConf
     {
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLower(), cancellationToken);
 
-        if (user == null || user.IsDeleted)
-            throw new UnauthorizedAccessException("No account found with this email. Please register first.");
+        // Use a constant-time BCrypt verify even for non-existent users to prevent
+        // timing-based account enumeration. The dummy hash is never valid.
+        const string DummyHash = "$2a$11$invalidhashvaluethatwillnevermatchwithanypasswordhash..";
+        var hashToVerify = (user == null || user.IsDeleted) ? DummyHash : user.PasswordHash;
+        var passwordValid = BCrypt.Net.BCrypt.Verify(request.Password, hashToVerify);
 
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            throw new UnauthorizedAccessException("Incorrect password. Please try again.");
+        if (user == null || user.IsDeleted || !passwordValid)
+            throw new UnauthorizedAccessException("Invalid email or password.");
 
         var skipEmailVerification = bool.TryParse(config["SkipEmailVerification"], out var skip) && skip;
         if (!user.IsEmailVerified && !skipEmailVerification)

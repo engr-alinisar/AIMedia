@@ -50,8 +50,7 @@ public class WebhooksController(
             !string.IsNullOrWhiteSpace(token),
             HttpContext.Connection.RemoteIpAddress?.ToString());
         var webhookSecret = config["FalAi:WebhookSecret"]
-            ?? config["FAL_WEBHOOK_SECRET"]
-            ?? config["Jwt:Secret"];
+            ?? config["FAL_WEBHOOK_SECRET"];
 
         if (!Guid.TryParse(jobIdRaw, out var jobId) ||
             string.IsNullOrWhiteSpace(webhookSecret) ||

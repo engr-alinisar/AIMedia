@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using AiMedia.API.Security;
 using AiMedia.API.Hubs;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
@@ -118,8 +120,8 @@ try
                 ?? builder.Configuration["AllowedOrigins"]?.Split(',')
                 ?? ["http://localhost:4200"];
             policy.WithOrigins(origins)
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
+                  .WithHeaders("Content-Type", "Authorization", "X-Requested-With")
+                  .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                   .AllowCredentials(); // Required for SignalR
         });
     });
@@ -130,6 +132,28 @@ try
 
     // Health checks
     builder.Services.AddHealthChecks();
+
+    // Rate limiting — auth endpoints: 10 requests per minute per IP
+    builder.Services.AddRateLimiter(opts =>
+    {
+        opts.AddPolicy("auth", context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                }));
+        opts.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        opts.OnRejected = async (ctx, ct) =>
+        {
+            ctx.HttpContext.Response.ContentType = "application/json";
+            await ctx.HttpContext.Response.WriteAsync(
+                "{\"error\":\"Too many requests. Please try again later.\"}", ct);
+        };
+    });
 
     var runDatabaseMigrations = builder.Environment.IsDevelopment() ||
         builder.Configuration.GetValue<bool>("RUN_DATABASE_MIGRATIONS");
@@ -170,6 +194,7 @@ try
     }
 
     app.UseCors();
+    app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
 

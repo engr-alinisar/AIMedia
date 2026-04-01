@@ -166,7 +166,9 @@
       "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\backend && dotnet build src/AiMedia.Application/AiMedia.Application.csproj -v quiet 2>&1 | tail -5\")",
       "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\backend && dotnet build src/AiMedia.Application/AiMedia.Application.csproj -v quiet 2>&1\")",
       "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\backend && dotnet build src/AiMedia.Infrastructure/AiMedia.Infrastructure.csproj -v quiet 2>&1\")",
-      "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\backend && dotnet build src/AiMedia.API/AiMedia.API.csproj -v quiet 2>&1\")"
+      "Bash(cmd /c \"cd /d D:\\\\Projects\\\\AiMedia\\\\backend && dotnet build src/AiMedia.API/AiMedia.API.csproj -v quiet 2>&1\")",
+      "Bash(git check-ignore:*)",
+      "Bash(python3 -c \":*)"
     ]
   }
 }

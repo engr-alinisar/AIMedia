@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using AiMedia.Application.DTOs;
 using AiMedia.Application.Interfaces;
 using AiMedia.Domain.Entities;
@@ -12,6 +13,8 @@ public class RegisterCommandHandler(IAppDbContext db, IEmailService emailService
 {
     public async Task<RegisterResponse> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
+        ValidatePassword(request.Password);
+
         var emailLower = request.Email.ToLower();
 
         // Check active accounts
@@ -49,6 +52,20 @@ public class RegisterCommandHandler(IAppDbContext db, IEmailService emailService
         return new RegisterResponse(
             "Registration successful! Please check your email to verify your account.",
             MapToDto(user));
+    }
+
+    private static void ValidatePassword(string password)
+    {
+        if (password.Length < 8)
+            throw new ArgumentException("Password must be at least 8 characters.");
+        if (!Regex.IsMatch(password, "[A-Z]"))
+            throw new ArgumentException("Password must contain at least one uppercase letter.");
+        if (!Regex.IsMatch(password, "[a-z]"))
+            throw new ArgumentException("Password must contain at least one lowercase letter.");
+        if (!Regex.IsMatch(password, "[0-9]"))
+            throw new ArgumentException("Password must contain at least one digit.");
+        if (!Regex.IsMatch(password, "[^A-Za-z0-9]"))
+            throw new ArgumentException("Password must contain at least one special character.");
     }
 
     private static UserDto MapToDto(User u) => new()
