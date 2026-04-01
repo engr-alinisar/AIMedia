@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AiMedia.API.Security;
 using AiMedia.Application.Interfaces;
 using AiMedia.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -39,23 +40,16 @@ public class VoiceClonesController(IAppDbContext db, IStorageService storage) : 
         if (file == null || file.Length == 0)
             return BadRequest(new { error = "Audio file is required." });
 
-        var allowedTypes = new[] {
-            "audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/mp4",
-            "audio/x-wav", "audio/wave", "audio/x-m4a", "audio/aac"
-        };
-        if (!allowedTypes.Contains(file.ContentType.ToLower()))
-            return BadRequest(new { error = "Only audio files are allowed (MP3, WAV, OGG, M4A)." });
-
         if (string.IsNullOrWhiteSpace(request.Name))
             return BadRequest(new { error = "Voice name is required." });
 
         var cloneId = Guid.NewGuid();
-        var ext = Path.GetExtension(file.FileName).ToLower();
-        if (string.IsNullOrEmpty(ext)) ext = ".mp3";
-        var r2Key = $"{userId}/voice-clones/{cloneId}{ext}";
-
         await using var stream = file.OpenReadStream();
-        await storage.UploadAsync(stream, r2Key, file.ContentType, ct);
+        if (!FileSignatureValidator.TryDetectAudio(stream, out var contentType, out var extension))
+            return BadRequest(new { error = "Only valid audio files are allowed (MP3, WAV, OGG, M4A)." });
+
+        var r2Key = $"{userId}/voice-clones/{cloneId}{extension}";
+        await storage.UploadAsync(stream, r2Key, contentType, ct);
 
         var r2Url = storage.GetPublicUrl(r2Key);
 

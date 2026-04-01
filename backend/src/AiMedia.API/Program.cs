@@ -1,10 +1,12 @@
 using System.Text;
+using AiMedia.API.Security;
 using AiMedia.API.Hubs;
 using Microsoft.EntityFrameworkCore;
 using AiMedia.API.Middleware;
 using AiMedia.FalAi.Extensions;
 using AiMedia.Infrastructure.Extensions;
 using Hangfire;
+using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -159,7 +161,36 @@ try
     app.MapControllers();
     app.MapHub<GenerationHub>("/hubs/generation");
     app.MapHealthChecks("/health");
-    app.UseHangfireDashboard("/hangfire");
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseHangfireDashboard("/hangfire");
+    }
+    else
+    {
+        var enableHangfireDashboard = builder.Configuration.GetValue<bool>("ENABLE_HANGFIRE_DASHBOARD");
+        if (enableHangfireDashboard)
+        {
+            var dashboardUsername = builder.Configuration["HANGFIRE_DASHBOARD_USERNAME"];
+            var dashboardPassword = builder.Configuration["HANGFIRE_DASHBOARD_PASSWORD"];
+
+            if (string.IsNullOrWhiteSpace(dashboardUsername) || string.IsNullOrWhiteSpace(dashboardPassword))
+            {
+                Log.Warning("ENABLE_HANGFIRE_DASHBOARD is true but Hangfire dashboard credentials are missing. Dashboard remains disabled.");
+            }
+            else
+            {
+                app.UseHangfireDashboard("/hangfire", new DashboardOptions
+                {
+                    Authorization = [new HangfireBasicAuthFilter(dashboardUsername, dashboardPassword)]
+                });
+                Log.Information("Hangfire dashboard is enabled with HTTP basic auth.");
+            }
+        }
+        else
+        {
+            Log.Information("Hangfire dashboard is disabled outside development.");
+        }
+    }
 
     using (var scope = app.Services.CreateScope())
     {
