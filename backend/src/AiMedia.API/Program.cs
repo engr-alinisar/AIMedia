@@ -131,11 +131,14 @@ try
     // Health checks
     builder.Services.AddHealthChecks();
 
+    var runDatabaseMigrations = builder.Environment.IsDevelopment() ||
+        builder.Configuration.GetValue<bool>("RUN_DATABASE_MIGRATIONS");
+
     var app = builder.Build();
 
-    // Auto-apply pending EF Core migrations on startup (safe for single-instance Railway deployment)
-    using (var scope = app.Services.CreateScope())
+    if (runDatabaseMigrations)
     {
+        using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider
             .GetRequiredService<AiMedia.Infrastructure.Persistence.AppDbContext>();
         db.Database.Migrate();
@@ -144,9 +147,21 @@ try
         var pricingSvc = scope.ServiceProvider.GetRequiredService<AiMedia.Application.Interfaces.IModelPricingService>();
         await pricingSvc.SeedAsync();
     }
+    else
+    {
+        Log.Information("Database migrations are disabled at startup.");
+    }
 
     app.UseMiddleware<ExceptionHandlingMiddleware>();
-    app.UseSerilogRequestLogging();
+    app.UseSerilogRequestLogging(opts =>
+    {
+        opts.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+        {
+            diagnosticContext.Set("RequestPath", httpContext.Request.Path.Value ?? string.Empty);
+            diagnosticContext.Set("HasAccessTokenQuery", httpContext.Request.Query.ContainsKey("access_token"));
+        };
+        opts.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+    });
 
     if (app.Environment.IsDevelopment())
     {
