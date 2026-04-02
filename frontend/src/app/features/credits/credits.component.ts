@@ -55,7 +55,7 @@ import type { CreditTransactionDto, PagedResult } from '../../core/models/models
       <div class="text-3xl">💳</div>
       <div class="flex-1">
         <p class="text-sm font-semibold text-gray-900">Sign in to view your balance</p>
-        <p class="text-xs text-gray-500 mt-0.5">Create a free account and get 100 credits instantly — no credit card required.</p>
+        <p class="text-xs text-gray-500 mt-0.5">Create a free account and get 50 credits instantly — no credit card required.</p>
       </div>
       <button (click)="loginModal.show('register')"
               class="flex-shrink-0 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors"

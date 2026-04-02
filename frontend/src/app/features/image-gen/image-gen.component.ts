@@ -5,6 +5,7 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { GenerationService } from '../../core/services/generation.service';
 import { CreditsService } from '../../core/services/credits.service';
 import { SignalRService } from '../../core/services/signalr.service';
+import { ModelCatalogService } from '../../core/services/model-catalog.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { LoginModalService } from '../../core/services/login-modal.service';
 import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
@@ -521,9 +522,12 @@ export class ImageGenComponent implements OnInit, OnDestroy {
   private gen = inject(GenerationService);
   private credits = inject(CreditsService);
   private signalR = inject(SignalRService);
+  private modelCatalog = inject(ModelCatalogService);
   private auth = inject(AuthService);
   private loginModal = inject(LoginModalService);
   private route = inject(ActivatedRoute);
+  catalog = this.modelCatalog.catalog;
+  pricingById = computed(() => new Map(this.catalog().map(item => [item.id, item.displayPrice])));
   readonly thinkingLevels = THINKING_LEVELS;
   readonly ideogramRenderSpeeds = IDEOGRAM_RENDER_SPEEDS;
   readonly ideogramStylePresets = IDEOGRAM_STYLE_PRESETS;
@@ -593,7 +597,7 @@ export class ImageGenComponent implements OnInit, OnDestroy {
         id: m.id,
         name: m.name,
         description: m.description,
-        creditsDisplay: `${m.credits} credits`,
+        creditsDisplay: this.pricingById().get(m.id) ?? `${m.credits} credits`,
         badge: m.badge,
         badgeColor: m.badgeColor,
         tags: m.tags,
@@ -762,6 +766,7 @@ export class ImageGenComponent implements OnInit, OnDestroy {
   private pollInterval?: ReturnType<typeof setInterval>;
 
   ngOnInit() {
+    this.modelCatalog.loadAll();
     const qp = this.route.snapshot.queryParams;
     if (qp['prompt']) this.prompt = qp['prompt'];
     if (qp['model']) {

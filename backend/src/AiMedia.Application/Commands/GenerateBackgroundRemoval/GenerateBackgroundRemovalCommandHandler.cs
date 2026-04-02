@@ -21,9 +21,7 @@ public class GenerateBackgroundRemovalCommandHandler(
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
         // Variable pricing: Ideogram speed tiers — TURBO=6, BALANCED=12, QUALITY=18
-        int credits = request.ModelId is "fal-ai/ideogram/v3/replace-background" or "fal-ai/ideogram/v3/edit"
-            ? (request.RenderingSpeed?.ToUpper() switch { "TURBO" => 6, "QUALITY" => 18, _ => 12 })
-            : await pricing.GetCreditsAsync(request.ModelId, 1, cancellationToken);
+        var credits = await pricing.GetImageStudioCreditsAsync(request.ModelId, request.RenderingSpeed, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -67,14 +65,6 @@ public class GenerateBackgroundRemovalCommandHandler(
                     ? (object)new { image_url = imageUrl, prompt = request.Prompt ?? "", negative_prompt = request.NegativePrompt ?? "", refine_prompt = true, fast = true }
                     : new { image_url = imageUrl, ref_image_url = secondaryImageUrl, refine_prompt = true, fast = true },
 
-            "fal-ai/ideogram/v3/replace-background" =>
-                new
-                {
-                    image_url = imageUrl,
-                    prompt = request.Prompt ?? "",
-                    rendering_speed = request.RenderingSpeed ?? "BALANCED",
-                    expand_prompt = true
-                },
 
             // ── Photo Editing ─────────────────────────────────────────────────────────
             "fal-ai/image-editing/object-removal" =>

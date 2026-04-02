@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth/auth.service';
 import { ExploreService } from '../../core/services/explore.service';
 import { LoginModalService } from '../../core/services/login-modal.service';
+import { ModelCatalogService } from '../../core/services/model-catalog.service';
 import type { ExploreItemDto } from '../../core/models/models';
 
 @Component({
@@ -101,7 +102,7 @@ import type { ExploreItemDto } from '../../core/models/models';
       50 free credits on signup — no credit card required
     </div>
     <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
-      Create stunning <span style="color:#7c3aed;">AI media</span> in seconds
+      Create stunning <span style="color:#7c3aed;">AI Media</span> in seconds
     </h1>
     <p class="text-lg text-gray-500 max-w-xl mx-auto mb-8">
       Generate images, videos, voice, and more — powered by cutting-edge AI. Pick a tool and start creating.
@@ -151,7 +152,7 @@ import type { ExploreItemDto } from '../../core/models/models';
                 <h3 class="text-base font-semibold text-gray-900">{{ tool.title }}</h3>
                 <span class="text-[11px] font-medium px-2 py-0.5 rounded-full"
                       [style.background]="tool.bgColor" [style.color]="tool.textColor">
-                  from {{ tool.minCredits }} credits
+                  {{ toolPriceLabel(tool.product, tool.fallbackPrice, tool.modelIds) }}
                 </span>
               </div>
             </div>
@@ -161,11 +162,7 @@ import type { ExploreItemDto } from '../../core/models/models';
             <!-- CTA -->
             <div class="flex items-center gap-1.5 text-sm font-semibold transition-colors"
                  [style.color]="tool.textColor">
-              @if (auth.isLoggedIn()) {
-                Try it now
-              } @else {
-                Sign up to try
-              }
+              Try it now
               <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
               </svg>
@@ -337,12 +334,14 @@ export class LandingComponent implements OnInit {
   auth = inject(AuthService);
   loginModal = inject(LoginModalService);
   private exploreSvc = inject(ExploreService);
+  private modelCatalog = inject(ModelCatalogService);
   private router = inject(Router);
 
   currentYear = new Date().getFullYear();
   recentItems = signal<ExploreItemDto[]>([]);
   recentLoading = signal(true);
   skeletons = Array(8).fill(0);
+  catalog = this.modelCatalog.catalog;
 
   tools = [
     {
@@ -350,7 +349,9 @@ export class LandingComponent implements OnInit {
       title: 'Text to Image',
       description: 'Turn text prompts into stunning, high-quality images using state-of-the-art diffusion models.',
       route: '/text-to-image',
-      minCredits: 5,
+      product: 'ImageGen',
+      modelIds: ['fal-ai/flux/schnell', 'fal-ai/flux-pro/v1.1', 'fal-ai/flux-2-pro', 'fal-ai/nano-banana', 'fal-ai/nano-banana-2', 'fal-ai/nano-banana-pro', 'fal-ai/imagen3/fast', 'fal-ai/imagen4/preview', 'fal-ai/bytedance/seedream/v4/text-to-image', 'fal-ai/bytedance/seedream/v5/lite/text-to-image', 'fal-ai/ideogram/v2', 'fal-ai/ideogram/v3'],
+      fallbackPrice: 'from 10 credits',
       color: 'linear-gradient(90deg, #7C3AED, #6D28D9)',
       bgColor: '#f5f3ff',
       textColor: '#7c3aed',
@@ -360,7 +361,9 @@ export class LandingComponent implements OnInit {
       title: 'Image to Video',
       description: 'Animate any image into a dynamic, fluid video clip — bring your photos to life.',
       route: '/image-to-video',
-      minCredits: 5,
+      product: 'ImageToVideo',
+      modelIds: ['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/kling-video/o3/standard/image-to-video', 'fal-ai/kling-video/v2.6/pro/image-to-video', 'fal-ai/kling-video/v2.5-turbo/pro/image-to-video', 'fal-ai/minimax/hailuo-2.3/pro/image-to-video', 'fal-ai/minimax/hailuo-02/standard/image-to-video', 'fal-ai/veo3.1/image-to-video', 'fal-ai/veo3.1/fast/first-last-frame-to-video', 'fal-ai/veo3/fast', 'fal-ai/veo3/image-to-video'],
+      fallbackPrice: 'from 42 credits',
       color: 'linear-gradient(90deg, #EF4444, #DC2626)',
       bgColor: '#fef2f2',
       textColor: '#dc2626',
@@ -370,7 +373,9 @@ export class LandingComponent implements OnInit {
       title: 'Text to Video',
       description: 'Generate cinematic videos directly from text descriptions — no footage required.',
       route: '/text-to-video',
-      minCredits: 5,
+      product: 'TextToVideo',
+      modelIds: ['fal-ai/kling-video/v3/pro/text-to-video', 'fal-ai/kling-video/o3/pro/text-to-video', 'fal-ai/kling-video/v2.6/pro/text-to-video', 'fal-ai/kling-video/v2.5-turbo/pro/text-to-video', 'fal-ai/minimax/hailuo-2.3/pro/text-to-video', 'fal-ai/minimax/hailuo-02/standard/text-to-video', 'fal-ai/veo3.1', 'fal-ai/veo3.1/fast', 'fal-ai/veo3'],
+      fallbackPrice: 'from 25 credits',
       color: 'linear-gradient(90deg, #F97316, #EA580C)',
       bgColor: '#fff7ed',
       textColor: '#ea580c',
@@ -380,7 +385,9 @@ export class LandingComponent implements OnInit {
       title: 'Text to Audio',
       description: 'Convert text to natural, expressive speech with realistic AI voices.',
       route: '/voice',
-      minCredits: 4,
+      product: 'Voice',
+      modelIds: ['fal-ai/kokoro/american-english', 'fal-ai/kokoro/british-english', 'fal-ai/kokoro/spanish', 'fal-ai/kokoro/french', 'fal-ai/kokoro/japanese', 'fal-ai/kokoro/brazilian-portuguese', 'fal-ai/kokoro/hindi', 'fal-ai/kokoro/mandarin-chinese', 'fal-ai/kokoro/italian', 'fal-ai/elevenlabs/tts/eleven-v3', 'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/elevenlabs/tts/multilingual-v2', 'fal-ai/minimax/speech-2.8-hd', 'fal-ai/f5-tts'],
+      fallbackPrice: 'from 4 credits',
       color: 'linear-gradient(90deg, #059669, #047857)',
       bgColor: '#f0fdf4',
       textColor: '#059669',
@@ -390,7 +397,9 @@ export class LandingComponent implements OnInit {
       title: 'Audio to Text',
       description: 'Transcribe any audio or video file to accurate, formatted text instantly.',
       route: '/transcription',
-      minCredits: 10,
+      product: 'Transcription',
+      modelIds: ['fal-ai/whisper', 'fal-ai/wizper', 'fal-ai/elevenlabs/speech-to-text/scribe-v2', 'fal-ai/elevenlabs/speech-to-text'],
+      fallbackPrice: 'from 1 credit',
       color: 'linear-gradient(90deg, #2563EB, #1D4ED8)',
       bgColor: '#eff6ff',
       textColor: '#2563eb',
@@ -400,7 +409,9 @@ export class LandingComponent implements OnInit {
       title: 'Image Studio',
       description: 'Remove backgrounds from images in one click with pixel-perfect AI precision.',
       route: '/background-removal',
-      minCredits: 3,
+      product: 'BackgroundRemoval',
+      modelIds: ['fal-ai/bria/background/remove', 'fal-ai/bria/background/replace', 'fal-ai/image-editing/object-removal', 'fal-ai/ideogram/v3/edit', 'fal-ai/iclight-v2', 'fal-ai/image-apps-v2/headshot-photo', 'fal-ai/image-apps-v2/makeup-application', 'fal-ai/flux-2-lora-gallery/ballpoint-pen-sketch', 'fal-ai/flux-2-lora-gallery/digital-comic-art', 'fal-ai/flux-2-lora-gallery/sepia-vintage', 'fal-ai/flux-2-lora-gallery/face-to-full-portrait', 'fal-ai/flux-2-lora-gallery/virtual-tryon', 'fal-ai/qwen-image-edit-plus-lora-gallery/integrate-product'],
+      fallbackPrice: 'from 4 credits',
       color: 'linear-gradient(90deg, #0891B2, #0E7490)',
       bgColor: '#ecfeff',
       textColor: '#0891b2',
@@ -408,6 +419,7 @@ export class LandingComponent implements OnInit {
   ];
 
   ngOnInit() {
+    this.modelCatalog.loadAll();
     this.exploreSvc.getExplore(1, 8).subscribe({
       next: result => {
         this.recentItems.set(result.items);
@@ -418,11 +430,7 @@ export class LandingComponent implements OnInit {
   }
 
   tryTool(route: string) {
-    if (!this.auth.isLoggedIn()) {
-      this.loginModal.show();
-    } else {
-      this.router.navigate([route]);
-    }
+    this.router.navigate([route]);
   }
 
   isVideoItem(item: ExploreItemDto): boolean {
@@ -455,5 +463,38 @@ export class LandingComponent implements OnInit {
 
   safePlay(event: Event) {
     (event.target as HTMLVideoElement).play().catch(() => {});
+  }
+
+  toolPriceLabel(product: string, fallback: string, modelIds?: string[]): string {
+    const values = this.catalog()
+      .filter(item => item.product === product && (!modelIds?.length || modelIds.includes(item.id)))
+      .map(item => item.displayPrice);
+
+    const parsed = values
+      .map(v => this.parseDisplayPrice(v))
+      .filter((v): v is number => v !== null);
+    if (parsed.length > 0)
+      return `from ${Math.min(...parsed)} credit${Math.min(...parsed) === 1 ? '' : 's'}`;
+
+    return fallback;
+  }
+
+  private parseDisplayPrice(value: string): number | null {
+    const exact = /^(\d+)\s+credits?$/.exec(value);
+    if (exact) return Number(exact[1]);
+
+    const rangePerSecond = /^(\d+)-(\d+)\s+cr\/s$/.exec(value);
+    if (rangePerSecond) return Number(rangePerSecond[1]);
+
+    const perSecond = /^(\d+)\s+cr\/s$/.exec(value);
+    if (perSecond) return Number(perSecond[1]);
+
+    const perMinute = /^(\d+)\s+cr\/min$/.exec(value);
+    if (perMinute) return Number(perMinute[1]);
+
+    const perK = /^(\d+)\s+cr\/1K chars$/.exec(value);
+    if (perK) return Number(perK[1]);
+
+    return null;
   }
 }

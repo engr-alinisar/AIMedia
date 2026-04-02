@@ -32,7 +32,7 @@ namespace AiMedia.Infrastructure.Persistence.Migrations
                 keyColumn: "question",
                 keyValue: "How many free credits do I get?",
                 column: "answer",
-                value: "<p>Every new account receives <strong>100 free credits</strong> on registration — no credit card required.</p><p>This lets you try all features before purchasing. Note: free credits are only given once per email address.</p>");
+                value: "<p>Every new account receives <strong>50 free credits</strong> on registration — no credit card required.</p><p>This lets you try all features before purchasing. Note: free credits are only given once per email address.</p>");
 
             migrationBuilder.UpdateData(
                 table: "faq_items",
@@ -61,7 +61,7 @@ namespace AiMedia.Infrastructure.Persistence.Migrations
                 keyColumn: "question",
                 keyValue: "Is there a refund policy?",
                 column: "answer",
-                value: "<p>All credit purchases are <strong>final and non-refundable</strong>.</p><p>We offer <strong>100 free credits</strong> to every new account so you can fully test the platform before making a purchase. We encourage you to use your free credits first.</p>");
+                value: "<p>All credit purchases are <strong>final and non-refundable</strong>.</p><p>We offer <strong>50 free credits</strong> to every new account so you can fully test the platform before making a purchase. We encourage you to use your free credits first.</p>");
 
             migrationBuilder.UpdateData(
                 table: "faq_items",
@@ -83,21 +83,21 @@ namespace AiMedia.Infrastructure.Persistence.Migrations
                 keyColumn: "question",
                 keyValue: "What AI models are available?",
                 column: "answer",
-                value: "<p>VoicesForge offers 6 AI-powered tools:</p><ul><li>🖼️ <strong>Image Generation</strong> — create images from text prompts</li><li>🎬 <strong>Image to Video</strong> — animate a still image into a short video</li><li>🎥 <strong>Text to Video</strong> — generate video directly from a text description</li><li>🎙️ <strong>Text to Voice</strong> — convert text to natural-sounding speech, with voice cloning support</li><li>📝 <strong>Transcription</strong> — convert audio/video to text automatically</li><li>✂️ <strong>Background Removal</strong> — remove the background from any image instantly</li></ul>");
+                value: "<p>VoicesForge offers 6 AI-powered tools:</p><ul><li>🖼️ <strong>Text to Image</strong> — create images from text prompts</li><li>🎬 <strong>Image to Video</strong> — animate a still image into a short video</li><li>🎥 <strong>Text to Video</strong> — generate video directly from a text description</li><li>🎙️ <strong>Text to Audio</strong> — convert text to natural-sounding speech, with voice cloning support</li><li>📝 <strong>Audio to Text</strong> — convert audio or video to text automatically</li><li>✂️ <strong>Image Studio</strong> — remove the background from any image instantly</li></ul>");
 
             migrationBuilder.UpdateData(
                 table: "faq_items",
                 keyColumn: "question",
                 keyValue: "How much does each model cost?",
                 column: "answer",
-                value: "<table><thead><tr><th>Model</th><th>Cost</th></tr></thead><tbody><tr><td>✂️ Background Removal</td><td>3 credits</td></tr><tr><td>🎙️ Text to Voice</td><td>from 4 credits</td></tr><tr><td>🖼️ Image Generation</td><td>from 5 credits</td></tr><tr><td>📝 Transcription</td><td>from 10 credits</td></tr><tr><td>🎬 Image to Video</td><td>from 25 credits</td></tr><tr><td>🎥 Text to Video</td><td>from 25 credits</td></tr></tbody></table><p style='margin-top:0.5rem;font-size:0.85rem;color:#6b7280;'>1 credit = $0.01 USD</p>");
+                value: "<table><thead><tr><th>Tool</th><th>Cost</th></tr></thead><tbody><tr><td>✂️ Image Studio</td><td>from 4 credits</td></tr><tr><td>🎙️ Text to Audio</td><td>from 4 credits</td></tr><tr><td>🖼️ Text to Image</td><td>from 10 credits</td></tr><tr><td>📝 Audio to Text</td><td>from 1 credit</td></tr><tr><td>🎬 Image to Video</td><td>from 42 credits</td></tr><tr><td>🎥 Text to Video</td><td>from 25 credits</td></tr></tbody></table><p style='margin-top:0.5rem;font-size:0.85rem;color:#6b7280;'>1 credit = $0.01 USD</p>");
 
             migrationBuilder.UpdateData(
                 table: "faq_items",
                 keyColumn: "question",
                 keyValue: "How long does generation take?",
                 column: "answer",
-                value: "<p>Most jobs complete within <strong>10–60 seconds</strong>. Times vary by model:</p><ul><li><strong>Background Removal</strong> — ~5 seconds</li><li><strong>Image Generation</strong> — 10–20 seconds</li><li><strong>Text to Voice</strong> — 5–15 seconds</li><li><strong>Transcription</strong> — depends on audio length</li><li><strong>Image/Text to Video</strong> — 30–90 seconds</li></ul><p>You'll receive a real-time notification as soon as your job completes.</p>");
+                value: "<p>Most jobs complete within <strong>10–60 seconds</strong>. Times vary by tool:</p><ul><li><strong>Image Studio</strong> — ~5 seconds</li><li><strong>Text to Image</strong> — 10–20 seconds</li><li><strong>Text to Audio</strong> — 5–15 seconds</li><li><strong>Audio to Text</strong> — depends on audio length</li><li><strong>Image to Video / Text to Video</strong> — 30–90 seconds</li></ul><p>You'll receive a real-time notification as soon as your job completes.</p>");
 
             migrationBuilder.UpdateData(
                 table: "faq_items",

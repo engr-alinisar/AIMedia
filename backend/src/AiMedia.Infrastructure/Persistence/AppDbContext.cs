@@ -13,7 +13,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<VoiceClone> VoiceClones => Set<VoiceClone>();
     public DbSet<CreditPack> CreditPacks => Set<CreditPack>();
     public DbSet<FaqItem> FaqItems => Set<FaqItem>();
-    public DbSet<ModelPricing> ModelPricings => Set<ModelPricing>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

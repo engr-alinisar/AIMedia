@@ -167,9 +167,6 @@ try
             .GetRequiredService<AiMedia.Infrastructure.Persistence.AppDbContext>();
         db.Database.Migrate();
 
-        // Seed model pricing rows for any new models not yet in the DB
-        var pricingSvc = scope.ServiceProvider.GetRequiredService<AiMedia.Application.Interfaces.IModelPricingService>();
-        await pricingSvc.SeedAsync();
     }
     else
     {

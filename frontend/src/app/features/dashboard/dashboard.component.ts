@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { GenerationService } from '../../core/services/generation.service';
 import { CreditsService } from '../../core/services/credits.service';
+import { ModelCatalogService } from '../../core/services/model-catalog.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import type { JobDto } from '../../core/models/models';
@@ -43,7 +44,7 @@ import type { JobDto } from '../../core/models/models';
           <span class="text-xl sm:text-2xl flex-shrink-0">{{ action.icon }}</span>
           <div class="min-w-0">
             <p class="text-xs sm:text-sm font-medium text-gray-900 group-hover:text-accent transition-colors leading-tight">{{ action.label }}</p>
-            <p class="text-[10px] sm:text-xs text-gray-400 mt-0.5">{{ action.cost }}</p>
+            <p class="text-[10px] sm:text-xs text-gray-400 mt-0.5">{{ quickActionPrice(action.product, action.fallbackCost) }}</p>
           </div>
         </a>
       }
@@ -87,7 +88,9 @@ import type { JobDto } from '../../core/models/models';
 export class DashboardComponent implements OnInit {
   auth = inject(AuthService);
   credits = inject(CreditsService);
+  private modelCatalog = inject(ModelCatalogService);
   private gen = inject(GenerationService);
+  catalog = this.modelCatalog.catalog;
 
   recentJobs = signal<JobDto[]>([]);
   loading = signal(true);
@@ -95,12 +98,12 @@ export class DashboardComponent implements OnInit {
   name = () => this.auth.user()?.fullName ?? this.auth.user()?.email?.split('@')[0] ?? 'there';
 
   quickActions = [
-    { icon: '🖼️', label: 'Text to Image', route: '/text-to-image',         cost: 'From 5 credits' },
-    { icon: '🎬', label: 'Image to Video',  route: '/image-to-video',   cost: 'From 25 credits' },
-    { icon: '🎥', label: 'Text to Video',   route: '/text-to-video',    cost: 'From 25 credits' },
-    { icon: '🎙️', label: 'Text to Audio',  route: '/voice',            cost: 'From 4 credits' },
-    { icon: '📝', label: 'Audio to Text',   route: '/transcription',    cost: 'From 10 credits' },
-    { icon: '✂️', label: 'Remove BG',       route: '/background-removal', cost: '3 credits' },
+    { icon: '🖼️', label: 'Text to Image', route: '/text-to-image', product: 'ImageGen', fallbackCost: 'From 10 credits' },
+    { icon: '🎬', label: 'Image to Video', route: '/image-to-video', product: 'ImageToVideo', fallbackCost: 'From 42 credits' },
+    { icon: '🎥', label: 'Text to Video', route: '/text-to-video', product: 'TextToVideo', fallbackCost: 'From 25 credits' },
+    { icon: '🎙️', label: 'Text to Audio', route: '/voice', product: 'Voice', fallbackCost: 'From 4 credits' },
+    { icon: '📝', label: 'Audio to Text', route: '/transcription', product: 'Transcription', fallbackCost: 'From 1 credit' },
+    { icon: '✂️', label: 'Remove BG', route: '/background-removal', product: 'BackgroundRemoval', fallbackCost: 'From 4 credits' },
   ];
 
   productIcon(p: string) {
@@ -114,9 +117,50 @@ export class DashboardComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.modelCatalog.loadAll();
     this.gen.getJobs(1, 5).subscribe({
       next: r => { this.recentJobs.set(r.items); this.loading.set(false); },
       error: () => this.loading.set(false)
     });
+  }
+
+  quickActionPrice(product: string, fallback: string) {
+    const values = this.catalog()
+      .filter(item => item.product === product && this.activeModelIdsForProduct(product).includes(item.id))
+      .map(item => item.displayPrice);
+
+    const parsed = values.map(v => this.parseDisplayPrice(v)).filter((v): v is number => v !== null);
+    if (parsed.length > 0) {
+      const min = Math.min(...parsed);
+      return `From ${min} credit${min === 1 ? '' : 's'}`;
+    }
+
+    return fallback;
+  }
+
+  private activeModelIdsForProduct(product: string): string[] {
+    const map: Record<string, string[]> = {
+      ImageGen: ['fal-ai/flux/schnell', 'fal-ai/flux-pro/v1.1', 'fal-ai/flux-2-pro', 'fal-ai/nano-banana', 'fal-ai/nano-banana-2', 'fal-ai/nano-banana-pro', 'fal-ai/imagen3/fast', 'fal-ai/imagen4/preview', 'fal-ai/bytedance/seedream/v4/text-to-image', 'fal-ai/bytedance/seedream/v5/lite/text-to-image', 'fal-ai/ideogram/v2', 'fal-ai/ideogram/v3'],
+      ImageToVideo: ['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/kling-video/o3/standard/image-to-video', 'fal-ai/kling-video/v2.6/pro/image-to-video', 'fal-ai/kling-video/v2.5-turbo/pro/image-to-video', 'fal-ai/minimax/hailuo-2.3/pro/image-to-video', 'fal-ai/minimax/hailuo-02/standard/image-to-video', 'fal-ai/veo3.1/image-to-video', 'fal-ai/veo3.1/fast/first-last-frame-to-video', 'fal-ai/veo3/fast', 'fal-ai/veo3/image-to-video'],
+      TextToVideo: ['fal-ai/kling-video/v3/pro/text-to-video', 'fal-ai/kling-video/o3/pro/text-to-video', 'fal-ai/kling-video/v2.6/pro/text-to-video', 'fal-ai/kling-video/v2.5-turbo/pro/text-to-video', 'fal-ai/minimax/hailuo-2.3/pro/text-to-video', 'fal-ai/minimax/hailuo-02/standard/text-to-video', 'fal-ai/veo3.1', 'fal-ai/veo3.1/fast', 'fal-ai/veo3'],
+      Voice: ['fal-ai/kokoro/american-english', 'fal-ai/kokoro/british-english', 'fal-ai/kokoro/spanish', 'fal-ai/kokoro/french', 'fal-ai/kokoro/japanese', 'fal-ai/kokoro/brazilian-portuguese', 'fal-ai/kokoro/hindi', 'fal-ai/kokoro/mandarin-chinese', 'fal-ai/kokoro/italian', 'fal-ai/elevenlabs/tts/eleven-v3', 'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/elevenlabs/tts/multilingual-v2', 'fal-ai/minimax/speech-2.8-hd', 'fal-ai/f5-tts'],
+      Transcription: ['fal-ai/whisper', 'fal-ai/wizper', 'fal-ai/elevenlabs/speech-to-text/scribe-v2', 'fal-ai/elevenlabs/speech-to-text'],
+      BackgroundRemoval: ['fal-ai/bria/background/remove', 'fal-ai/bria/background/replace', 'fal-ai/image-editing/object-removal', 'fal-ai/ideogram/v3/edit', 'fal-ai/iclight-v2', 'fal-ai/image-apps-v2/headshot-photo', 'fal-ai/image-apps-v2/makeup-application', 'fal-ai/flux-2-lora-gallery/ballpoint-pen-sketch', 'fal-ai/flux-2-lora-gallery/digital-comic-art', 'fal-ai/flux-2-lora-gallery/sepia-vintage', 'fal-ai/flux-2-lora-gallery/face-to-full-portrait', 'fal-ai/flux-2-lora-gallery/virtual-tryon', 'fal-ai/qwen-image-edit-plus-lora-gallery/integrate-product']
+    };
+    return map[product] ?? [];
+  }
+
+  private parseDisplayPrice(value: string): number | null {
+    const exact = /^(\d+)\s+credits?$/.exec(value);
+    if (exact) return Number(exact[1]);
+    const rangePerSecond = /^(\d+)-(\d+)\s+cr\/s$/.exec(value);
+    if (rangePerSecond) return Number(rangePerSecond[1]);
+    const perSecond = /^(\d+)\s+cr\/s$/.exec(value);
+    if (perSecond) return Number(perSecond[1]);
+    const perMinute = /^(\d+)\s+cr\/min$/.exec(value);
+    if (perMinute) return Number(perMinute[1]);
+    const perK = /^(\d+)\s+cr\/1K chars$/.exec(value);
+    if (perK) return Number(perK[1]);
+    return null;
   }
 }

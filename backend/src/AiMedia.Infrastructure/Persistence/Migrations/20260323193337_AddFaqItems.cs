@@ -42,17 +42,17 @@ namespace AiMedia.Infrastructure.Persistence.Migrations
                 {
                     // Credits
                     { "How do credits work?", "Credits are the currency used on VoicesForge. Each AI operation costs a certain number of credits. When you submit a job, credits are reserved. On success they are deducted, on failure they are returned to your balance.", "Credits", 1, true, DateTime.UtcNow },
-                    { "How many free credits do I get?", "Every new account receives 100 free credits on registration. This lets you try all features before purchasing.", "Credits", 2, true, DateTime.UtcNow },
+                    { "How many free credits do I get?", "Every new account receives 50 free credits on registration. This lets you try all features before purchasing.", "Credits", 2, true, DateTime.UtcNow },
                     { "Do credits expire?", "No, purchased credits do not expire. Use them at your own pace.", "Credits", 3, true, DateTime.UtcNow },
                     { "What happens if I run out of credits?", "Your jobs will not be submitted until you top up your balance. You will receive a low credit warning email when your balance drops below 50 credits.", "Credits", 4, true, DateTime.UtcNow },
                     // Payments
                     { "What payment methods are accepted?", "We accept all major credit/debit cards and PayPal via our secure PayPal checkout.", "Payments", 1, true, DateTime.UtcNow },
-                    { "Is there a refund policy?", "All credit purchases are final and non-refundable. We offer 100 free credits to every new account so you can try the platform before purchasing.", "Payments", 2, true, DateTime.UtcNow },
+                    { "Is there a refund policy?", "All credit purchases are final and non-refundable. We offer 50 free credits to every new account so you can try the platform before purchasing.", "Payments", 2, true, DateTime.UtcNow },
                     { "How long does it take for credits to appear after payment?", "Credits are added to your account instantly after a successful payment.", "Payments", 3, true, DateTime.UtcNow },
                     { "Is my payment information secure?", "Yes. We use PayPal for all payments — we never store your card details on our servers.", "Payments", 4, true, DateTime.UtcNow },
                     // AI Models
                     { "What AI models are available?", "VoicesForge offers Image Generation, Image to Video, Text to Video, Text to Voice (with voice cloning), Transcription, and Background Removal.", "AI Models", 1, true, DateTime.UtcNow },
-                    { "How much does each model cost?", "Costs vary by model: Background Removal costs 3 credits, Text to Voice from 4 credits, Image Generation from 5 credits, Transcription from 10 credits, and Image/Text to Video from 25 credits.", "AI Models", 2, true, DateTime.UtcNow },
+                    { "How much does each model cost?", "Costs vary by model: Image Studio starts at 4 credits, Text to Audio from 4 credits, Text to Image from 10 credits, Audio to Text from 1 credit, Text to Video from 25 credits, and Image to Video from 42 credits.", "AI Models", 2, true, DateTime.UtcNow },
                     { "How long does generation take?", "Most jobs complete in 10–60 seconds depending on the model and complexity.", "AI Models", 3, true, DateTime.UtcNow },
                     { "Why is my job stuck in Queued status?", "Jobs are processed in the order received. If a job stays Queued for more than 5 minutes, it will be automatically retried. Contact support if the issue persists.", "AI Models", 4, true, DateTime.UtcNow },
                     // Account

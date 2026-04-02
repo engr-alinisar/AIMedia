@@ -1,19 +1,12 @@
 using AiMedia.Application.Common;
+using AiMedia.Application.DTOs;
 using AiMedia.Application.Interfaces;
-using AiMedia.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
+using AiMedia.Domain.Enums;
 
 namespace AiMedia.Infrastructure.Services;
 
-public class ModelPricingService(
-    IAppDbContext db,
-    IMemoryCache cache,
-    ILogger<ModelPricingService> logger) : IModelPricingService
+public class ModelPricingService : IModelPricingService
 {
-    private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(1);
-    private const string CacheKeyPrefix = "model_pricing:";
     private static readonly IReadOnlyDictionary<string, (int Width, int Height)> ImageSizeDimensions =
         new Dictionary<string, (int Width, int Height)>(StringComparer.OrdinalIgnoreCase)
         {
@@ -25,12 +18,13 @@ public class ModelPricingService(
             ["landscape_16_9"] = (1024, 576)
         };
 
-    public async Task<int> GetCreditsAsync(string modelId, int durationSeconds = 1, CancellationToken ct = default)
+    public Task<int> GetCreditsAsync(string modelId, int durationSeconds = 1, CancellationToken ct = default)
     {
-        var pricing = await GetPricingAsync(modelId, ct);
-        return pricing.CreditsPerSecond > 0
-            ? pricing.CreditsPerSecond * durationSeconds
-            : pricing.CreditsBase;
+        var model = ModelRegistry.Get(modelId)
+            ?? throw new InvalidOperationException($"Unknown model: {modelId}");
+        return Task.FromResult(model.CreditsPerSecond > 0
+            ? model.CreditsPerSecond * durationSeconds
+            : model.CreditsBase);
     }
 
     public async Task<int> GetVideoCreditsAsync(string modelId, int durationSeconds, bool generateAudio, string? resolution = null, CancellationToken ct = default)
@@ -145,39 +139,39 @@ public class ModelPricingService(
         return creditsPerThousand * units;
     }
 
-    public async Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, string? thinkingLevel = null, string? renderingSpeed = null, CancellationToken ct = default)
+    public Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, string? thinkingLevel = null, string? renderingSpeed = null, CancellationToken ct = default)
     {
-        var pricing = await GetPricingAsync(modelId, ct);
+        
 
         // FLUX Schnell: flat app pricing.
         if (modelId == "fal-ai/flux/schnell")
-            return 10;
+            return Task.FromResult(10);
 
         if (modelId == "fal-ai/flux-pro/v1.1")
-            return 10;
+            return Task.FromResult(10);
 
         // FLUX 2 Pro: $0.03 first billed MP + $0.015 each additional billed MP at 1.5× markup, minimum 10 credits.
         if (modelId == "fal-ai/flux-2-pro")
         {
             var billedMegapixels = GetBilledMegapixels(imageSize);
             var credits = 4.5m + Math.Max(0, billedMegapixels - 1) * 2.25m;
-            return Math.Max(10, (int)Math.Round(credits, MidpointRounding.AwayFromZero));
+            return Task.FromResult(Math.Max(10, (int)Math.Round(credits, MidpointRounding.AwayFromZero)));
         }
 
         if (modelId == "fal-ai/imagen3/fast")
-            return 10;
+            return Task.FromResult(10);
 
         if (modelId == "fal-ai/imagen4/preview")
-            return 10;
+            return Task.FromResult(10);
 
         if (modelId == "fal-ai/bytedance/seedream/v4/text-to-image")
-            return 10;
+            return Task.FromResult(10);
 
         if (modelId == "fal-ai/bytedance/seedream/v5/lite/text-to-image")
-            return 10;
+            return Task.FromResult(10);
 
         if (modelId == "fal-ai/ideogram/v2")
-            return 12;
+            return Task.FromResult(12);
 
         if (modelId == "fal-ai/ideogram/v3")
         {
@@ -187,12 +181,12 @@ public class ModelPricingService(
                 "QUALITY" => 13.5m,
                 _ => 9m
             };
-            return Math.Max(10, (int)Math.Round(credits, MidpointRounding.AwayFromZero));
+            return Task.FromResult(Math.Max(10, (int)Math.Round(credits, MidpointRounding.AwayFromZero)));
         }
 
         // Nano Banana: flat app pricing with minimum floor.
         if (modelId == "fal-ai/nano-banana")
-            return 10;
+            return Task.FromResult(10);
 
         // Nano Banana 2: resolution tiers from provider pricing with 1.5× app markup.
         if (modelId == "fal-ai/nano-banana-2")
@@ -206,14 +200,53 @@ public class ModelPricingService(
             };
             if (string.Equals(thinkingLevel, "high", StringComparison.OrdinalIgnoreCase))
                 baseCredits += 0.3m;
-            return Math.Max(10, (int)Math.Round(baseCredits, MidpointRounding.AwayFromZero));
+            return Task.FromResult(Math.Max(10, (int)Math.Round(baseCredits, MidpointRounding.AwayFromZero)));
         }
 
         // Nano Banana Pro: resolution tiers from provider pricing with 1.5× app markup.
         if (modelId == "fal-ai/nano-banana-pro")
-            return resolution == "4K" ? 45 : 23;
+            return Task.FromResult(resolution == "4K" ? 45 : 23);
 
-        return pricing.CreditsBase;
+        var model = ModelRegistry.Get(modelId)
+            ?? throw new InvalidOperationException($"Unknown model: {modelId}");
+        return Task.FromResult(model.CreditsBase);
+    }
+
+    public Task<int> GetImageStudioCreditsAsync(string modelId, string? renderingSpeed = null, CancellationToken ct = default)
+    {
+        if (modelId == "fal-ai/ideogram/v3/edit")
+        {
+            var credits = (renderingSpeed ?? "BALANCED").ToUpperInvariant() switch
+            {
+                "TURBO" => 6,
+                "QUALITY" => 18,
+                _ => 12
+            };
+            return Task.FromResult(credits);
+        }
+
+        return GetCreditsAsync(modelId, 1, ct);
+    }
+
+    public async Task<IReadOnlyList<ModelCatalogItemDto>> GetCatalogAsync(ProductType? product = null, CancellationToken ct = default)
+    {
+        var models = (product.HasValue ? ModelRegistry.ForProduct(product.Value) : ModelRegistry.AllModels).ToList();
+        var items = new List<ModelCatalogItemDto>(models.Count);
+
+        foreach (var model in models)
+        {
+            items.Add(new ModelCatalogItemDto(
+                model.Id,
+                model.Name,
+                model.Description,
+                model.Product.ToString(),
+                model.Tier.ToString(),
+                model.CreditsBase,
+                model.CreditsPerSecond,
+                await GetDisplayPriceAsync(model, ct)));
+        }
+
+        return items;
     }
 
     private static int GetBilledMegapixels(string? imageSize)
@@ -226,71 +259,45 @@ public class ModelPricingService(
         return Math.Max(1, (int)Math.Ceiling(megapixels));
     }
 
-    public async Task SeedAsync(CancellationToken ct = default)
+    private async Task<string> GetDisplayPriceAsync(ModelInfo model, CancellationToken ct)
     {
-        var existingMap = await db.ModelPricings
-            .ToDictionaryAsync(p => p.ModelId, ct);
-
-        var inserted = 0;
-        var updated = 0;
-
-        foreach (var m in ModelRegistry.AllModels)
+        return model.Product switch
         {
-            if (existingMap.TryGetValue(m.Id, out var existing))
-            {
-                // Update if pricing changed in code
-                if (existing.CreditsBase != m.CreditsBase || existing.CreditsPerSecond != m.CreditsPerSecond)
-                {
-                    existing.CreditsBase = m.CreditsBase;
-                    existing.CreditsPerSecond = m.CreditsPerSecond;
-                    existing.UpdatedAt = DateTime.UtcNow;
-                    updated++;
-                }
-            }
-            else
-            {
-                db.ModelPricings.Add(new ModelPricing
-                {
-                    ModelId = m.Id,
-                    CreditsBase = m.CreditsBase,
-                    CreditsPerSecond = m.CreditsPerSecond,
-                    UpdatedAt = DateTime.UtcNow
-                });
-                inserted++;
-            }
-        }
-
-        if (inserted > 0 || updated > 0)
-        {
-            await db.SaveChangesAsync(ct);
-            logger.LogInformation("Seeded pricing: {Inserted} new, {Updated} updated", inserted, updated);
-        }
+            ProductType.Voice => $"{await GetVoiceCreditsAsync(model.Id, 1, ct)} cr/1K chars",
+            ProductType.Transcription => $"{await GetTranscriptionCreditsAsync(model.Id, 60, ct)} cr/min",
+            ProductType.ImageGen => $"{await GetImageGenCreditsAsync(model.Id, null, null, null, null, null, ct)} credits",
+            ProductType.BackgroundRemoval => $"{await GetCreditsAsync(model.Id, 1, ct)} credits",
+            ProductType.TextToVideo or ProductType.ImageToVideo => GetVideoDisplayPrice(model.Id),
+            _ => $"{await GetCreditsAsync(model.Id, 1, ct)} credits"
+        };
     }
 
-    private async Task<ModelPricing> GetPricingAsync(string modelId, CancellationToken ct)
+    private static string GetVideoDisplayPrice(string modelId)
     {
-        var cacheKey = CacheKeyPrefix + modelId;
-        if (cache.TryGetValue(cacheKey, out ModelPricing? cached) && cached is not null)
-            return cached;
-
-        var pricing = await db.ModelPricings.AsNoTracking()
-            .FirstOrDefaultAsync(p => p.ModelId == modelId, ct);
-
-        if (pricing is null)
+        return modelId switch
         {
-            // Fallback to ModelRegistry seed values (model may not be seeded yet)
-            var info = ModelRegistry.Get(modelId)
-                ?? throw new InvalidOperationException($"Unknown model: {modelId}");
-            pricing = new ModelPricing
-            {
-                ModelId = modelId,
-                CreditsBase = info.CreditsBase,
-                CreditsPerSecond = info.CreditsPerSecond
-            };
-            logger.LogWarning("Model {ModelId} not found in model_pricings table, using registry fallback", modelId);
-        }
+            "fal-ai/kling-video/v3/pro/text-to-video" => "17-25 cr/s",
+            "fal-ai/kling-video/o3/pro/text-to-video" => "17-21 cr/s",
+            "fal-ai/kling-video/v2.6/pro/text-to-video" => "11-21 cr/s",
+            "fal-ai/kling-video/v2.5-turbo/pro/text-to-video" => "11 cr/s",
+            "fal-ai/minimax/hailuo-2.3/pro/text-to-video" => "74 credits",
+            "fal-ai/minimax/hailuo-02/standard/text-to-video" => "7 cr/s",
+            "fal-ai/veo3.1" => "30-90 cr/s",
+            "fal-ai/veo3.1/fast" => "15-53 cr/s",
+            "fal-ai/veo3" => "30-60 cr/s",
+            "fal-ai/veo3/fast" => "15-23 cr/s",
 
-        cache.Set(cacheKey, pricing, CacheTtl);
-        return pricing;
+            "fal-ai/kling-video/v3/pro/image-to-video" => "17-25 cr/s",
+            "fal-ai/kling-video/o3/standard/image-to-video" => "13-17 cr/s",
+            "fal-ai/kling-video/v2.6/pro/image-to-video" => "14 cr/s",
+            "fal-ai/kling-video/v2.5-turbo/pro/image-to-video" => "11 cr/s",
+            "fal-ai/minimax/hailuo-2.3/pro/image-to-video" => "74 credits",
+            "fal-ai/minimax/hailuo-02/standard/image-to-video" => "3-7 cr/s",
+            "fal-ai/veo3.1/image-to-video" => "30-90 cr/s",
+            "fal-ai/veo3.1/fast/first-last-frame-to-video" => "15-53 cr/s",
+            "fal-ai/veo3/image-to-video" => "30-60 cr/s",
+            _ => "Custom pricing"
+        };
     }
+
 }

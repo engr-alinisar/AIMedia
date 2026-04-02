@@ -7,6 +7,7 @@ import { CreditsService } from '../../core/services/credits.service';
 import { SignalRService } from '../../core/services/signalr.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { LoginModalService } from '../../core/services/login-modal.service';
+import { ModelCatalogService } from '../../core/services/model-catalog.service';
 import { VoiceCloneService, VoiceCloneDto } from '../../core/services/voice-clone.service';
 import { CloneVoiceModalComponent } from '../../shared/components/clone-voice-modal/clone-voice-modal.component';
 import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
@@ -425,9 +426,12 @@ export class VoiceComponent implements OnInit, OnDestroy {
   private credits = inject(CreditsService);
   private auth = inject(AuthService);
   private loginModal = inject(LoginModalService);
+  private modelCatalog = inject(ModelCatalogService);
   private signalR = inject(SignalRService);
   private voiceCloneSvc = inject(VoiceCloneService);
   private route = inject(ActivatedRoute);
+  catalog = this.modelCatalog.catalog;
+  pricingById = computed(() => new Map(this.catalog().map(item => [item.id, item.displayPrice])));
 
   // ── model groups ──────────────────────────────────────────────────
   groups: VoiceGroup[] = [
@@ -489,7 +493,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
         id: m.id,
         name: m.name,
         description: m.description,
-        creditsDisplay: `${m.creditsPerKChars} cr/1K`,
+        creditsDisplay: this.pricingById().get(m.id) ?? `${m.creditsPerKChars} cr/1K chars`,
         badge: m.badge,
         badgeColor: m.badgeColor,
         tags: m.tags,
@@ -550,6 +554,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.modelCatalog.loadAll();
     const qp = this.route.snapshot.queryParams;
     if (qp['prompt']) this.text = qp['prompt'];
     this.textLength.set(this.text.length);

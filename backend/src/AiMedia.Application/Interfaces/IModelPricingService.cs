@@ -1,3 +1,6 @@
+using AiMedia.Application.DTOs;
+using AiMedia.Domain.Enums;
+
 namespace AiMedia.Application.Interfaces;
 
 public interface IModelPricingService
@@ -17,6 +20,8 @@ public interface IModelPricingService
     /// <summary>Credits for image generation — handles model-specific dynamic pricing like Nano Banana and Ideogram tiers.</summary>
     Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, string? thinkingLevel = null, string? renderingSpeed = null, CancellationToken ct = default);
 
-    /// <summary>Seed pricing rows from ModelRegistry for any model not yet in the DB.</summary>
-    Task SeedAsync(CancellationToken ct = default);
+    Task<int> GetImageStudioCreditsAsync(string modelId, string? renderingSpeed = null, CancellationToken ct = default);
+
+    /// <summary>Frontend-ready model catalog with display pricing from the backend source of truth.</summary>
+    Task<IReadOnlyList<ModelCatalogItemDto>> GetCatalogAsync(ProductType? product = null, CancellationToken ct = default);
 }

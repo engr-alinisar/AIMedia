@@ -7,6 +7,7 @@ import { CreditsService } from '../../core/services/credits.service';
 import { SignalRService } from '../../core/services/signalr.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { LoginModalService } from '../../core/services/login-modal.service';
+import { ModelCatalogService } from '../../core/services/model-catalog.service';
 import { MediaPreviewComponent } from '../../shared/components/media-preview/media-preview.component';
 import { JobStatusComponent } from '../../shared/components/job-status/job-status.component';
 import { type JobStatus } from '../../core/models/models';
@@ -356,8 +357,11 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   private credits = inject(CreditsService);
   private auth = inject(AuthService);
   private loginModal = inject(LoginModalService);
+  private modelCatalog = inject(ModelCatalogService);
   private signalR = inject(SignalRService);
   private route = inject(ActivatedRoute);
+  catalog = this.modelCatalog.catalog;
+  pricingById = computed(() => new Map(this.catalog().map(item => [item.id, item.displayPrice])));
 
   modelGroups: TtvGroup[] = [
     {
@@ -556,13 +560,13 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
         id: m.id,
         name: m.name,
         description: m.description,
-        creditsDisplay: m.creditsFlat > 0
+        creditsDisplay: this.pricingById().get(m.id) ?? (m.creditsFlat > 0
           ? `${m.creditsFlat} cr`
           : m.audioResolutionTiers
             ? `${m.audioResolutionTiers[0].noAudio}–${m.audioResolutionTiers[m.audioResolutionTiers.length - 1].audio} cr/s`
             : m.audioTiers
               ? `${m.audioTiers.noAudio}–${m.audioTiers.audio} cr/s`
-              : `${m.creditsPerSec} cr/s`,
+              : `${m.creditsPerSec} cr/s`),
         badge: m.badge,
         badgeColor: m.badgeColor,
         tags: m.tags,
@@ -642,6 +646,7 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   private pollInterval?: ReturnType<typeof setInterval>;
 
   ngOnInit() {
+    this.modelCatalog.loadAll();
     const qp = this.route.snapshot.queryParams;
     if (qp['prompt']) this.prompt = qp['prompt'];
     if (qp['model']) {
