@@ -16,6 +16,7 @@ interface TranscriptionModel {
   name: string;
   description: string;
   creditsFlat: number;
+  creditsPerMinute?: number;
   badge?: string;
   badgeColor?: string;
   tags: string[];
@@ -174,9 +175,18 @@ const WHISPER_LANGS = [
     <div class="px-5 py-4 border-t border-border space-y-3">
       <div class="flex items-center justify-between text-sm">
         <span class="text-gray-500">Cost estimate</span>
-        <span class="font-semibold text-gray-900">
-          <span class="text-accent">{{ selectedModel()?.creditsFlat ?? 10 }}</span> credits / job
-        </span>
+        <div class="text-right">
+          <div class="font-semibold text-gray-900">
+            <span class="text-accent">{{ estimatedCredits() }}</span>
+            {{ selectedModel()?.creditsPerMinute ? 'credits total' : 'credits / job' }}
+          </div>
+          @if (selectedModel()?.creditsPerMinute) {
+            <div class="text-xs text-gray-400">
+              {{ selectedModel()?.creditsPerMinute }} credits / min
+              @if (audioDurationLabel()) { <span> • {{ audioDurationLabel() }}</span> }
+            </div>
+          }
+        </div>
       </div>
       <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
         <div>
@@ -277,8 +287,8 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
       icon: 'W', iconBg: '#7C3AED', iconUrl: undefined,
       tags: ['Open Source', 'Free'],
       subModels: [
-        { id: 'fal-ai/whisper', name: 'Whisper Large v3', description: 'OpenAI Whisper large — accurate, multi-language, speaker diarization', creditsFlat: 10, tags: ['Multi-language', 'Diarization'], hasLanguage: true, hasDiarize: true, hasTask: true },
-        { id: 'fal-ai/wizper',  name: 'Wizper',           description: 'Optimised Whisper with smart segment merging',                        creditsFlat: 10, tags: ['Fast', 'Segment Merge'],  hasLanguage: true, hasTask: true },
+        { id: 'fal-ai/whisper', name: 'Whisper Large v3', description: 'OpenAI Whisper large — accurate, multi-language, speaker diarization', creditsFlat: 10, creditsPerMinute: 3, tags: ['Multi-language', 'Diarization'], hasLanguage: true, hasDiarize: true, hasTask: true },
+        { id: 'fal-ai/wizper',  name: 'Wizper',           description: 'Optimised Whisper with smart segment merging',                        creditsFlat: 10, creditsPerMinute: 10, tags: ['Fast', 'Segment Merge'],  hasLanguage: true, hasTask: true },
       ]
     },
     {
@@ -286,8 +296,8 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
       icon: 'E', iconBg: '#1A1A1A', iconUrl: undefined,
       tags: ['Premium', 'Speaker ID'],
       subModels: [
-        { id: 'fal-ai/elevenlabs/speech-to-text/scribe-v2', name: 'Scribe v2', description: 'Latest ElevenLabs — word-level timestamps, 99 languages, audio event tagging', creditsFlat: 22, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['99 Languages', 'Word Timestamps', 'Speaker ID'], hasLanguage: true, hasDiarize: true, hasTagEvents: true },
-        { id: 'fal-ai/elevenlabs/speech-to-text',           name: 'Scribe v1', description: 'ElevenLabs premium transcription with speaker diarization',                    creditsFlat: 18, tags: ['99 Languages', 'Speaker ID'], hasLanguage: true, hasDiarize: true, hasTagEvents: true },
+        { id: 'fal-ai/elevenlabs/speech-to-text/scribe-v2', name: 'Scribe v2', description: 'Latest ElevenLabs — word-level timestamps, 99 languages, audio event tagging', creditsFlat: 22, creditsPerMinute: 1, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['99 Languages', 'Word Timestamps', 'Speaker ID'], hasLanguage: true, hasDiarize: true, hasTagEvents: true },
+        { id: 'fal-ai/elevenlabs/speech-to-text',           name: 'Scribe v1', description: 'ElevenLabs premium transcription with speaker diarization',                    creditsFlat: 18, creditsPerMinute: 5, tags: ['99 Languages', 'Speaker ID'], hasLanguage: true, hasDiarize: true, hasTagEvents: true },
       ]
     },
   ];
@@ -307,7 +317,7 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
         id: m.id,
         name: m.name,
         description: m.description,
-        creditsDisplay: `${m.creditsFlat} cr`,
+        creditsDisplay: m.creditsPerMinute ? `${m.creditsPerMinute} cr/min` : `${m.creditsFlat} cr`,
         badge: m.badge,
         badgeColor: m.badgeColor,
         tags: m.tags,
@@ -320,6 +330,7 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
   audioUrl  = '';
   audioFile: File | null = null;
   fileName  = signal('');
+  audioDurationSeconds = signal<number | null>(null);
 
   language       = '';
   task           = 'transcribe';
@@ -333,6 +344,26 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
   isPublic    = signal(true);
   zone        = '';
   copied      = signal(false);
+
+  estimatedCredits = computed(() => {
+    const model = this.selectedModel();
+    if (!model) return 0;
+    if (!model.creditsPerMinute) return model.creditsFlat ?? 0;
+
+    const durationSeconds = this.audioDurationSeconds();
+    if (!durationSeconds || durationSeconds <= 0) return model.creditsPerMinute;
+
+    return Math.max(1, Math.round((durationSeconds / 60) * model.creditsPerMinute));
+  });
+
+  audioDurationLabel = computed(() => {
+    const durationSeconds = this.audioDurationSeconds();
+    if (!durationSeconds || durationSeconds <= 0) return '';
+
+    const minutes = Math.floor(durationSeconds / 60);
+    const seconds = durationSeconds % 60;
+    return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+  });
 
   downloadUrl = computed(() => {
     const t = this.transcript();
@@ -366,7 +397,12 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
 
   onFile(e: Event) {
     const f = (e.target as HTMLInputElement).files?.[0];
-    if (f) { this.audioFile = f; this.fileName.set(f.name); }
+    if (f) {
+      this.audioFile = f;
+      this.audioUrl = '';
+      this.fileName.set(f.name);
+      void this.loadAudioDuration(f);
+    }
   }
 
   copyTranscript() {
@@ -392,6 +428,7 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
     if (this.audioFile) fd.append('file', this.audioFile);
     else fd.append('audioUrl', this.audioUrl);
     fd.append('modelId', m.id);
+    if (this.audioDurationSeconds()) fd.append('durationSeconds', String(this.audioDurationSeconds()));
     fd.append('isPublic', String(this.isPublic()));
     if (this.zone) fd.append('zone', this.zone);
     if (m.hasLanguage && this.language) fd.append('language', this.language);
@@ -452,6 +489,36 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
       this.errorMsg.set(err ?? 'Failed.');
       this.credits.loadBalance().subscribe();
     }
+  }
+
+  private async loadAudioDuration(file: File) {
+    this.audioDurationSeconds.set(null);
+
+    try {
+      const duration = await this.readDuration(file);
+      this.audioDurationSeconds.set(Math.max(1, Math.round(duration)));
+    } catch {
+      this.audioDurationSeconds.set(null);
+    }
+  }
+
+  private readDuration(file: File): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const media = document.createElement(file.type.startsWith('video/') ? 'video' : 'audio');
+      const objectUrl = URL.createObjectURL(file);
+      media.preload = 'metadata';
+      media.src = objectUrl;
+
+      media.onloadedmetadata = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(media.duration);
+      };
+
+      media.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Failed to read media duration.'));
+      };
+    });
   }
 
   ngOnDestroy() { clearInterval(this.pollInterval); }

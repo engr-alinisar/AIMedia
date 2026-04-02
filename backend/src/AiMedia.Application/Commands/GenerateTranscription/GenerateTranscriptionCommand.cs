@@ -6,6 +6,7 @@ namespace AiMedia.Application.Commands.GenerateTranscription;
 public record GenerateTranscriptionCommand(
     Guid UserId,
     string ModelId,
+    int? DurationSeconds = null,
     string? AudioUrl = null,
     Stream? AudioStream = null,
     string? FileName = null,

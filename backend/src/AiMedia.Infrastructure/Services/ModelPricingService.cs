@@ -107,6 +107,26 @@ public class ModelPricingService(
         return await GetCreditsAsync(modelId, durationSeconds, ct);
     }
 
+    public async Task<int> GetTranscriptionCreditsAsync(string modelId, int durationSeconds, CancellationToken ct = default)
+    {
+        if (durationSeconds <= 0)
+            return await GetCreditsAsync(modelId, 1, ct);
+
+        decimal credits = modelId switch
+        {
+            "fal-ai/whisper" => (durationSeconds / 60.0m) * 2.502m,
+            "fal-ai/wizper" => (durationSeconds / 60.0m) * 9.99m,
+            "fal-ai/elevenlabs/speech-to-text" => (durationSeconds / 60.0m) * 4.5m,
+            "fal-ai/elevenlabs/speech-to-text/scribe-v2" => (durationSeconds / 60.0m) * 1.2m,
+            _ => 0m
+        };
+
+        if (credits > 0)
+            return Math.Max(1, (int)Math.Round(credits, MidpointRounding.AwayFromZero));
+
+        return await GetCreditsAsync(modelId, 1, ct);
+    }
+
     public async Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, CancellationToken ct = default)
     {
         var pricing = await GetPricingAsync(modelId, ct);

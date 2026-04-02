@@ -99,7 +99,7 @@ public class GenerationController : ControllerBase
         CancellationToken ct)
     {
         var result = await _mediator.Send(new GenerateTranscriptionCommand(
-            GetUserId(), request.ModelId,
+            GetUserId(), request.ModelId, request.DurationSeconds,
             request.AudioUrl,
             file?.OpenReadStream(),
             file?.FileName,
@@ -220,6 +220,7 @@ public record GenerateVoiceRequest(
 
 public record TranscriptionRequest(
     string ModelId = "fal-ai/whisper",
+    int? DurationSeconds = null,
     string? AudioUrl = null,
     bool IsPublic = true,
     string? Zone = null,

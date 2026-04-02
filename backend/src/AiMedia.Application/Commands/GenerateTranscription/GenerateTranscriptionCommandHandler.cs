@@ -20,7 +20,7 @@ public class GenerateTranscriptionCommandHandler(
         var model = ModelRegistry.Get(request.ModelId)
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
-        var credits = await pricing.GetCreditsAsync(request.ModelId, 1, cancellationToken);
+        var credits = await pricing.GetTranscriptionCreditsAsync(request.ModelId, request.DurationSeconds ?? 0, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -103,6 +103,7 @@ public class GenerateTranscriptionCommandHandler(
             FalResponseUrl = falSubmit.ResponseUrl,
             Status = JobStatus.Queued,
             CreditsReserved = credits,
+            DurationSeconds = request.DurationSeconds ?? 0,
             FalInput = JsonDocument.Parse(JsonSerializer.Serialize(input)),
             IsPublic = request.IsPublic,
             Zone = request.Zone,
