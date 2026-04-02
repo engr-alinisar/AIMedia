@@ -28,6 +28,8 @@ interface VoiceModel {
   voices?: VoiceOption[];
   hasSpeed?: boolean;
   hasStability?: boolean;
+  hasSimilarityBoost?: boolean;
+  hasVoiceStyle?: boolean;
   hasLanguageCode?: boolean;
   hasMiniMaxParams?: boolean;   // pitch, vol, emotion
 }
@@ -144,7 +146,7 @@ const ELEVENLABS_VOICES: VoiceOption[] = [
       <!-- Text -->
       <div>
         <label class="form-label">Text</label>
-        <textarea class="form-textarea h-40" [(ngModel)]="text"
+        <textarea class="form-textarea h-40" [(ngModel)]="text" (ngModelChange)="onTextChange($event)"
           spellcheck="true" lang="en" autocorrect="on" autocapitalize="sentences"
           placeholder="Enter the text to convert to speech..." maxlength="5000"></textarea>
         <p class="text-right text-xs text-gray-400 mt-1">{{ text.length }}/5000</p>
@@ -180,10 +182,9 @@ const ELEVENLABS_VOICES: VoiceOption[] = [
         </div>
       }
 
-      <!-- ElevenLabs — Stability + Similarity -->
+      <!-- Stability -->
       @if (selectedModel()?.hasStability) {
-        <div class="space-y-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
-          <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Voice Settings</p>
+        <div>
           <div>
             <label class="form-label">Stability — <span class="text-accent font-semibold">{{ stability().toFixed(2) }}</span></label>
             <input type="range" class="w-full accent-accent" min="0" max="1" step="0.05"
@@ -192,16 +193,20 @@ const ELEVENLABS_VOICES: VoiceOption[] = [
               <span>More Variable</span><span>More Stable</span>
             </div>
           </div>
-          <div>
-            <label class="form-label">Similarity Boost — <span class="text-accent font-semibold">{{ similarityBoost().toFixed(2) }}</span></label>
-            <input type="range" class="w-full accent-accent" min="0" max="1" step="0.05"
-              [value]="similarityBoost()" (input)="similarityBoost.set(+$any($event.target).value)" />
-          </div>
-          <div>
-            <label class="form-label">Style Exaggeration — <span class="text-accent font-semibold">{{ voiceStyle().toFixed(2) }}</span></label>
-            <input type="range" class="w-full accent-accent" min="0" max="1" step="0.05"
-              [value]="voiceStyle()" (input)="voiceStyle.set(+$any($event.target).value)" />
-          </div>
+          @if (selectedModel()?.hasSimilarityBoost) {
+            <div class="mt-4">
+              <label class="form-label">Similarity Boost — <span class="text-accent font-semibold">{{ similarityBoost().toFixed(2) }}</span></label>
+              <input type="range" class="w-full accent-accent" min="0" max="1" step="0.05"
+                [value]="similarityBoost()" (input)="similarityBoost.set(+$any($event.target).value)" />
+            </div>
+          }
+          @if (selectedModel()?.hasVoiceStyle) {
+            <div class="mt-4">
+              <label class="form-label">Style Exaggeration — <span class="text-accent font-semibold">{{ voiceStyle().toFixed(2) }}</span></label>
+              <input type="range" class="w-full accent-accent" min="0" max="1" step="0.05"
+                [value]="voiceStyle()" (input)="voiceStyle.set(+$any($event.target).value)" />
+            </div>
+          }
         </div>
       }
 
@@ -254,7 +259,7 @@ const ELEVENLABS_VOICES: VoiceOption[] = [
         <div>
           <div class="flex items-center justify-between mb-2">
             <label class="form-label mb-0">Your Voice Clones</label>
-            <button type="button" (click)="showCloneModal.set(true)"
+            <button type="button" (click)="openCloneModal()"
                     class="flex items-center gap-1.5 px-2.5 py-1 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent/90 transition-colors">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -323,9 +328,14 @@ const ELEVENLABS_VOICES: VoiceOption[] = [
     <div class="px-5 py-4 border-t border-border space-y-3">
       <div class="flex items-center justify-between text-sm">
         <span class="text-gray-500">Cost estimate</span>
-        <span class="font-semibold text-gray-900">
-          <span class="text-accent">{{ costEstimate() }}</span> credits / 1K chars
-        </span>
+        <div class="text-right">
+          <div class="font-semibold text-gray-900">
+            <span class="text-accent">{{ costEstimate() }}</span> credits total
+          </div>
+          <div class="text-xs text-gray-400">
+            {{ selectedModel()?.creditsPerKChars ?? 4 }} credits / 1K chars
+          </div>
+        </div>
       </div>
 
       <!-- Public visibility toggle -->
@@ -443,8 +453,8 @@ export class VoiceComponent implements OnInit, OnDestroy {
       tags: ['Professional', 'Expressive'],
       subModels: [
         { id: 'fal-ai/elevenlabs/tts/eleven-v3',        name: 'Eleven v3',          description: 'Latest ElevenLabs — superior expressiveness', creditsPerKChars: 15, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'Expressive'], hasSpeed: true, hasStability: true, voices: ELEVENLABS_VOICES },
-        { id: 'fal-ai/elevenlabs/tts/turbo-v2.5',       name: 'Turbo v2.5',         description: 'Fast ElevenLabs with high quality',           creditsPerKChars: 12, tags: ['Fast', 'High Quality'], hasSpeed: true, hasStability: true, voices: ELEVENLABS_VOICES },
-        { id: 'fal-ai/elevenlabs/tts/multilingual-v2',  name: 'Multilingual v2',    description: '29 languages with natural speech',            creditsPerKChars: 10, tags: ['29 Languages', 'Multilingual'], hasSpeed: true, hasStability: true, hasLanguageCode: true, voices: ELEVENLABS_VOICES },
+        { id: 'fal-ai/elevenlabs/tts/turbo-v2.5',       name: 'Turbo v2.5',         description: 'Fast ElevenLabs with high quality',           creditsPerKChars: 8, tags: ['Fast', 'High Quality'], hasSpeed: true, hasStability: true, hasSimilarityBoost: true, hasVoiceStyle: true, voices: ELEVENLABS_VOICES },
+        { id: 'fal-ai/elevenlabs/tts/multilingual-v2',  name: 'Multilingual v2',    description: '29 languages with natural speech',            creditsPerKChars: 15, tags: ['29 Languages', 'Multilingual'], hasSpeed: true, hasStability: true, hasSimilarityBoost: true, hasVoiceStyle: true, hasLanguageCode: true, voices: ELEVENLABS_VOICES },
       ]
     },
     {
@@ -452,14 +462,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
       icon: 'M', iconBg: '#059669', iconUrl: '/assets/icons/minimax.svg',
       tags: ['HD Quality', 'Expressive'],
       subModels: [
-        { id: 'fal-ai/minimax/speech-2.8-hd',            name: 'Speech 2.8 HD',    description: 'Latest MiniMax HD — emotion, pitch & volume control', creditsPerKChars: 20, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'HD'],    hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
-        { id: 'fal-ai/minimax/speech-2.8-turbo',          name: 'Speech 2.8 Turbo', description: 'Latest MiniMax fast — emotion & pitch control',         creditsPerKChars: 16, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'Fast'],  hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
-        { id: 'fal-ai/minimax/speech-02-hd',              name: 'Speech 02 HD',     description: 'MiniMax 02 HD with emotion & pitch control',             creditsPerKChars: 18, tags: ['HD Quality'],                                         hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
-        { id: 'fal-ai/minimax/speech-02-turbo',           name: 'Speech 02 Turbo',  description: 'MiniMax 02 fast with emotion control',                   creditsPerKChars: 14, tags: ['Fast'],                                               hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
-        { id: 'fal-ai/minimax/speech-2.6-hd',             name: 'Speech 2.6 HD',    description: 'MiniMax 2.6 HD expressive voice',                        creditsPerKChars: 17, tags: ['HD Quality'],                                         hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
-        { id: 'fal-ai/minimax/speech-2.6-turbo',          name: 'Speech 2.6 Turbo', description: 'MiniMax 2.6 fast expressive voice',                      creditsPerKChars: 13, tags: ['Fast'],                                               hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
-        { id: 'fal-ai/minimax/preview/speech-2.5-hd',     name: 'Speech 2.5 HD',    description: 'MiniMax 2.5 preview HD quality',                         creditsPerKChars: 15, tags: ['Preview', 'HD'],                                      hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
-        { id: 'fal-ai/minimax/preview/speech-2.5-turbo',  name: 'Speech 2.5 Turbo', description: 'MiniMax 2.5 preview fast generation',                    creditsPerKChars: 12, tags: ['Preview', 'Fast'],                                    hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
+        { id: 'fal-ai/minimax/speech-2.8-hd',            name: 'Speech 2.8 HD',    description: 'Latest MiniMax HD — emotion, pitch & volume control', creditsPerKChars: 15, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'HD'], hasMiniMaxParams: true, hasSpeed: true, voices: MINIMAX_VOICES },
       ]
     },
     {
@@ -467,7 +470,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
       icon: 'F', iconBg: '#059669', iconUrl: '/assets/icons/f5tts.svg',
       tags: ['Voice Cloning', 'Custom'],
       subModels: [
-        { id: 'fal-ai/f5-tts', name: 'F5-TTS', description: 'Clone any voice from a 15–30s audio sample', creditsPerKChars: 12, badge: 'CLONE', badgeColor: '#059669', tags: ['Voice Cloning', 'Custom Voice'], requiresAudioSample: true },
+        { id: 'fal-ai/f5-tts', name: 'F5-TTS', description: 'Clone any voice from a 15–30s audio sample', creditsPerKChars: 15, badge: 'CLONE', badgeColor: '#059669', tags: ['Voice Cloning', 'Custom Voice'], requiresAudioSample: true },
       ]
     },
   ];
@@ -494,13 +497,21 @@ export class VoiceComponent implements OnInit, OnDestroy {
     } satisfies PickerGroup))
   );
 
-  costEstimate = computed(() => this.selectedModel()?.creditsPerKChars ?? 4);
+  costEstimate = computed(() => {
+    const model = this.selectedModel();
+    if (!model) return 0;
+
+    const charCount = Math.max(1, this.textLength());
+    const units = Math.ceil(charCount / 1000);
+    return model.creditsPerKChars * units;
+  });
 
   allModels = computed(() => this.groups.flatMap(g => g.subModels));
 
   selectedModel = signal<VoiceModel | null>(this.groups[0].subModels[0]);
 
   text         = '';
+  private textLength = signal(0);
   voiceId      = 'af_heart';
   languageCode = '';
 
@@ -541,10 +552,15 @@ export class VoiceComponent implements OnInit, OnDestroy {
   ngOnInit() {
     const qp = this.route.snapshot.queryParams;
     if (qp['prompt']) this.text = qp['prompt'];
+    this.textLength.set(this.text.length);
     if (qp['model']) this.selectModelById(qp['model']);
   }
 
   onModelSelect(id: string) { this.selectModelById(id); }
+
+  onTextChange(value: string) {
+    this.textLength.set(value.length);
+  }
 
   selectModelById(id: string) {
     const m = this.allModels().find(x => x.id === id);
@@ -562,7 +578,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
     this.vol.set(1.0);
     this.emotion.set('');
     this.languageCode = '';
-    if (m.requiresAudioSample) this.loadClones();
+    if (m.requiresAudioSample && this.auth.isLoggedIn()) this.loadClones();
   }
 
   loadClones() {
@@ -571,6 +587,15 @@ export class VoiceComponent implements OnInit, OnDestroy {
       next: clones => { this.voiceClones.set(clones); this.loadingClones.set(false); },
       error: () => this.loadingClones.set(false)
     });
+  }
+
+  openCloneModal() {
+    if (!this.auth.isLoggedIn()) {
+      this.loginModal.show();
+      return;
+    }
+
+    this.showCloneModal.set(true);
   }
 
   selectClone(clone: VoiceCloneDto) { this.selectedCloneId.set(clone.id); }
@@ -611,8 +636,8 @@ export class VoiceComponent implements OnInit, OnDestroy {
       title:            this.title.trim() || undefined,
       speed:            m.hasSpeed ? this.speed() : undefined,
       stability:        m.hasStability ? this.stability() : undefined,
-      similarityBoost:  m.hasStability ? this.similarityBoost() : undefined,
-      voiceStyle:       m.hasStability ? this.voiceStyle() : undefined,
+      similarityBoost:  m.hasSimilarityBoost ? this.similarityBoost() : undefined,
+      voiceStyle:       m.hasVoiceStyle ? this.voiceStyle() : undefined,
       languageCode:     m.hasLanguageCode && this.languageCode ? this.languageCode : undefined,
       pitch:            m.hasMiniMaxParams && this.pitch() !== 0 ? this.pitch() : undefined,
       vol:              m.hasMiniMaxParams && this.vol() !== 1.0 ? this.vol() : undefined,

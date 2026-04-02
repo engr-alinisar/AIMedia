@@ -22,4 +22,7 @@ public record GenerateImageCommand(
     bool? EnhancePrompt = null,
     string? ThinkingLevel = null,
     int? CustomWidth = null,
-    int? CustomHeight = null) : IRequest<GenerationResponse>;
+    int? CustomHeight = null,
+    string? RenderingSpeed = null,
+    bool? ExpandPrompt = null,
+    string? StylePreset = null) : IRequest<GenerationResponse>;

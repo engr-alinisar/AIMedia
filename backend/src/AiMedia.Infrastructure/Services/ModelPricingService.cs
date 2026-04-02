@@ -22,10 +22,7 @@ public class ModelPricingService(
             ["portrait_4_3"] = (768, 1024),
             ["portrait_16_9"] = (576, 1024),
             ["landscape_4_3"] = (1024, 768),
-            ["landscape_16_9"] = (1024, 576),
-            ["1024x1024"] = (1024, 1024),
-            ["1536x1024"] = (1536, 1024),
-            ["1024x1536"] = (1024, 1536)
+            ["landscape_16_9"] = (1024, 576)
         };
 
     public async Task<int> GetCreditsAsync(string modelId, int durationSeconds = 1, CancellationToken ct = default)
@@ -140,7 +137,15 @@ public class ModelPricingService(
         return await GetCreditsAsync(modelId, 1, ct);
     }
 
-    public async Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, string? thinkingLevel = null, CancellationToken ct = default)
+    public async Task<int> GetVoiceCreditsAsync(string modelId, int characterCount, CancellationToken ct = default)
+    {
+        var safeCharacterCount = Math.Max(1, characterCount);
+        var units = (int)Math.Ceiling(safeCharacterCount / 1000.0m);
+        var creditsPerThousand = await GetCreditsAsync(modelId, 1, ct);
+        return creditsPerThousand * units;
+    }
+
+    public async Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, string? thinkingLevel = null, string? renderingSpeed = null, CancellationToken ct = default)
     {
         var pricing = await GetPricingAsync(modelId, ct);
 
@@ -171,16 +176,18 @@ public class ModelPricingService(
         if (modelId == "fal-ai/bytedance/seedream/v5/lite/text-to-image")
             return 10;
 
-        // GPT Image: dynamic by quality + size
-        if (modelId.Contains("gpt-image"))
+        if (modelId == "fal-ai/ideogram/v2")
+            return 12;
+
+        if (modelId == "fal-ai/ideogram/v3")
         {
-            var isLarge = imageSize is "1536x1024" or "1024x1536";
-            if (modelId.Contains("1-mini"))
-                return (quality ?? "high") switch { "low" => 2, "medium" => 5, _ => isLarge ? 11 : 8 };
-            if (modelId.Contains("1.5"))
-                return (quality ?? "high") switch { "low" => 2, "medium" => 8, _ => isLarge ? 22 : 15 };
-            // gpt-image-1
-            return (quality ?? "high") switch { "low" => 3, "medium" => 7, _ => isLarge ? 16 : 12 };
+            decimal credits = (renderingSpeed ?? "BALANCED").ToUpperInvariant() switch
+            {
+                "TURBO" => 4.5m,
+                "QUALITY" => 13.5m,
+                _ => 9m
+            };
+            return Math.Max(10, (int)Math.Round(credits, MidpointRounding.AwayFromZero));
         }
 
         // Nano Banana: flat app pricing with minimum floor.

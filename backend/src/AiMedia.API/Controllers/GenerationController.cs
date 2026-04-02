@@ -31,7 +31,7 @@ public class GenerationController : ControllerBase
             request.ImageSize, request.NegativePrompt, request.IsPublic, request.Zone,
             request.AspectRatio, request.Style, request.Quality, request.Background, request.Resolution,
             request.Seed, request.GuidanceScale, request.OutputFormat, request.EnhancePrompt, request.ThinkingLevel,
-            request.CustomWidth, request.CustomHeight), ct);
+            request.CustomWidth, request.CustomHeight, request.RenderingSpeed, request.ExpandPrompt, request.StylePreset), ct);
         return Accepted(result);
     }
 
@@ -164,7 +164,10 @@ public record GenerateImageRequest(
     bool? EnhancePrompt = null,
     string? ThinkingLevel = null,
     int? CustomWidth = null,
-    int? CustomHeight = null);
+    int? CustomHeight = null,
+    string? RenderingSpeed = null,
+    bool? ExpandPrompt = null,
+    string? StylePreset = null);
 
 public record KlingElementRequest(
     string? ImageUrl = null,

@@ -67,16 +67,6 @@ public static class ModelRegistry
         new("fal-ai/ideogram/v2",                              "Ideogram v2",          "Style-rich generation with text rendering",        8,  0, ProductType.ImageGen, ModelTier.Standard),
         new("fal-ai/ideogram/v3",                              "Ideogram v3",          "Latest Ideogram with style presets",               12, 0, ProductType.ImageGen, ModelTier.Premium),
 
-        // Image Generation — Recraft
-        new("fal-ai/recraft/v3/text-to-image",                 "Recraft v3",           "80+ style options for professional imagery",       6,  0, ProductType.ImageGen, ModelTier.Standard),
-        new("fal-ai/recraft/v4/text-to-image",                 "Recraft v4",           "Latest Recraft with enhanced quality",             8,  0, ProductType.ImageGen, ModelTier.Premium),
-        new("fal-ai/recraft/v4/pro/text-to-image",             "Recraft v4 Pro",       "Recraft v4 Pro — highest quality design",          35, 0, ProductType.ImageGen, ModelTier.Premium),
-
-        // Image Generation — OpenAI
-        new("fal-ai/gpt-image-1-mini",                         "GPT Image 1 Mini",     "OpenAI GPT Image 1 Mini — fast generation",        8,  0, ProductType.ImageGen, ModelTier.Premium),
-        new("fal-ai/gpt-image-1/text-to-image",                "GPT Image 1",          "OpenAI GPT Image 1 — high quality",                12, 0, ProductType.ImageGen, ModelTier.Premium),
-        new("fal-ai/gpt-image-1.5",                            "GPT Image 1.5",        "OpenAI GPT Image 1.5 — latest model",              15, 0, ProductType.ImageGen, ModelTier.Premium),
-
         // Image Studio — Background
         new("fal-ai/bria/background/remove",                                    "BRIA Remove BG",         "Commercial-safe background removal by BRIA",                4,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
         new("fal-ai/bria/background/replace",                                   "BRIA Replace BG",        "Swap background with text prompt or reference image",        8,  0, ProductType.BackgroundRemoval, ModelTier.Standard),
@@ -102,15 +92,8 @@ public static class ModelRegistry
 
         // Voice
         new("fal-ai/kokoro",                              "Kokoro",          "Lightweight TTS, natural voice quality",               4,  0, ProductType.Voice, ModelTier.Free),
-        new("fal-ai/minimax/speech-2.8-hd",               "MiniMax Speech 2.8 HD",    "Latest MiniMax HD — emotion & pitch control",          20, 0, ProductType.Voice, ModelTier.Premium),
-        new("fal-ai/minimax/speech-2.8-turbo",            "MiniMax Speech 2.8 Turbo", "Latest MiniMax fast — emotion & pitch control",         16, 0, ProductType.Voice, ModelTier.Premium),
-        new("fal-ai/minimax/speech-02-hd",                "MiniMax Speech 02 HD",     "High definition voice with emotion control",            18, 0, ProductType.Voice, ModelTier.Standard),
-        new("fal-ai/minimax/speech-02-turbo",             "MiniMax Speech 02 Turbo",  "Fast MiniMax with emotion control",                     14, 0, ProductType.Voice, ModelTier.Standard),
-        new("fal-ai/minimax/speech-2.6-hd",               "MiniMax Speech 2.6 HD",    "MiniMax 2.6 HD with expressive voice",                  17, 0, ProductType.Voice, ModelTier.Standard),
-        new("fal-ai/minimax/speech-2.6-turbo",            "MiniMax Speech 2.6 Turbo", "MiniMax 2.6 fast with expressive voice",                13, 0, ProductType.Voice, ModelTier.Standard),
-        new("fal-ai/minimax/preview/speech-2.5-hd",       "MiniMax Speech 2.5 HD",    "MiniMax 2.5 preview HD quality",                        15, 0, ProductType.Voice, ModelTier.Standard),
-        new("fal-ai/minimax/preview/speech-2.5-turbo",    "MiniMax Speech 2.5 Turbo", "MiniMax 2.5 preview fast generation",                   12, 0, ProductType.Voice, ModelTier.Standard),
-        new("fal-ai/f5-tts",                              "F5-TTS",          "Clone any voice from a 15–30s audio sample",          12, 0, ProductType.Voice, ModelTier.Premium),
+        new("fal-ai/minimax/speech-2.8-hd",               "MiniMax Speech 2.8 HD",    "Latest MiniMax HD — emotion & pitch control",          15, 0, ProductType.Voice, ModelTier.Premium),
+        new("fal-ai/f5-tts",                              "F5-TTS",          "Clone any voice from a 15–30s audio sample",          15, 0, ProductType.Voice, ModelTier.Premium),
         new("fal-ai/kokoro/american-english",              "Kokoro American English",   "Natural US English voices, 20+ options",              4,  0, ProductType.Voice, ModelTier.Free),
         new("fal-ai/kokoro/british-english",               "Kokoro British English",    "British accent voices",                               4,  0, ProductType.Voice, ModelTier.Free),
         new("fal-ai/kokoro/spanish",                       "Kokoro Spanish",            "Spanish language Kokoro voices",                      4,  0, ProductType.Voice, ModelTier.Free),
@@ -121,8 +104,8 @@ public static class ModelRegistry
         new("fal-ai/kokoro/mandarin-chinese",              "Kokoro Mandarin",           "Mandarin Chinese Kokoro voices",                      4,  0, ProductType.Voice, ModelTier.Free),
         new("fal-ai/kokoro/italian",                       "Kokoro Italian",            "Italian language Kokoro voices",                      4,  0, ProductType.Voice, ModelTier.Free),
         new("fal-ai/elevenlabs/tts/eleven-v3",             "ElevenLabs Eleven v3",      "Latest ElevenLabs model with superior expressiveness", 15, 0, ProductType.Voice, ModelTier.Premium),
-        new("fal-ai/elevenlabs/tts/turbo-v2.5",            "ElevenLabs Turbo v2.5",     "Fast ElevenLabs with high quality output",             12, 0, ProductType.Voice, ModelTier.Premium),
-        new("fal-ai/elevenlabs/tts/multilingual-v2",       "ElevenLabs Multilingual v2","Multilingual voice synthesis with 29 languages",      10, 0, ProductType.Voice, ModelTier.Standard),
+        new("fal-ai/elevenlabs/tts/turbo-v2.5",            "ElevenLabs Turbo v2.5",     "Fast ElevenLabs with high quality output",             8,  0, ProductType.Voice, ModelTier.Premium),
+        new("fal-ai/elevenlabs/tts/multilingual-v2",       "ElevenLabs Multilingual v2","Multilingual voice synthesis with 29 languages",      15, 0, ProductType.Voice, ModelTier.Standard),
 
         // Transcription — Whisper
         new("fal-ai/whisper",                                    "Whisper",               "OpenAI Whisper large — accurate, multi-language",       10, 0, ProductType.Transcription, ModelTier.Free),
@@ -150,22 +133,10 @@ public static class ModelRegistry
             : model.CreditsBase;
     }
 
-    /// <summary>Dynamic credit calculation for image generation — GPT Image quality tiers and Nano Banana resolution multipliers.</summary>
+    /// <summary>Dynamic credit calculation for image generation — currently handles Nano Banana resolution tiers.</summary>
     public static int CalculateImageGenCredits(string modelId, string? quality, string? imageSize, string? resolution)
     {
         var model = Get(modelId) ?? throw new InvalidOperationException($"Unknown model: {modelId}");
-
-        // GPT Image: dynamic by quality + size
-        if (modelId.Contains("gpt-image"))
-        {
-            var isLarge = imageSize is "1536x1024" or "1024x1536";
-            if (modelId.Contains("1-mini"))
-                return (quality ?? "high") switch { "low" => 2, "medium" => 5, _ => isLarge ? 11 : 8 };
-            if (modelId.Contains("1.5"))
-                return (quality ?? "high") switch { "low" => 2, "medium" => 8, _ => isLarge ? 22 : 15 };
-            // gpt-image-1
-            return (quality ?? "high") switch { "low" => 3, "medium" => 7, _ => isLarge ? 16 : 12 };
-        }
 
         // Nano Banana 2 + Pro: resolution multipliers (priced at ~2× fal.ai cost)
         // fal.ai: $0.06/0.5K, $0.08/1K, $0.12/2K, $0.16/4K

@@ -49,18 +49,24 @@ interface ImageGroup {
 const IMAGE_SIZES = ['square_hd', 'square', 'portrait_4_3', 'portrait_16_9', 'landscape_4_3', 'landscape_16_9'];
 const SEEDREAM_V5_LITE_SIZES = ['square_hd', 'square', 'portrait_4_3', 'portrait_16_9', 'landscape_4_3', 'landscape_16_9', 'auto', 'auto_2K', 'auto_3K', 'auto_4K'];
 const ASPECT_RATIOS_STANDARD = ['1:1', '16:9', '9:16', '4:3', '3:4'];
+const ASPECT_RATIOS_IDEOGRAM_V2 = ['10:16', '16:10', '9:16', '16:9', '4:3', '3:4', '1:1', '1:3', '3:1', '3:2', '2:3'];
 const ASPECT_RATIOS_NANO = ['21:9', '16:9', '3:2', '4:3', '5:4', '1:1', '4:5', '3:4', '2:3', '9:16'];
 const ASPECT_RATIOS_NANO_EXTENDED = ['auto', ...ASPECT_RATIOS_NANO, '4:1', '1:4', '8:1', '1:8'];
-const GPT_SIZES = ['1024x1024', '1536x1024', '1024x1536'];
-
 const IDEOGRAM_STYLES_V2 = ['auto', 'general', 'realistic', 'design', 'render_3D', 'anime'];
 const IDEOGRAM_STYLES_V3 = ['AUTO', 'GENERAL', 'REALISTIC', 'DESIGN'];
-const RECRAFT_V3_STYLES = [
-  'realistic_image', 'digital_illustration', 'vector_illustration',
-  'b_and_w', 'hard_flash', 'hdr', 'natural_light', 'studio_portrait',
-  'pixel_art', 'hand_drawn', 'watercolor', 'pop_art', 'noir'
-];
 const THINKING_LEVELS: ReadonlyArray<'minimal' | 'high'> = ['minimal', 'high'];
+const IDEOGRAM_RENDER_SPEEDS: ReadonlyArray<'TURBO' | 'BALANCED' | 'QUALITY'> = ['TURBO', 'BALANCED', 'QUALITY'];
+const IDEOGRAM_STYLE_PRESETS = [
+  '80S_ILLUSTRATION', '90S_NOSTALGIA', 'ABSTRACT_ORGANIC', 'ANALOG_NOSTALGIA', 'ART_BRUT', 'ART_DECO', 'ART_POSTER',
+  'AURA', 'AVANT_GARDE', 'BAUHAUS', 'BLUEPRINT', 'BLURRY_MOTION', 'BRIGHT_ART', 'C4D_CARTOON', 'CHILDRENS_BOOK',
+  'COLLAGE', 'COLORING_BOOK_I', 'COLORING_BOOK_II', 'CUBISM', 'DARK_AURA', 'DOODLE', 'DOUBLE_EXPOSURE',
+  'DRAMATIC_CINEMA', 'EDITORIAL', 'EMOTIONAL_MINIMAL', 'ETHEREAL_PARTY', 'EXPIRED_FILM', 'FLAT_ART', 'FLAT_VECTOR',
+  'FOREST_REVERIE', 'GEO_MINIMALIST', 'GLASS_PRISM', 'GOLDEN_HOUR', 'GRAFFITI_I', 'GRAFFITI_II', 'HALFTONE_PRINT',
+  'HIGH_CONTRAST', 'HIPPIE_ERA', 'ICONIC', 'JAPANDI_FUSION', 'JAZZY', 'LONG_EXPOSURE', 'MAGAZINE_EDITORIAL',
+  'MINIMAL_ILLUSTRATION', 'MIXED_MEDIA', 'MONOCHROME', 'NIGHTLIFE', 'OIL_PAINTING', 'OLD_CARTOONS', 'PAINT_GESTURE',
+  'POP_ART', 'RETRO_ETCHING', 'RIVIERA_POP', 'SPOTLIGHT_80S', 'STYLIZED_RED', 'SURREAL_COLLAGE', 'TRAVEL_POSTER',
+  'VINTAGE_GEO', 'VINTAGE_POSTER', 'WATERCOLOR', 'WEIRD', 'WOODBLOCK_PRINT'
+] as const;
 
 @Component({
   selector: 'app-image-gen',
@@ -108,7 +114,7 @@ const THINKING_LEVELS: ReadonlyArray<'minimal' | 'high'> = ['minimal', 'high'];
           (valueChange)="aspectRatio.set($event)" />
       }
 
-      <!-- Image Size (FLUX / GPT / Seedream / Ideogram / Recraft) -->
+      <!-- Image Size (FLUX / Seedream / Ideogram) -->
       @if (selectedModel()?.paramMode === 'imageSize') {
         <div>
           <label class="form-label">Image Size</label>
@@ -136,8 +142,8 @@ const THINKING_LEVELS: ReadonlyArray<'minimal' | 'high'> = ['minimal', 'high'];
         [premiumResolutions]="premiumResolutions()"
         (valueChange)="resolution.set($event)" />
 
-      <!-- Style (Ideogram, Recraft v3) -->
-      @if (selectedModel()?.styles?.length) {
+      <!-- Style (inline picker) -->
+      @if (showInlineStylePicker()) {
         <div>
           <label class="form-label">Style</label>
           <div class="flex flex-wrap gap-2">
@@ -154,43 +160,7 @@ const THINKING_LEVELS: ReadonlyArray<'minimal' | 'high'> = ['minimal', 'high'];
         </div>
       }
 
-      <!-- Quality (GPT Image) -->
-      @if (selectedModel()?.qualities?.length) {
-        <div>
-          <label class="form-label">Quality</label>
-          <div class="flex gap-2">
-            @for (q of selectedModel()!.qualities!; track q) {
-              <button type="button" (click)="quality.set(q)"
-                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize"
-                [class.border-accent]="quality() === q"
-                [class.bg-accent-light]="quality() === q"
-                [class.text-accent]="quality() === q"
-                [class.border-border]="quality() !== q"
-                [class.text-gray-600]="quality() !== q">{{ q }}</button>
-            }
-          </div>
-        </div>
-      }
-
-      <!-- Background (GPT Image) -->
-      @if (selectedModel()?.backgrounds?.length) {
-        <div>
-          <label class="form-label">Background</label>
-          <div class="flex gap-2">
-            @for (b of selectedModel()!.backgrounds!; track b) {
-              <button type="button" (click)="background.set(b)"
-                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize"
-                [class.border-accent]="background() === b"
-                [class.bg-accent-light]="background() === b"
-                [class.text-accent]="background() === b"
-                [class.border-border]="background() !== b"
-                [class.text-gray-600]="background() !== b">{{ b }}</button>
-            }
-          </div>
-        </div>
-      }
-
-      @if (showFluxAdvanced() || showNanoAdvanced() || showImagenAdvanced() || showSeedreamAdvanced()) {
+      @if (showFluxAdvanced() || showNanoAdvanced() || showImagenAdvanced() || showSeedreamAdvanced() || showIdeogramAdvanced()) {
         <div class="rounded-xl border border-border overflow-hidden">
           <button type="button"
                   class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-left"
@@ -258,6 +228,78 @@ const THINKING_LEVELS: ReadonlyArray<'minimal' | 'high'> = ['minimal', 'high'];
                 </div>
               }
 
+              @if (showIdeogramV2Advanced()) {
+                <div>
+                  <label class="form-label">Style</label>
+                  <div class="flex flex-wrap gap-2">
+                    @for (s of selectedModel()!.styles!; track s) {
+                      <button type="button" (click)="style.set(s)"
+                              class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize"
+                              [class.border-accent]="style() === s"
+                              [class.bg-accent-light]="style() === s"
+                              [class.text-accent]="style() === s"
+                              [class.border-border]="style() !== s"
+                              [class.text-gray-600]="style() !== s">{{ s.replace('_', ' ').toLowerCase() }}</button>
+                    }
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label">Negative Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
+                  <textarea class="form-textarea h-16" [(ngModel)]="negativePrompt"
+                    spellcheck="true" lang="en"
+                    placeholder="What to avoid in the image..."></textarea>
+                </div>
+              }
+
+              @if (showIdeogramV3Advanced()) {
+                <div>
+                  <label class="form-label">Style</label>
+                  <div class="flex flex-wrap gap-2">
+                    @for (s of selectedModel()!.styles!; track s) {
+                      <button type="button" (click)="style.set(s)"
+                              class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize"
+                              [class.border-accent]="style() === s"
+                              [class.bg-accent-light]="style() === s"
+                              [class.text-accent]="style() === s"
+                              [class.border-border]="style() !== s"
+                              [class.text-gray-600]="style() !== s">{{ s.replace('_', ' ').toLowerCase() }}</button>
+                    }
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label">Negative Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
+                  <textarea class="form-textarea h-16" [(ngModel)]="negativePrompt"
+                    spellcheck="true" lang="en"
+                    placeholder="What to avoid in the image..."></textarea>
+                </div>
+                <div>
+                  <label class="form-label">Style Preset <span class="text-gray-400 font-normal">(optional)</span></label>
+                  <select class="form-select" [ngModel]="stylePreset()" (ngModelChange)="stylePreset.set($event)">
+                    <option value="">None</option>
+                    @for (preset of ideogramStylePresets; track preset) {
+                      <option [value]="preset">{{ preset.replaceAll('_', ' ') }}</option>
+                    }
+                  </select>
+                </div>
+              }
+
+              @if (showIdeogramV2Advanced()) {
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">Expand Prompt</p>
+                    <p class="text-xs text-gray-400">Use MagicPrompt to enrich the request</p>
+                  </div>
+                  <button type="button" (click)="expandPrompt.update(v => !v)"
+                          class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                          [class.bg-accent]="expandPrompt()"
+                          [class.bg-gray-300]="!expandPrompt()">
+                    <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                          [class.translate-x-6]="expandPrompt()"
+                          [class.translate-x-1]="!expandPrompt()"></span>
+                  </button>
+                </div>
+              }
+
               @if (showFormatAdvanced()) {
                 <div>
                   <label class="form-label">Output Format</label>
@@ -304,6 +346,59 @@ const THINKING_LEVELS: ReadonlyArray<'minimal' | 'high'> = ['minimal', 'high'];
               }
 
               @if (showSeedreamV5LiteAdvanced()) {
+                <div>
+                  <label class="form-label">Custom Image Size <span class="text-gray-400 font-normal">(optional)</span></label>
+                  <div class="grid grid-cols-2 gap-3">
+                    <input type="number"
+                           class="form-input"
+                           [ngModel]="customWidth()"
+                           (ngModelChange)="onCustomSizeChange('width', $event)"
+                           min="256"
+                           max="4096"
+                           step="1"
+                           placeholder="Width" />
+                    <input type="number"
+                           class="form-input"
+                           [ngModel]="customHeight()"
+                           (ngModelChange)="onCustomSizeChange('height', $event)"
+                           min="256"
+                           max="4096"
+                           step="1"
+                           placeholder="Height" />
+                  </div>
+                  <p class="text-xs text-gray-400 mt-2">If both width and height are set, they override the preset image size.</p>
+                </div>
+              }
+
+              @if (showIdeogramV3Advanced()) {
+                <div>
+                  <label class="form-label">Rendering Speed</label>
+                  <div class="flex flex-wrap gap-2">
+                    @for (speed of ideogramRenderSpeeds; track speed) {
+                      <button type="button" (click)="renderingSpeed.set(speed)"
+                              class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+                              [class.border-accent]="renderingSpeed() === speed"
+                              [class.bg-accent-light]="renderingSpeed() === speed"
+                              [class.text-accent]="renderingSpeed() === speed"
+                              [class.border-border]="renderingSpeed() !== speed"
+                              [class.text-gray-600]="renderingSpeed() !== speed">{{ speed }}</button>
+                    }
+                  </div>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">Expand Prompt</p>
+                    <p class="text-xs text-gray-400">Use MagicPrompt to enrich the request</p>
+                  </div>
+                  <button type="button" (click)="expandPrompt.update(v => !v)"
+                          class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                          [class.bg-accent]="expandPrompt()"
+                          [class.bg-gray-300]="!expandPrompt()">
+                    <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                          [class.translate-x-6]="expandPrompt()"
+                          [class.translate-x-1]="!expandPrompt()"></span>
+                  </button>
+                </div>
                 <div>
                   <label class="form-label">Custom Image Size <span class="text-gray-400 font-normal">(optional)</span></label>
                   <div class="grid grid-cols-2 gap-3">
@@ -430,6 +525,8 @@ export class ImageGenComponent implements OnInit, OnDestroy {
   private loginModal = inject(LoginModalService);
   private route = inject(ActivatedRoute);
   readonly thinkingLevels = THINKING_LEVELS;
+  readonly ideogramRenderSpeeds = IDEOGRAM_RENDER_SPEEDS;
+  readonly ideogramStylePresets = IDEOGRAM_STYLE_PRESETS;
 
   // ── model groups ──────────────────────────────────────────────────
   groups: ImageGroup[] = [
@@ -476,28 +573,8 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       icon: 'I', iconBg: '#6366F1', iconUrl: '/assets/icons/ideogram.svg',
       tags: ['Style Control', 'Text Rendering'],
       subModels: [
-        { id: 'fal-ai/ideogram/v2', name: 'Ideogram v2', description: 'Style-rich generation with text rendering', credits: 8, tags: ['Styles', 'Text'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], styles: IDEOGRAM_STYLES_V2, supportsNegativePrompt: true },
-        { id: 'fal-ai/ideogram/v3', name: 'Ideogram v3', description: 'Latest with style presets and text rendering', credits: 12, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'Styles'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], styles: IDEOGRAM_STYLES_V3, supportsNegativePrompt: true },
-      ]
-    },
-    {
-      id: 'recraft', name: 'Recraft', tagline: 'Recraft AI',
-      icon: 'R', iconBg: '#DC2626', iconUrl: '/assets/icons/recraft.png',
-      tags: ['Design', 'Styles'],
-      subModels: [
-        { id: 'fal-ai/recraft/v3/text-to-image', name: 'Recraft v3', description: '80+ style options for professional imagery', credits: 6, tags: ['80+ Styles', 'Design'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], styles: RECRAFT_V3_STYLES, supportsNegativePrompt: false },
-        { id: 'fal-ai/recraft/v4/text-to-image', name: 'Recraft v4', description: 'Latest Recraft with enhanced quality', credits: 8, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
-        { id: 'fal-ai/recraft/v4/pro/text-to-image', name: 'Recraft v4 Pro', description: 'Recraft v4 Pro — highest quality design', credits: 12, badge: 'PRO', badgeColor: '#7C3AED', tags: ['Pro', 'Highest Quality'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
-      ]
-    },
-    {
-      id: 'openai', name: 'GPT Image', tagline: 'OpenAI',
-      icon: 'O', iconBg: '#10A37F', iconUrl: '/assets/icons/openai.png',
-      tags: ['OpenAI', 'High Quality'],
-      subModels: [
-        { id: 'fal-ai/gpt-image-1-mini', name: 'GPT Image 1 Mini', description: 'OpenAI GPT Image 1 Mini — fast generation', credits: 8, tags: ['Fast', 'OpenAI'], paramMode: 'imageSize', imageSizes: GPT_SIZES, aspectRatios: [], qualities: ['auto', 'low', 'medium', 'high'], backgrounds: ['auto', 'transparent', 'opaque'], supportsNegativePrompt: false },
-        { id: 'fal-ai/gpt-image-1/text-to-image', name: 'GPT Image 1', description: 'OpenAI GPT Image 1 — high quality', credits: 12, tags: ['High Quality', 'OpenAI'], paramMode: 'imageSize', imageSizes: GPT_SIZES, aspectRatios: [], qualities: ['auto', 'low', 'medium', 'high'], backgrounds: ['auto', 'transparent', 'opaque'], supportsNegativePrompt: false },
-        { id: 'fal-ai/gpt-image-1.5', name: 'GPT Image 1.5', description: 'OpenAI GPT Image 1.5 — latest model', credits: 15, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'OpenAI'], paramMode: 'imageSize', imageSizes: GPT_SIZES, aspectRatios: [], qualities: ['low', 'medium', 'high'], backgrounds: ['auto', 'transparent', 'opaque'], supportsNegativePrompt: false },
+        { id: 'fal-ai/ideogram/v2', name: 'Ideogram v2', description: 'Style-rich generation with text rendering', credits: 12, tags: ['Styles', 'Text'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_IDEOGRAM_V2, styles: IDEOGRAM_STYLES_V2, supportsNegativePrompt: true },
+        { id: 'fal-ai/ideogram/v3', name: 'Ideogram v3', description: 'Latest with style presets and text rendering', credits: 10, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'Styles'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], styles: IDEOGRAM_STYLES_V3, supportsNegativePrompt: true },
       ]
     },
   ];
@@ -551,12 +628,16 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     '1:1':  { w: 18, h: 18 },
     '16:9': { w: 22, h: 13 },
     '9:16': { w: 13, h: 22 },
+    '16:10': { w: 22, h: 14 },
+    '10:16': { w: 14, h: 22 },
     '4:3':  { w: 20, h: 15 },
     '3:4':  { w: 15, h: 20 },
     '5:4':  { w: 20, h: 16 },
     '4:5':  { w: 16, h: 20 },
     '3:2':  { w: 21, h: 14 },
     '2:3':  { w: 14, h: 21 },
+    '3:1':  { w: 24, h: 8 },
+    '1:3':  { w: 8, h: 24 },
     '21:9': { w: 24, h: 10 },
     '4:1':  { w: 24, h: 9 },
     '1:4':  { w: 9, h: 24 },
@@ -588,6 +669,9 @@ export class ImageGenComponent implements OnInit, OnDestroy {
   thinkingLevel = signal<'minimal' | 'high'>('minimal');
   customWidth = signal<number | null>(null);
   customHeight = signal<number | null>(null);
+  renderingSpeed = signal<'TURBO' | 'BALANCED' | 'QUALITY'>('BALANCED');
+  expandPrompt = signal(true);
+  stylePreset = signal('');
 
   // ── dynamic cost estimate ─────────────────────────────────────────
   costEstimate = computed(() => {
@@ -600,17 +684,8 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     if (m.id === 'fal-ai/nano-banana') return 10;
     if (m.id === 'fal-ai/nano-banana-2') return this.getNanoBanana2Credits(this.resolution(), this.thinkingLevel());
     if (m.id === 'fal-ai/nano-banana-pro') return this.getNanoBananaProCredits(this.resolution());
-
-    // GPT Image: quality + size based pricing
-    if (m.id.includes('gpt-image')) {
-      const isLarge = this.imageSize() === '1536x1024' || this.imageSize() === '1024x1536';
-      if (m.id.includes('1-mini'))
-        return this.quality() === 'low' ? 2 : this.quality() === 'medium' ? 5 : isLarge ? 11 : 8;
-      if (m.id.includes('1.5'))
-        return this.quality() === 'low' ? 2 : this.quality() === 'medium' ? 8 : isLarge ? 22 : 15;
-      // gpt-image-1
-      return this.quality() === 'low' ? 3 : this.quality() === 'medium' ? 7 : isLarge ? 16 : 12;
-    }
+    if (m.id === 'fal-ai/ideogram/v2') return 12;
+    if (m.id === 'fal-ai/ideogram/v3') return this.getIdeogramV3Credits(this.renderingSpeed());
 
     // Nano Banana 2: resolution multipliers (0.75× / 1× / 1.5× / 2×)
     if (m.id === 'fal-ai/nano-banana-2')
@@ -658,13 +733,22 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       || modelId === 'fal-ai/bytedance/seedream/v5/lite/text-to-image';
   });
   showSeedreamV5LiteAdvanced = computed(() => this.selectedModel()?.id === 'fal-ai/bytedance/seedream/v5/lite/text-to-image');
+  showIdeogramAdvanced = computed(() => {
+    const modelId = this.selectedModel()?.id;
+    return modelId === 'fal-ai/ideogram/v2' || modelId === 'fal-ai/ideogram/v3';
+  });
+  showIdeogramV2Advanced = computed(() => this.selectedModel()?.id === 'fal-ai/ideogram/v2');
+  showIdeogramV3Advanced = computed(() => this.selectedModel()?.id === 'fal-ai/ideogram/v3');
   showFormatAdvanced = computed(() =>
     this.showFluxAdvanced() ||
     this.showNanoAdvanced() ||
     this.showImagen4PreviewAdvanced()
   );
   showInlineNegativePrompt = computed(() =>
-    !!this.selectedModel()?.supportsNegativePrompt && !this.showImagen3FastAdvanced()
+    !!this.selectedModel()?.supportsNegativePrompt && !this.showImagen3FastAdvanced() && !this.showIdeogramAdvanced()
+  );
+  showInlineStylePicker = computed(() =>
+    !!this.selectedModel()?.styles?.length && !this.showIdeogramAdvanced()
   );
 
   generating = signal(false);
@@ -707,6 +791,9 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     this.thinkingLevel.set('minimal');
     this.customWidth.set(null);
     this.customHeight.set(null);
+    this.renderingSpeed.set('BALANCED');
+    this.expandPrompt.set(true);
+    this.stylePreset.set('');
   }
 
   generate() {
@@ -734,8 +821,11 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       outputFormat: this.showFormatAdvanced() ? this.outputFormat() || undefined : undefined,
       enhancePrompt: this.showFluxPro11Advanced() ? this.enhancePrompt() : undefined,
       thinkingLevel: this.showNanoBanana2Advanced() ? this.thinkingLevel() : undefined,
-      customWidth: this.showSeedreamV5LiteAdvanced() ? this.customWidth() ?? undefined : undefined,
-      customHeight: this.showSeedreamV5LiteAdvanced() ? this.customHeight() ?? undefined : undefined,
+      customWidth: (this.showSeedreamV5LiteAdvanced() || this.showIdeogramV3Advanced()) ? this.customWidth() ?? undefined : undefined,
+      customHeight: (this.showSeedreamV5LiteAdvanced() || this.showIdeogramV3Advanced()) ? this.customHeight() ?? undefined : undefined,
+      renderingSpeed: this.showIdeogramV3Advanced() ? this.renderingSpeed() : undefined,
+      expandPrompt: this.showIdeogramAdvanced() ? this.expandPrompt() : undefined,
+      stylePreset: this.showIdeogramV3Advanced() ? this.stylePreset() || undefined : undefined,
     }).subscribe({
       next: res => {
         this.currentJobId = res.jobId;
@@ -838,6 +928,15 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     return Math.max(10, Math.round(credits));
   }
 
+  private getIdeogramV3Credits(renderingSpeed: 'TURBO' | 'BALANCED' | 'QUALITY') {
+    const credits = renderingSpeed === 'TURBO'
+      ? 4.5
+      : renderingSpeed === 'QUALITY'
+        ? 13.5
+        : 9;
+    return Math.max(10, Math.round(credits));
+  }
+
   private getBilledMegapixels(imageSize: string) {
     const dimensions: Record<string, { width: number; height: number }> = {
       square_hd: { width: 1024, height: 1024 },
@@ -846,9 +945,6 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       portrait_16_9: { width: 576, height: 1024 },
       landscape_4_3: { width: 1024, height: 768 },
       landscape_16_9: { width: 1024, height: 576 },
-      '1024x1024': { width: 1024, height: 1024 },
-      '1536x1024': { width: 1536, height: 1024 },
-      '1024x1536': { width: 1024, height: 1536 },
     };
 
     const dims = dimensions[imageSize] ?? dimensions['square_hd'];

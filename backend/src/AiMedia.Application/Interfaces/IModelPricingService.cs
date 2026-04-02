@@ -11,8 +11,11 @@ public interface IModelPricingService
     /// <summary>Credits for transcription models that charge by audio duration.</summary>
     Task<int> GetTranscriptionCreditsAsync(string modelId, int durationSeconds, CancellationToken ct = default);
 
-    /// <summary>Credits for image generation — handles GPT Image quality tiers and Nano Banana resolution tiers.</summary>
-    Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, string? thinkingLevel = null, CancellationToken ct = default);
+    /// <summary>Credits for voice models that charge by text length buckets (for example per 1,000 characters).</summary>
+    Task<int> GetVoiceCreditsAsync(string modelId, int characterCount, CancellationToken ct = default);
+
+    /// <summary>Credits for image generation — handles model-specific dynamic pricing like Nano Banana and Ideogram tiers.</summary>
+    Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, string? thinkingLevel = null, string? renderingSpeed = null, CancellationToken ct = default);
 
     /// <summary>Seed pricing rows from ModelRegistry for any model not yet in the DB.</summary>
     Task SeedAsync(CancellationToken ct = default);

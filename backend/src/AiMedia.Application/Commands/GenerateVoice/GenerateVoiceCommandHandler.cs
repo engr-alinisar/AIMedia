@@ -20,10 +20,7 @@ public class GenerateVoiceCommandHandler(
         var model = ModelRegistry.Get(request.ModelId)
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
-        // Cost per 1000 characters
-        var charCount = Math.Max(1, request.Text.Length);
-        var units = (int)Math.Ceiling(charCount / 1000.0);
-        var credits = await pricing.GetCreditsAsync(request.ModelId, 1, cancellationToken) * units;
+        var credits = await pricing.GetVoiceCreditsAsync(request.ModelId, request.Text.Length, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -32,6 +29,7 @@ public class GenerateVoiceCommandHandler(
 
         var isKokoro        = request.ModelId.StartsWith("fal-ai/kokoro");
         var isElevenLabs    = request.ModelId.StartsWith("fal-ai/elevenlabs/tts");
+        var isElevenV3      = request.ModelId == "fal-ai/elevenlabs/tts/eleven-v3";
         var isMiniMaxSpeech = request.ModelId.Contains("minimax/speech") || request.ModelId.Contains("minimax/preview/speech");
 
         object input;
@@ -73,16 +71,25 @@ public class GenerateVoiceCommandHandler(
         }
         else if (isElevenLabs)
         {
-            input = new
-            {
-                text             = request.Text,
-                voice            = request.VoiceId ?? "Rachel",
-                stability        = request.Stability ?? 0.5f,
-                similarity_boost = request.SimilarityBoost ?? 0.75f,
-                style            = request.VoiceStyle ?? 0f,
-                speed            = request.Speed ?? 1.0f,
-                language_code    = request.LanguageCode
-            };
+            input = isElevenV3
+                ? new
+                {
+                    text          = request.Text,
+                    voice         = request.VoiceId ?? "Rachel",
+                    stability     = request.Stability ?? 0.5f,
+                    speed         = request.Speed ?? 1.0f,
+                    language_code = request.LanguageCode
+                }
+                : new
+                {
+                    text             = request.Text,
+                    voice            = request.VoiceId ?? "Rachel",
+                    stability        = request.Stability ?? 0.5f,
+                    similarity_boost = request.SimilarityBoost ?? 0.75f,
+                    style            = request.VoiceStyle ?? 0f,
+                    speed            = request.Speed ?? 1.0f,
+                    language_code    = request.LanguageCode
+                };
         }
         else if (isMiniMaxSpeech)
         {

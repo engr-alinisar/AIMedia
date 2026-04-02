@@ -19,7 +19,7 @@ public class GenerateImageCommandHandler(
         var model = ModelRegistry.Get(request.ModelId)
             ?? throw new InvalidOperationException($"Unknown model: {request.ModelId}");
 
-        var credits = await pricing.GetImageGenCreditsAsync(request.ModelId, request.Quality, request.ImageSize, request.Resolution, request.ThinkingLevel, cancellationToken);
+        var credits = await pricing.GetImageGenCreditsAsync(request.ModelId, request.Quality, request.ImageSize, request.Resolution, request.ThinkingLevel, request.RenderingSpeed, cancellationToken);
 
         if (!await creditService.HasSufficientCreditsAsync(request.UserId, credits, cancellationToken))
             throw new InvalidOperationException("Insufficient credits.");
@@ -32,14 +32,13 @@ public class GenerateImageCommandHandler(
         var isImagen      = request.ModelId.Contains("imagen");
         var isSeedream    = request.ModelId.Contains("seedream");
         var isIdeogram    = request.ModelId.Contains("ideogram");
-        var isRecraftV3   = request.ModelId.Contains("recraft/v3");
-        var isRecraft     = request.ModelId.Contains("recraft");
-        var isGptImage    = request.ModelId.Contains("gpt-image");
         var isFluxSchnell = request.ModelId == "fal-ai/flux/schnell";
         var isFluxPro11   = request.ModelId == "fal-ai/flux-pro/v1.1";
         var isFlux2Pro    = request.ModelId == "fal-ai/flux-2-pro";
         var isImagen3Fast = request.ModelId == "fal-ai/imagen3/fast";
         var isImagen4Preview = request.ModelId == "fal-ai/imagen4/preview";
+        var isIdeogramV2 = request.ModelId == "fal-ai/ideogram/v2";
+        var isIdeogramV3 = request.ModelId == "fal-ai/ideogram/v3";
         var hasCustomSize = request.CustomWidth.HasValue && request.CustomHeight.HasValue;
 
         object input = isNanoBanana
@@ -103,6 +102,30 @@ public class GenerateImageCommandHandler(
                     : request.ImageSize!,
                 seed       = request.Seed
             }
+            : isIdeogramV3
+            ? (object)new
+            {
+                prompt           = request.Prompt,
+                image_size       = hasCustomSize
+                    ? (object)new { width = request.CustomWidth!.Value, height = request.CustomHeight!.Value }
+                    : request.ImageSize!,
+                style            = request.Style ?? "AUTO",
+                rendering_speed  = request.RenderingSpeed ?? "BALANCED",
+                negative_prompt  = request.NegativePrompt,
+                expand_prompt    = request.ExpandPrompt ?? true,
+                seed             = request.Seed,
+                style_preset     = request.StylePreset
+            }
+            : isIdeogramV2
+            ? (object)new
+            {
+                prompt          = request.Prompt,
+                aspect_ratio    = request.AspectRatio ?? "1:1",
+                style           = request.Style ?? "auto",
+                negative_prompt = request.NegativePrompt,
+                expand_prompt   = request.ExpandPrompt ?? true,
+                seed            = request.Seed
+            }
             : isIdeogram
             ? (object)new
             {
@@ -112,27 +135,6 @@ public class GenerateImageCommandHandler(
                 rendering_speed  = "BALANCED",
                 negative_prompt  = request.NegativePrompt,
                 expand_prompt    = true
-            }
-            : isRecraftV3
-            ? (object)new
-            {
-                prompt     = request.Prompt,
-                image_size = request.ImageSize,
-                style      = request.Style ?? "realistic_image"
-            }
-            : isRecraft
-            ? (object)new
-            {
-                prompt     = request.Prompt,
-                image_size = request.ImageSize
-            }
-            : isGptImage
-            ? (object)new
-            {
-                prompt     = request.Prompt,
-                image_size = (request.ImageSize is null or "auto" or "square_hd") ? "1024x1024" : request.ImageSize,
-                quality    = request.Quality,          // null → fal.ai uses its own default ("auto")
-                background = request.Background        // null → fal.ai uses its own default ("auto")
             }
             : isFluxSchnell
             ? (object)new
