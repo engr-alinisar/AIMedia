@@ -347,9 +347,9 @@ export class LandingComponent implements OnInit {
   tools = [
     {
       icon: '🖼️',
-      title: 'Image Generation',
+      title: 'Text to Image',
       description: 'Turn text prompts into stunning, high-quality images using state-of-the-art diffusion models.',
-      route: '/image-gen',
+      route: '/text-to-image',
       minCredits: 5,
       color: 'linear-gradient(90deg, #7C3AED, #6D28D9)',
       bgColor: '#f5f3ff',

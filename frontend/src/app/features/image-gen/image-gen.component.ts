@@ -47,8 +47,10 @@ interface ImageGroup {
 }
 
 const IMAGE_SIZES = ['square_hd', 'square', 'portrait_4_3', 'portrait_16_9', 'landscape_4_3', 'landscape_16_9'];
+const SEEDREAM_V5_LITE_SIZES = ['square_hd', 'square', 'portrait_4_3', 'portrait_16_9', 'landscape_4_3', 'landscape_16_9', 'auto', 'auto_2K', 'auto_3K', 'auto_4K'];
 const ASPECT_RATIOS_STANDARD = ['1:1', '16:9', '9:16', '4:3', '3:4'];
-const ASPECT_RATIOS_NANO = ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'];
+const ASPECT_RATIOS_NANO = ['21:9', '16:9', '3:2', '4:3', '5:4', '1:1', '4:5', '3:4', '2:3', '9:16'];
+const ASPECT_RATIOS_NANO_EXTENDED = ['auto', ...ASPECT_RATIOS_NANO, '4:1', '1:4', '8:1', '1:8'];
 const GPT_SIZES = ['1024x1024', '1536x1024', '1024x1536'];
 
 const IDEOGRAM_STYLES_V2 = ['auto', 'general', 'realistic', 'design', 'render_3D', 'anime'];
@@ -58,6 +60,7 @@ const RECRAFT_V3_STYLES = [
   'b_and_w', 'hard_flash', 'hdr', 'natural_light', 'studio_portrait',
   'pixel_art', 'hand_drawn', 'watercolor', 'pop_art', 'noir'
 ];
+const THINKING_LEVELS: ReadonlyArray<'minimal' | 'high'> = ['minimal', 'high'];
 
 @Component({
   selector: 'app-image-gen',
@@ -67,7 +70,7 @@ const RECRAFT_V3_STYLES = [
 <div class="flex flex-col lg:flex-row lg:h-full">
   <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
     <div class="px-5 py-4 border-b border-border">
-      <h1 class="text-base font-semibold text-gray-900">Image Generation</h1>
+      <h1 class="text-base font-semibold text-gray-900">Text to Image</h1>
     </div>
 
     <div class="flex-1 overflow-y-auto px-5 py-4 space-y-5">
@@ -88,7 +91,7 @@ const RECRAFT_V3_STYLES = [
       </div>
 
       <!-- Negative Prompt (models that support it) -->
-      @if (selectedModel()?.supportsNegativePrompt) {
+      @if (showInlineNegativePrompt()) {
         <div>
           <label class="form-label">Negative Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
           <textarea class="form-textarea h-16" [(ngModel)]="negativePrompt"
@@ -184,6 +187,148 @@ const RECRAFT_V3_STYLES = [
                 [class.text-gray-600]="background() !== b">{{ b }}</button>
             }
           </div>
+        </div>
+      }
+
+      @if (showFluxAdvanced() || showNanoAdvanced() || showImagenAdvanced() || showSeedreamAdvanced()) {
+        <div class="rounded-xl border border-border overflow-hidden">
+          <button type="button"
+                  class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-left"
+                  (click)="advancedOpen.update(v => !v)">
+            <div>
+              <p class="text-sm font-medium text-gray-900">Advanced Options</p>
+              <p class="text-xs text-gray-400">{{ selectedModel()?.name }} generation controls</p>
+            </div>
+            <span class="text-sm text-gray-400">{{ advancedOpen() ? 'Hide' : 'Show' }}</span>
+          </button>
+
+          @if (advancedOpen()) {
+            <div class="p-4 space-y-4 bg-white">
+              <div>
+                <label class="form-label">Seed</label>
+                <div class="flex gap-2">
+                  <input type="number"
+                         class="form-input"
+                         [ngModel]="seed()"
+                         (ngModelChange)="onSeedChange($event)"
+                         min="0"
+                         max="2147483647"
+                         placeholder="Random seed" />
+                  <button type="button"
+                          class="px-3 py-2 text-sm border border-border rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                          (click)="randomizeSeed()">
+                    Random
+                  </button>
+                </div>
+              </div>
+
+              @if (showSchnellAdvanced()) {
+                <div>
+                  <label class="form-label">Guidance scale (CFG)</label>
+                  <div class="flex items-center gap-3">
+                    <input type="range"
+                           class="flex-1 accent-[var(--accent)]"
+                           min="1"
+                           max="20"
+                           step="0.5"
+                           [ngModel]="guidanceScale()"
+                           (ngModelChange)="onGuidanceScaleChange($event)" />
+                    <input type="number"
+                           class="w-24 form-input"
+                           min="1"
+                           max="20"
+                           step="0.5"
+                           [ngModel]="guidanceScale()"
+                           (ngModelChange)="onGuidanceScaleChange($event)" />
+                    <button type="button"
+                            class="px-3 py-2 text-sm border border-border rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                            (click)="guidanceScale.set(3.5)">
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              }
+
+              @if (showImagen3FastAdvanced()) {
+                <div>
+                  <label class="form-label">Negative Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
+                  <textarea class="form-textarea h-16" [(ngModel)]="negativePrompt"
+                    spellcheck="true" lang="en"
+                    placeholder="What to avoid in the image..."></textarea>
+                </div>
+              }
+
+              @if (showFormatAdvanced()) {
+                <div>
+                  <label class="form-label">Output Format</label>
+                  <select class="form-select" [ngModel]="outputFormat()" (ngModelChange)="outputFormat.set($event)">
+                    <option value="">Default</option>
+                    <option value="jpeg">jpeg</option>
+                    <option value="png">png</option>
+                  </select>
+                </div>
+              }
+
+              @if (showFluxPro11Advanced()) {
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">Enhance Prompt</p>
+                    <p class="text-xs text-gray-400">Let the model improve and expand your prompt</p>
+                  </div>
+                  <button type="button" (click)="enhancePrompt.update(v => !v)"
+                          class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                          [class.bg-accent]="enhancePrompt()"
+                          [class.bg-gray-300]="!enhancePrompt()">
+                    <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                          [class.translate-x-6]="enhancePrompt()"
+                          [class.translate-x-1]="!enhancePrompt()"></span>
+                  </button>
+                </div>
+              }
+
+              @if (showNanoBanana2Advanced()) {
+                <div>
+                  <label class="form-label">Thinking Level</label>
+                  <div class="flex gap-2">
+                    @for (level of thinkingLevels; track level) {
+                      <button type="button" (click)="thinkingLevel.set(level)"
+                              class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize"
+                              [class.border-accent]="thinkingLevel() === level"
+                              [class.bg-accent-light]="thinkingLevel() === level"
+                              [class.text-accent]="thinkingLevel() === level"
+                              [class.border-border]="thinkingLevel() !== level"
+                              [class.text-gray-600]="thinkingLevel() !== level">{{ level }}</button>
+                    }
+                  </div>
+                </div>
+              }
+
+              @if (showSeedreamV5LiteAdvanced()) {
+                <div>
+                  <label class="form-label">Custom Image Size <span class="text-gray-400 font-normal">(optional)</span></label>
+                  <div class="grid grid-cols-2 gap-3">
+                    <input type="number"
+                           class="form-input"
+                           [ngModel]="customWidth()"
+                           (ngModelChange)="onCustomSizeChange('width', $event)"
+                           min="256"
+                           max="4096"
+                           step="1"
+                           placeholder="Width" />
+                    <input type="number"
+                           class="form-input"
+                           [ngModel]="customHeight()"
+                           (ngModelChange)="onCustomSizeChange('height', $event)"
+                           min="256"
+                           max="4096"
+                           step="1"
+                           placeholder="Height" />
+                  </div>
+                  <p class="text-xs text-gray-400 mt-2">If both width and height are set, they override the preset image size.</p>
+                </div>
+              }
+            </div>
+          }
         </div>
       }
 
@@ -284,6 +429,7 @@ export class ImageGenComponent implements OnInit, OnDestroy {
   private auth = inject(AuthService);
   private loginModal = inject(LoginModalService);
   private route = inject(ActivatedRoute);
+  readonly thinkingLevels = THINKING_LEVELS;
 
   // ── model groups ──────────────────────────────────────────────────
   groups: ImageGroup[] = [
@@ -292,10 +438,8 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       icon: 'F', iconBg: '#000000', iconUrl: '/assets/icons/flux.png',
       tags: ['Open Source', 'Fast'],
       subModels: [
-        { id: 'fal-ai/flux/schnell', name: 'FLUX Schnell', description: 'Ultra-fast 1-4 step generation', credits: 2, tags: ['Fastest', 'Free'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
-        { id: 'fal-ai/flux/dev', name: 'FLUX Dev', description: 'Open-source 12B model, great for experiments', credits: 5, tags: ['Open Source'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: true },
-        { id: 'fal-ai/flux-pro/v1.1', name: 'FLUX Pro 1.1', description: 'High quality with improved photorealism', credits: 8, tags: ['High Quality'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: true },
-        { id: 'fal-ai/flux-pro/v1.1-ultra', name: 'FLUX Pro 1.1 Ultra', description: 'Maximum detail and resolution up to 2K', credits: 11, badge: 'BEST', badgeColor: '#7C3AED', tags: ['Ultra Quality', '2K'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: true },
+        { id: 'fal-ai/flux/schnell', name: 'FLUX Schnell', description: 'Ultra-fast 1-4 step generation', credits: 10, tags: ['Fastest', 'Low Cost'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
+        { id: 'fal-ai/flux-pro/v1.1', name: 'FLUX Pro 1.1', description: 'High quality with improved photorealism', credits: 10, tags: ['High Quality'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: true },
         { id: 'fal-ai/flux-2-pro', name: 'FLUX 2 Pro', description: 'Latest FLUX with improved typography', credits: 10, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Latest', 'Typography'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
       ]
     },
@@ -304,9 +448,9 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       icon: 'G', iconBg: '#4285F4', iconUrl: '/assets/icons/nano.png',
       tags: ['Google', 'Fast'],
       subModels: [
-        { id: 'fal-ai/nano-banana', name: 'Nano Banana', description: "Google's fast generation model", credits: 5, tags: ['Fast'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_NANO, supportsNegativePrompt: false },
-        { id: 'fal-ai/nano-banana-2', name: 'Nano Banana 2', description: 'Web search + up to 4K resolution', credits: 8, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['4K', 'Web Search'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ['auto', ...ASPECT_RATIOS_NANO], resolutions: ['0.5K', '1K', '2K', '4K'], supportsNegativePrompt: false },
-        { id: 'fal-ai/nano-banana-pro', name: 'Nano Banana Pro', description: "Google's pro model with 4K resolution", credits: 10, tags: ['Pro', '4K'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ['auto', ...ASPECT_RATIOS_STANDARD], resolutions: ['1K', '2K', '4K'], supportsNegativePrompt: false },
+        { id: 'fal-ai/nano-banana', name: 'Nano Banana', description: "Google's fast generation model", credits: 10, tags: ['Fast'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_NANO, supportsNegativePrompt: false },
+        { id: 'fal-ai/nano-banana-2', name: 'Nano Banana 2', description: 'Web search + up to 4K resolution', credits: 10, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['4K', 'Web Search'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_NANO_EXTENDED, resolutions: ['0.5K', '1K', '2K', '4K'], supportsNegativePrompt: false },
+        { id: 'fal-ai/nano-banana-pro', name: 'Nano Banana Pro', description: "Google's pro model with 4K resolution", credits: 23, tags: ['Pro', '4K'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ['auto', ...ASPECT_RATIOS_NANO], resolutions: ['1K', '2K', '4K'], supportsNegativePrompt: false },
       ]
     },
     {
@@ -314,11 +458,8 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       icon: 'G', iconBg: '#4285F4', iconUrl: '/assets/icons/veo.png',
       tags: ['Google', 'Photorealistic'],
       subModels: [
-        { id: 'fal-ai/imagen3/fast', name: 'Imagen 3 Fast', description: 'Fast version of Google Imagen 3', credits: 6, tags: ['Fast'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, supportsNegativePrompt: true },
-        { id: 'fal-ai/imagen3', name: 'Imagen 3', description: 'High-quality photorealistic generation', credits: 10, tags: ['High Quality'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, supportsNegativePrompt: true },
-        { id: 'fal-ai/imagen4/preview/fast', name: 'Imagen 4 Fast', description: 'Fast Imagen 4 preview generation', credits: 12, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['Fast', 'Preview'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, resolutions: ['1K', '2K'], supportsNegativePrompt: false },
-        { id: 'fal-ai/imagen4/preview', name: 'Imagen 4 Preview', description: 'Google Imagen 4 preview with up to 2K', credits: 15, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['2K', 'Preview'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, resolutions: ['1K', '2K'], supportsNegativePrompt: false },
-        { id: 'fal-ai/imagen4/preview/ultra', name: 'Imagen 4 Ultra', description: 'Google Imagen 4 Ultra — highest quality', credits: 20, badge: 'BEST', badgeColor: '#7C3AED', tags: ['Ultra Quality', '2K'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, resolutions: ['1K', '2K'], supportsNegativePrompt: false },
+        { id: 'fal-ai/imagen3/fast', name: 'Imagen 3 Fast', description: 'Fast version of Google Imagen 3', credits: 10, tags: ['Fast'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, supportsNegativePrompt: true },
+        { id: 'fal-ai/imagen4/preview', name: 'Imagen 4 Preview', description: 'Google Imagen 4 preview with up to 2K', credits: 10, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['2K', 'Preview'], paramMode: 'aspectRatio', imageSizes: [], aspectRatios: ASPECT_RATIOS_STANDARD, resolutions: ['1K', '2K'], supportsNegativePrompt: false },
       ]
     },
     {
@@ -326,8 +467,8 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       icon: 'S', iconBg: '#1D4ED8', iconUrl: '/assets/icons/seedream.png',
       tags: ['ByteDance', 'High Quality'],
       subModels: [
-        { id: 'fal-ai/bytedance/seedream/v4/text-to-image', name: 'Seedream v4', description: 'ByteDance high-quality generation', credits: 6, tags: ['High Quality'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
-        { id: 'fal-ai/bytedance/seedream/v5/lite/text-to-image', name: 'Seedream v5 Lite', description: 'ByteDance v5 with 2K–3K resolution', credits: 8, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['2K', 'Latest'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
+        { id: 'fal-ai/bytedance/seedream/v4/text-to-image', name: 'Seedream v4', description: 'ByteDance high-quality generation', credits: 10, tags: ['High Quality'], paramMode: 'imageSize', imageSizes: IMAGE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
+        { id: 'fal-ai/bytedance/seedream/v5/lite/text-to-image', name: 'Seedream v5 Lite', description: 'ByteDance v5 with flexible auto and high-res sizing', credits: 10, badge: 'NEW', badgeColor: '#0EA5E9', tags: ['4K', 'Latest'], paramMode: 'imageSize', imageSizes: SEEDREAM_V5_LITE_SIZES, aspectRatios: [], supportsNegativePrompt: false },
       ]
     },
     {
@@ -390,6 +531,10 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     { value: 'portrait_16_9',  label: 'Portrait 9:16',dims: '576×1024'  },
     { value: 'landscape_4_3',  label: 'Landscape 4:3',dims: '1024×768'  },
     { value: 'landscape_16_9', label: 'Wide 16:9',    dims: '1024×576'  },
+    { value: 'auto',           label: 'Auto',         dims: 'Model decides' },
+    { value: 'auto_2K',        label: 'Auto 2K',      dims: 'Up to 2K' },
+    { value: 'auto_3K',        label: 'Auto 3K',      dims: 'Up to 3K' },
+    { value: 'auto_4K',        label: 'Auto 4K',      dims: 'Up to 4K' },
     { value: '1024x1024',      label: 'Square',       dims: '1024×1024' },
     { value: '1536x1024',      label: 'Landscape',    dims: '1536×1024' },
     { value: '1024x1536',      label: 'Portrait',     dims: '1024×1536' },
@@ -408,9 +553,15 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     '9:16': { w: 13, h: 22 },
     '4:3':  { w: 20, h: 15 },
     '3:4':  { w: 15, h: 20 },
+    '5:4':  { w: 20, h: 16 },
+    '4:5':  { w: 16, h: 20 },
     '3:2':  { w: 21, h: 14 },
     '2:3':  { w: 14, h: 21 },
     '21:9': { w: 24, h: 10 },
+    '4:1':  { w: 24, h: 9 },
+    '1:4':  { w: 9, h: 24 },
+    '8:1':  { w: 24, h: 7 },
+    '1:8':  { w: 7, h: 24 },
   };
 
   currentAspectRatios = computed<AspectRatio[]>(() => {
@@ -419,7 +570,7 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     return m.aspectRatios.map(v => ({ value: v, ...(this.arDimMap[v] ?? { w: 18, h: 18 }) }));
   });
 
-  selectedModel = signal<ImageModel | null>(this.groups[0].subModels[2]); // FLUX Pro 1.1 default
+  selectedModel = signal<ImageModel | null>(this.groups[0].subModels[1]); // FLUX Pro 1.1 default
 
   prompt = '';
   negativePrompt = '';
@@ -429,11 +580,26 @@ export class ImageGenComponent implements OnInit, OnDestroy {
   quality      = signal('high');
   background   = signal('auto');
   resolution   = signal('');
+  advancedOpen = signal(false);
+  seed = signal<number | null>(null);
+  guidanceScale = signal(3.5);
+  outputFormat = signal('');
+  enhancePrompt = signal(true);
+  thinkingLevel = signal<'minimal' | 'high'>('minimal');
+  customWidth = signal<number | null>(null);
+  customHeight = signal<number | null>(null);
 
   // ── dynamic cost estimate ─────────────────────────────────────────
   costEstimate = computed(() => {
     const m = this.selectedModel();
     if (!m) return 0;
+
+    if (m.id === 'fal-ai/flux/schnell') return 10;
+    if (m.id === 'fal-ai/flux-pro/v1.1') return 10;
+    if (m.id === 'fal-ai/flux-2-pro') return this.getFlux2ProCredits(this.imageSize());
+    if (m.id === 'fal-ai/nano-banana') return 10;
+    if (m.id === 'fal-ai/nano-banana-2') return this.getNanoBanana2Credits(this.resolution(), this.thinkingLevel());
+    if (m.id === 'fal-ai/nano-banana-pro') return this.getNanoBananaProCredits(this.resolution());
 
     // GPT Image: quality + size based pricing
     if (m.id.includes('gpt-image')) {
@@ -468,6 +634,39 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     return []; // Imagen 4 flat pricing — no badge
   });
 
+  showFluxAdvanced = computed(() => {
+    const modelId = this.selectedModel()?.id;
+    return modelId === 'fal-ai/flux/schnell' || modelId === 'fal-ai/flux-pro/v1.1' || modelId === 'fal-ai/flux-2-pro';
+  });
+  showSchnellAdvanced = computed(() => this.selectedModel()?.id === 'fal-ai/flux/schnell');
+  showFluxPro11Advanced = computed(() => this.selectedModel()?.id === 'fal-ai/flux-pro/v1.1');
+  showFlux2ProAdvanced = computed(() => this.selectedModel()?.id === 'fal-ai/flux-2-pro');
+  showNanoAdvanced = computed(() => {
+    const modelId = this.selectedModel()?.id;
+    return modelId === 'fal-ai/nano-banana' || modelId === 'fal-ai/nano-banana-2' || modelId === 'fal-ai/nano-banana-pro';
+  });
+  showNanoBanana2Advanced = computed(() => this.selectedModel()?.id === 'fal-ai/nano-banana-2');
+  showImagenAdvanced = computed(() => {
+    const modelId = this.selectedModel()?.id;
+    return modelId === 'fal-ai/imagen3/fast' || modelId === 'fal-ai/imagen4/preview';
+  });
+  showImagen3FastAdvanced = computed(() => this.selectedModel()?.id === 'fal-ai/imagen3/fast');
+  showImagen4PreviewAdvanced = computed(() => this.selectedModel()?.id === 'fal-ai/imagen4/preview');
+  showSeedreamAdvanced = computed(() => {
+    const modelId = this.selectedModel()?.id;
+    return modelId === 'fal-ai/bytedance/seedream/v4/text-to-image'
+      || modelId === 'fal-ai/bytedance/seedream/v5/lite/text-to-image';
+  });
+  showSeedreamV5LiteAdvanced = computed(() => this.selectedModel()?.id === 'fal-ai/bytedance/seedream/v5/lite/text-to-image');
+  showFormatAdvanced = computed(() =>
+    this.showFluxAdvanced() ||
+    this.showNanoAdvanced() ||
+    this.showImagen4PreviewAdvanced()
+  );
+  showInlineNegativePrompt = computed(() =>
+    !!this.selectedModel()?.supportsNegativePrompt && !this.showImagen3FastAdvanced()
+  );
+
   generating = signal(false);
   jobStatus = signal<JobStatus | null>(null);
   outputUrl = signal<string | undefined>(undefined);
@@ -500,6 +699,14 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     this.resolution.set(m.resolutions?.[0] ?? '');
     this.quality.set(m.qualities?.[0] ?? 'high');
     this.background.set(m.backgrounds?.[0] ?? 'auto');
+    this.advancedOpen.set(false);
+    this.seed.set(null);
+    this.guidanceScale.set(3.5);
+    this.outputFormat.set('');
+    this.enhancePrompt.set(true);
+    this.thinkingLevel.set('minimal');
+    this.customWidth.set(null);
+    this.customHeight.set(null);
   }
 
   generate() {
@@ -522,6 +729,13 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       quality: this.quality() || undefined,
       background: this.background() !== 'auto' ? this.background() : undefined,
       resolution: this.resolution() || undefined,
+      seed: (this.showFluxAdvanced() || this.showNanoAdvanced() || this.showImagenAdvanced() || this.showSeedreamAdvanced()) ? this.seed() ?? undefined : undefined,
+      guidanceScale: this.showSchnellAdvanced() ? this.guidanceScale() : undefined,
+      outputFormat: this.showFormatAdvanced() ? this.outputFormat() || undefined : undefined,
+      enhancePrompt: this.showFluxPro11Advanced() ? this.enhancePrompt() : undefined,
+      thinkingLevel: this.showNanoBanana2Advanced() ? this.thinkingLevel() : undefined,
+      customWidth: this.showSeedreamV5LiteAdvanced() ? this.customWidth() ?? undefined : undefined,
+      customHeight: this.showSeedreamV5LiteAdvanced() ? this.customHeight() ?? undefined : undefined,
     }).subscribe({
       next: res => {
         this.currentJobId = res.jobId;
@@ -566,6 +780,79 @@ export class ImageGenComponent implements OnInit, OnDestroy {
     this.generating.set(false);
     if (status === 'Completed') { this.outputUrl.set(url); this.credits.loadBalance().subscribe(); }
     else { this.errorMsg.set(err ?? 'Failed.'); this.credits.loadBalance().subscribe(); }
+  }
+
+  onSeedChange(value: string | number | null) {
+    if (value === '' || value === null || value === undefined) {
+      this.seed.set(null);
+      return;
+    }
+
+    const parsed = Number(value);
+    if (Number.isFinite(parsed))
+      this.seed.set(Math.max(0, Math.min(2147483647, Math.round(parsed))));
+  }
+
+  onGuidanceScaleChange(value: string | number) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed))
+      this.guidanceScale.set(Math.max(1, Math.min(20, parsed)));
+  }
+
+  onCustomSizeChange(kind: 'width' | 'height', value: string | number | null) {
+    const target = kind === 'width' ? this.customWidth : this.customHeight;
+    if (value === '' || value === null || value === undefined) {
+      target.set(null);
+      return;
+    }
+
+    const parsed = Number(value);
+    if (Number.isFinite(parsed))
+      target.set(Math.max(256, Math.min(4096, Math.round(parsed))));
+  }
+
+  randomizeSeed() {
+    this.seed.set(Math.floor(Math.random() * 2147483647));
+  }
+
+  private getFlux2ProCredits(imageSize: string) {
+    const billedMegapixels = this.getBilledMegapixels(imageSize);
+    const credits = 4.5 + Math.max(0, billedMegapixels - 1) * 2.25;
+    return Math.max(10, Math.round(credits));
+  }
+
+  private getNanoBanana2Credits(resolution: string, thinkingLevel: 'minimal' | 'high') {
+    const baseCredits = resolution === '0.5K'
+      ? 9
+      : resolution === '2K'
+        ? 18
+        : resolution === '4K'
+          ? 24
+          : 12;
+    const thinkingCredits = thinkingLevel === 'high' ? 0.3 : 0;
+    return Math.max(10, Math.round(baseCredits + thinkingCredits));
+  }
+
+  private getNanoBananaProCredits(resolution: string) {
+    const credits = resolution === '4K' ? 45 : 22.5;
+    return Math.max(10, Math.round(credits));
+  }
+
+  private getBilledMegapixels(imageSize: string) {
+    const dimensions: Record<string, { width: number; height: number }> = {
+      square_hd: { width: 1024, height: 1024 },
+      square: { width: 512, height: 512 },
+      portrait_4_3: { width: 768, height: 1024 },
+      portrait_16_9: { width: 576, height: 1024 },
+      landscape_4_3: { width: 1024, height: 768 },
+      landscape_16_9: { width: 1024, height: 576 },
+      '1024x1024': { width: 1024, height: 1024 },
+      '1536x1024': { width: 1536, height: 1024 },
+      '1024x1536': { width: 1024, height: 1536 },
+    };
+
+    const dims = dimensions[imageSize] ?? dimensions['square_hd'];
+    return Math.max(1, Math.ceil((dims.width * dims.height) / 1_000_000));
   }
 
   ngOnDestroy() { clearInterval(this.pollInterval); }

@@ -14,6 +14,19 @@ public class ModelPricingService(
 {
     private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(1);
     private const string CacheKeyPrefix = "model_pricing:";
+    private static readonly IReadOnlyDictionary<string, (int Width, int Height)> ImageSizeDimensions =
+        new Dictionary<string, (int Width, int Height)>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["square_hd"] = (1024, 1024),
+            ["square"] = (512, 512),
+            ["portrait_4_3"] = (768, 1024),
+            ["portrait_16_9"] = (576, 1024),
+            ["landscape_4_3"] = (1024, 768),
+            ["landscape_16_9"] = (1024, 576),
+            ["1024x1024"] = (1024, 1024),
+            ["1536x1024"] = (1536, 1024),
+            ["1024x1536"] = (1024, 1536)
+        };
 
     public async Task<int> GetCreditsAsync(string modelId, int durationSeconds = 1, CancellationToken ct = default)
     {
@@ -127,9 +140,36 @@ public class ModelPricingService(
         return await GetCreditsAsync(modelId, 1, ct);
     }
 
-    public async Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, CancellationToken ct = default)
+    public async Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, string? thinkingLevel = null, CancellationToken ct = default)
     {
         var pricing = await GetPricingAsync(modelId, ct);
+
+        // FLUX Schnell: flat app pricing.
+        if (modelId == "fal-ai/flux/schnell")
+            return 10;
+
+        if (modelId == "fal-ai/flux-pro/v1.1")
+            return 10;
+
+        // FLUX 2 Pro: $0.03 first billed MP + $0.015 each additional billed MP at 1.5× markup, minimum 10 credits.
+        if (modelId == "fal-ai/flux-2-pro")
+        {
+            var billedMegapixels = GetBilledMegapixels(imageSize);
+            var credits = 4.5m + Math.Max(0, billedMegapixels - 1) * 2.25m;
+            return Math.Max(10, (int)Math.Round(credits, MidpointRounding.AwayFromZero));
+        }
+
+        if (modelId == "fal-ai/imagen3/fast")
+            return 10;
+
+        if (modelId == "fal-ai/imagen4/preview")
+            return 10;
+
+        if (modelId == "fal-ai/bytedance/seedream/v4/text-to-image")
+            return 10;
+
+        if (modelId == "fal-ai/bytedance/seedream/v5/lite/text-to-image")
+            return 10;
 
         // GPT Image: dynamic by quality + size
         if (modelId.Contains("gpt-image"))
@@ -143,15 +183,40 @@ public class ModelPricingService(
             return (quality ?? "high") switch { "low" => 3, "medium" => 7, _ => isLarge ? 16 : 12 };
         }
 
-        // Nano Banana 2: resolution tiers (2× fal.ai cost)
-        if (modelId == "fal-ai/nano-banana-2")
-            return (resolution ?? "1K") switch { "0.5K" => 12, "2K" => 24, "4K" => 32, _ => 16 };
+        // Nano Banana: flat app pricing with minimum floor.
+        if (modelId == "fal-ai/nano-banana")
+            return 10;
 
-        // Nano Banana Pro: resolution tiers (2× fal.ai cost)
+        // Nano Banana 2: resolution tiers from provider pricing with 1.5× app markup.
+        if (modelId == "fal-ai/nano-banana-2")
+        {
+            decimal baseCredits = (resolution ?? "1K") switch
+            {
+                "0.5K" => 9m,
+                "2K" => 18m,
+                "4K" => 24m,
+                _ => 12m
+            };
+            if (string.Equals(thinkingLevel, "high", StringComparison.OrdinalIgnoreCase))
+                baseCredits += 0.3m;
+            return Math.Max(10, (int)Math.Round(baseCredits, MidpointRounding.AwayFromZero));
+        }
+
+        // Nano Banana Pro: resolution tiers from provider pricing with 1.5× app markup.
         if (modelId == "fal-ai/nano-banana-pro")
-            return resolution == "4K" ? 45 : 22;
+            return resolution == "4K" ? 45 : 23;
 
         return pricing.CreditsBase;
+    }
+
+    private static int GetBilledMegapixels(string? imageSize)
+    {
+        var sizeKey = string.IsNullOrWhiteSpace(imageSize) ? "square_hd" : imageSize;
+        if (!ImageSizeDimensions.TryGetValue(sizeKey, out var dims))
+            dims = ImageSizeDimensions["square_hd"];
+
+        var megapixels = (dims.Width * dims.Height) / 1_000_000m;
+        return Math.Max(1, (int)Math.Ceiling(megapixels));
     }
 
     public async Task SeedAsync(CancellationToken ct = default)

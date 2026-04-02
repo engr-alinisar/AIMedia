@@ -245,7 +245,7 @@ export class JobsComponent implements OnInit, OnDestroy {
 
   readonly productOptions: FilterOption[] = [
     { label: 'All Types', value: '' },
-    { label: 'Image Generation', value: 'ImageGen' },
+    { label: 'Text to Image', value: 'ImageGen' },
     { label: 'Image to Video', value: 'ImageToVideo' },
     { label: 'Text to Video', value: 'TextToVideo' },
     { label: 'Text to Audio', value: 'Voice' },
@@ -316,7 +316,7 @@ export class JobsComponent implements OnInit, OnDestroy {
 
   productLabel(p: string) {
     const map: Record<string, string> = {
-      ImageGen: 'Image Generation', ImageToVideo: 'Image to Video', TextToVideo: 'Text to Video',
+      ImageGen: 'Text to Image', ImageToVideo: 'Image to Video', TextToVideo: 'Text to Video',
       Voice: 'Text to Audio', Transcription: 'Audio to Text', BackgroundRemoval: 'Image Studio'
     };
     return map[p] ?? p;
@@ -324,7 +324,7 @@ export class JobsComponent implements OnInit, OnDestroy {
 
   retryLink(job: JobDto): string {
     const map: Record<string, string> = {
-      ImageGen: '/image-gen', ImageToVideo: '/image-to-video',
+      ImageGen: '/text-to-image', ImageToVideo: '/image-to-video',
       TextToVideo: '/text-to-video', Voice: '/voice',
       Transcription: '/transcription', BackgroundRemoval: '/background-removal'
     };

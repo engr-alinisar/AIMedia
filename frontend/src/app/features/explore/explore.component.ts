@@ -416,7 +416,7 @@ export class ExploreComponent implements OnInit {
 
   tryThis(item: ExploreItemDto) {
     const routes: Record<string, string> = {
-      ImageGen: '/image-gen', ImageToVideo: '/image-to-video', TextToVideo: '/text-to-video',
+      ImageGen: '/text-to-image', ImageToVideo: '/image-to-video', TextToVideo: '/text-to-video',
       Voice: '/voice', Transcription: '/transcription', BackgroundRemoval: '/background-removal',
     };
     const route = routes[item.product];

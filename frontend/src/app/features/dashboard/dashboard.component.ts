@@ -95,7 +95,7 @@ export class DashboardComponent implements OnInit {
   name = () => this.auth.user()?.fullName ?? this.auth.user()?.email?.split('@')[0] ?? 'there';
 
   quickActions = [
-    { icon: '🖼️', label: 'Generate Image', route: '/image-gen',         cost: 'From 5 credits' },
+    { icon: '🖼️', label: 'Text to Image', route: '/text-to-image',         cost: 'From 5 credits' },
     { icon: '🎬', label: 'Image to Video',  route: '/image-to-video',   cost: 'From 25 credits' },
     { icon: '🎥', label: 'Text to Video',   route: '/text-to-video',    cost: 'From 25 credits' },
     { icon: '🎙️', label: 'Text to Audio',  route: '/voice',            cost: 'From 4 credits' },
@@ -109,7 +109,7 @@ export class DashboardComponent implements OnInit {
   }
 
   productLabel(p: string) {
-    const map: Record<string, string> = { ImageGen: 'Image Generation', ImageToVideo: 'Image to Video', TextToVideo: 'Text to Video', Voice: 'Text to Audio', Transcription: 'Audio to Text', BackgroundRemoval: 'Image Studio' };
+    const map: Record<string, string> = { ImageGen: 'Text to Image', ImageToVideo: 'Image to Video', TextToVideo: 'Text to Video', Voice: 'Text to Audio', Transcription: 'Audio to Text', BackgroundRemoval: 'Image Studio' };
     return map[p] ?? p;
   }
 

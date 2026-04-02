@@ -15,4 +15,11 @@ public record GenerateImageCommand(
     string? Style = null,
     string? Quality = null,
     string? Background = null,
-    string? Resolution = null) : IRequest<GenerationResponse>;
+    string? Resolution = null,
+    int? Seed = null,
+    float? GuidanceScale = null,
+    string? OutputFormat = null,
+    bool? EnhancePrompt = null,
+    string? ThinkingLevel = null,
+    int? CustomWidth = null,
+    int? CustomHeight = null) : IRequest<GenerationResponse>;

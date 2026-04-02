@@ -360,7 +360,7 @@ export class ShellComponent implements OnInit, OnDestroy {
     {
       category: 'Image AI',
       items: [
-        { label: 'Image Generation', icon: '🖼️', route: '/image-gen' },
+        { label: 'Text to Image', icon: '🖼️', route: '/text-to-image' },
         { label: 'Image Studio', icon: '✂️', route: '/background-removal' },
       ]
     },
@@ -399,7 +399,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   }
 
   private readonly productLabel: Record<string, string> = {
-    ImageGen: 'Image Generation', ImageToVideo: 'Image to Video',
+    ImageGen: 'Text to Image', ImageToVideo: 'Image to Video',
     TextToVideo: 'Text to Video', Voice: 'Text to Audio',
     Transcription: 'Audio to Text', BackgroundRemoval: 'Image Studio'
   };

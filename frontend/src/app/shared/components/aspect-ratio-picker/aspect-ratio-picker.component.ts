@@ -37,10 +37,10 @@ export const ASPECT_RATIOS_ALL: AspectRatio[] = [
 @if (ratios.length > 0) {
   <div class="pb-2">
     <label class="form-label">Aspect Ratio</label>
-    <div class="flex gap-2">
+    <div class="grid grid-cols-4 gap-2 md:grid-cols-5 lg:grid-cols-6">
       @for (ar of ratios; track ar.value) {
         <button type="button"
-                class="flex-1 flex flex-col items-center gap-1 py-2 px-1.5 rounded-lg border transition-colors"
+                class="w-full min-w-0 flex flex-col items-center gap-1 py-2 px-1.5 rounded-lg border transition-colors"
                 [class.border-accent]="value === ar.value"
                 [class.bg-accent-light]="value === ar.value"
                 [class.border-border]="value !== ar.value"

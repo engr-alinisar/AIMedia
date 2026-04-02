@@ -15,7 +15,8 @@ export const routes: Routes = [
     children: [
       { path: 'explore',            loadComponent: () => import('./features/explore/explore.component').then(m => m.ExploreComponent) },
       { path: 'dashboard',          loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent) },
-      { path: 'image-gen',          loadComponent: () => import('./features/image-gen/image-gen.component').then(m => m.ImageGenComponent) },
+      { path: 'text-to-image',      loadComponent: () => import('./features/image-gen/image-gen.component').then(m => m.ImageGenComponent) },
+      { path: 'image-gen',          redirectTo: 'text-to-image', pathMatch: 'full' },
       { path: 'image-to-video',     loadComponent: () => import('./features/image-to-video/image-to-video.component').then(m => m.ImageToVideoComponent) },
       { path: 'text-to-video',      loadComponent: () => import('./features/text-to-video/text-to-video.component').then(m => m.TextToVideoComponent) },
       { path: 'voice',              loadComponent: () => import('./features/voice/voice.component').then(m => m.VoiceComponent) },

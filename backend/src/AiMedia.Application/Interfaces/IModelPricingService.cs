@@ -12,7 +12,7 @@ public interface IModelPricingService
     Task<int> GetTranscriptionCreditsAsync(string modelId, int durationSeconds, CancellationToken ct = default);
 
     /// <summary>Credits for image generation — handles GPT Image quality tiers and Nano Banana resolution tiers.</summary>
-    Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, CancellationToken ct = default);
+    Task<int> GetImageGenCreditsAsync(string modelId, string? quality, string? imageSize, string? resolution, string? thinkingLevel = null, CancellationToken ct = default);
 
     /// <summary>Seed pricing rows from ModelRegistry for any model not yet in the DB.</summary>
     Task SeedAsync(CancellationToken ct = default);

@@ -29,7 +29,9 @@ public class GenerationController : ControllerBase
         var result = await _mediator.Send(new GenerateImageCommand(
             GetUserId(), request.Prompt, request.ModelId,
             request.ImageSize, request.NegativePrompt, request.IsPublic, request.Zone,
-            request.AspectRatio, request.Style, request.Quality, request.Background, request.Resolution), ct);
+            request.AspectRatio, request.Style, request.Quality, request.Background, request.Resolution,
+            request.Seed, request.GuidanceScale, request.OutputFormat, request.EnhancePrompt, request.ThinkingLevel,
+            request.CustomWidth, request.CustomHeight), ct);
         return Accepted(result);
     }
 
@@ -155,7 +157,14 @@ public record GenerateImageRequest(
     string? Style = null,
     string? Quality = null,
     string? Background = null,
-    string? Resolution = null);
+    string? Resolution = null,
+    int? Seed = null,
+    float? GuidanceScale = null,
+    string? OutputFormat = null,
+    bool? EnhancePrompt = null,
+    string? ThinkingLevel = null,
+    int? CustomWidth = null,
+    int? CustomHeight = null);
 
 public record KlingElementRequest(
     string? ImageUrl = null,
