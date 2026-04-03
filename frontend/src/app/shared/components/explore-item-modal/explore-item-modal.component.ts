@@ -201,7 +201,7 @@ export class ExploreItemModalComponent implements OnInit, OnDestroy {
   }
 
   isVideo(): boolean {
-    return this.item?.product === 'ImageToVideo' || this.item?.product === 'TextToVideo';
+    return this.item?.product === 'ImageToVideo' || this.item?.product === 'MotionControl' || this.item?.product === 'TextToVideo';
   }
 
   isAudio(): boolean {
@@ -229,7 +229,7 @@ export class ExploreItemModalComponent implements OnInit, OnDestroy {
   productLabel(): string {
     const labels: Record<string, string> = {
       ImageGen: 'Image Gen', ImageToVideo: 'Img → Video', TextToVideo: 'Text → Video',
-      Voice: 'Voice', Transcription: 'Transcript', BackgroundRemoval: 'BG Removal',
+      Voice: 'Voice', Transcription: 'Transcript', BackgroundRemoval: 'BG Removal', MotionControl: 'Motion',
     };
     return labels[this.item?.product] ?? this.item?.product;
   }
@@ -237,7 +237,7 @@ export class ExploreItemModalComponent implements OnInit, OnDestroy {
   productColor(): string {
     const colors: Record<string, string> = {
       ImageGen: '#7C3AED', ImageToVideo: '#EF4444', TextToVideo: '#F97316',
-      Voice: '#059669', Transcription: '#2563EB', BackgroundRemoval: '#0891B2',
+      Voice: '#059669', Transcription: '#2563EB', BackgroundRemoval: '#0891B2', MotionControl: '#7C3AED',
     };
     return colors[this.item?.product] ?? '#6B7280';
   }
@@ -245,7 +245,7 @@ export class ExploreItemModalComponent implements OnInit, OnDestroy {
   noPromptLabel(): string {
     const labels: Record<string, string> = {
       Voice: 'Text-to-speech output', Transcription: 'Audio to Text output',
-      BackgroundRemoval: 'Background removed', ImageToVideo: 'Image animated to video',
+      BackgroundRemoval: 'Background removed', ImageToVideo: 'Image animated to video', MotionControl: 'Motion-controlled video',
     };
     return labels[this.item?.product] ?? 'AI generated content';
   }
@@ -283,3 +283,4 @@ export class ExploreItemModalComponent implements OnInit, OnDestroy {
     (event.target as HTMLVideoElement).play().catch(() => {});
   }
 }
+
