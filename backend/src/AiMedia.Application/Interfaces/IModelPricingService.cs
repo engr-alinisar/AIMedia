@@ -11,6 +11,9 @@ public interface IModelPricingService
     /// <summary>Credits for video models with audio/resolution tier pricing.</summary>
     Task<int> GetVideoCreditsAsync(string modelId, int durationSeconds, bool generateAudio, string? resolution = null, CancellationToken ct = default);
 
+    /// <summary>Credits for motion-control video models that charge by reference video duration.</summary>
+    Task<int> GetMotionControlCreditsAsync(string modelId, int durationSeconds, CancellationToken ct = default);
+
     /// <summary>Credits for transcription models that charge by audio duration.</summary>
     Task<int> GetTranscriptionCreditsAsync(string modelId, int durationSeconds, CancellationToken ct = default);
 

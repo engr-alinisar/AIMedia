@@ -99,6 +99,35 @@ public static class FileSignatureValidator
         return false;
     }
 
+    public static bool TryDetectVideo(Stream stream, out string contentType, out string extension)
+    {
+        contentType = string.Empty;
+        extension = string.Empty;
+
+        Span<byte> header = stackalloc byte[16];
+        var read = ReadHeader(stream, header);
+
+        // MP4 / MOV-style ISO BMFF container
+        if (read >= 12 &&
+            header[4] == 0x66 && header[5] == 0x74 && header[6] == 0x79 && header[7] == 0x70)
+        {
+            contentType = "video/mp4";
+            extension = ".mp4";
+            return true;
+        }
+
+        // WebM / Matroska EBML header
+        if (read >= 4 &&
+            header[0] == 0x1A && header[1] == 0x45 && header[2] == 0xDF && header[3] == 0xA3)
+        {
+            contentType = "video/webm";
+            extension = ".webm";
+            return true;
+        }
+
+        return false;
+    }
+
     private static int ReadHeader(Stream stream, Span<byte> buffer)
     {
         if (!stream.CanSeek)

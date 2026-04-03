@@ -27,6 +27,9 @@ public static class ModelRegistry
         new("fal-ai/veo3/fast", "Veo 3 Fast", "Speed-optimised Veo 3 with audio", 0, 20, ProductType.ImageToVideo, ModelTier.Premium),
         new("fal-ai/veo3/image-to-video", "Veo 3", "Google's best model, ultra-realistic video", 0, 30, ProductType.ImageToVideo, ModelTier.Premium),
 
+        new("fal-ai/kling-video/v2.6/standard/motion-control", "Kling v2.6 Motion Control", "Transfer motion from a reference video onto a character from a reference image", 0, 11, ProductType.MotionControl, ModelTier.Standard),
+        new("fal-ai/kling-video/v3/pro/motion-control", "Kling v3 Pro Motion Control", "Higher-quality motion transfer with optional facial consistency binding", 0, 25, ProductType.MotionControl, ModelTier.Premium),
+
         new("fal-ai/kling-video/v3/pro/text-to-video", "Kling v3 Pro", "Cinematic multi-shot text-to-video with audio", 0, 17, ProductType.TextToVideo, ModelTier.Standard),
         new("fal-ai/kling-video/o3/pro/text-to-video", "Kling o3 Pro", "New o3 architecture, multi-shot, up to 15s", 0, 17, ProductType.TextToVideo, ModelTier.Standard),
         new("fal-ai/kling-video/v2.6/pro/text-to-video", "Kling v2.6 Pro", "Improved realism with native audio generation", 0, 11, ProductType.TextToVideo, ModelTier.Standard),

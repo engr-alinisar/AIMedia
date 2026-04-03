@@ -4,6 +4,7 @@ public enum ProductType
 {
     ImageGen,
     ImageToVideo,
+    MotionControl,
     TextToVideo,
     Voice,
     Transcription,

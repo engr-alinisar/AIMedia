@@ -29,6 +29,12 @@ public class ModelPricingService : IModelPricingService
 
     public async Task<int> GetVideoCreditsAsync(string modelId, int durationSeconds, bool generateAudio, string? resolution = null, CancellationToken ct = default)
     {
+        if (modelId == "fal-ai/kling-video/v3/pro/motion-control")
+            return 25 * durationSeconds;
+
+        if (modelId == "fal-ai/kling-video/v2.6/standard/motion-control")
+            return 11 * durationSeconds;
+
         // Kling v3 Pro — tiered by audio (1.5× fal.ai cost)
         // fal.ai: $0.112/s (no audio), $0.168/s (audio)
         if (modelId.Contains("kling-video/v3/"))
@@ -109,6 +115,19 @@ public class ModelPricingService : IModelPricingService
 
         // All other video models: use standard DB pricing
         return await GetCreditsAsync(modelId, durationSeconds, ct);
+    }
+
+    public Task<int> GetMotionControlCreditsAsync(string modelId, int durationSeconds, CancellationToken ct = default)
+    {
+        if (durationSeconds <= 0)
+            throw new InvalidOperationException("Duration must be greater than zero.");
+
+        return modelId switch
+        {
+            "fal-ai/kling-video/v2.6/standard/motion-control" => Task.FromResult(11 * durationSeconds),
+            "fal-ai/kling-video/v3/pro/motion-control" => Task.FromResult(25 * durationSeconds),
+            _ => throw new InvalidOperationException($"Unknown motion-control model: {modelId}")
+        };
     }
 
     public async Task<int> GetTranscriptionCreditsAsync(string modelId, int durationSeconds, CancellationToken ct = default)
@@ -267,6 +286,7 @@ public class ModelPricingService : IModelPricingService
             ProductType.Transcription => $"{await GetTranscriptionCreditsAsync(model.Id, 60, ct)} cr/min",
             ProductType.ImageGen => $"{await GetImageGenCreditsAsync(model.Id, null, null, null, null, null, ct)} credits",
             ProductType.BackgroundRemoval => $"{await GetCreditsAsync(model.Id, 1, ct)} credits",
+            ProductType.MotionControl => GetVideoDisplayPrice(model.Id),
             ProductType.TextToVideo or ProductType.ImageToVideo => GetVideoDisplayPrice(model.Id),
             _ => $"{await GetCreditsAsync(model.Id, 1, ct)} credits"
         };
@@ -296,8 +316,12 @@ public class ModelPricingService : IModelPricingService
             "fal-ai/veo3.1/image-to-video" => "30-90 cr/s",
             "fal-ai/veo3.1/fast/first-last-frame-to-video" => "15-53 cr/s",
             "fal-ai/veo3/image-to-video" => "30-60 cr/s",
+            "fal-ai/kling-video/v2.6/standard/motion-control" => "11 cr/s",
+            "fal-ai/kling-video/v3/pro/motion-control" => "25 cr/s",
             _ => "Custom pricing"
         };
     }
 
 }
+
+

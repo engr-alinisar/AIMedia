@@ -32,6 +32,12 @@ export class GenerationService {
     return this.http.post<{ url: string }>(`${environment.apiUrl}/api/upload/audio`, formData);
   }
 
+  uploadVideo(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ url: string }>(`${environment.apiUrl}/api/upload/video`, formData);
+  }
+
   generateImage(payload: { prompt: string; modelId: string; imageSize?: string; negativePrompt?: string; isPublic?: boolean; zone?: string; aspectRatio?: string; style?: string; quality?: string; background?: string; resolution?: string; seed?: number; guidanceScale?: number; outputFormat?: string; enhancePrompt?: boolean; thinkingLevel?: string; customWidth?: number; customHeight?: number; renderingSpeed?: string; expandPrompt?: boolean; stylePreset?: string }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/image`, payload);
   }
@@ -42,6 +48,10 @@ export class GenerationService {
 
   generateTextToVideo(payload: { prompt?: string; modelId: string; durationSeconds?: number; aspectRatio?: string; resolution?: string; multiShot?: boolean; generateAudio?: boolean; isPublic?: boolean; zone?: string; negativePrompt?: string; cfgScale?: number; multiPrompts?: string[]; promptOptimizer?: boolean; seed?: number; autoFix?: boolean }) {
     return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/text-to-video`, payload);
+  }
+
+  generateMotionControl(payload: { imageUrl: string; videoUrl: string; prompt: string; modelId: string; durationSeconds: number; isPublic?: boolean; zone?: string; keepOriginalSound?: boolean; characterOrientation?: 'image' | 'video'; elementImageUrl?: string }) {
+    return this.http.post<GenerationResponse>(`${environment.apiUrl}/api/generate/motion-control`, payload);
   }
 
   generateVoice(payload: { text: string; modelId: string; voiceId?: string; voiceCloneId?: string; refAudioUrl?: string; isPublic?: boolean; zone?: string; speed?: number; stability?: number; similarityBoost?: number; voiceStyle?: number; languageCode?: string; pitch?: number; vol?: number; emotion?: string; title?: string }) {

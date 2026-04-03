@@ -41,7 +41,7 @@ export class NotificationService {
     if (update.status !== 'Completed' && update.status !== 'Failed') return;
 
     const productLabel: Record<string, string> = {
-      ImageGen: 'Text to Image', ImageToVideo: 'Image to Video',
+      ImageGen: 'Text to Image', ImageToVideo: 'Image to Video', MotionControl: 'Motion Control',
       TextToVideo: 'Text to Video', Voice: 'Text to Audio',
       Transcription: 'Audio to Text', BackgroundRemoval: 'Image Studio'
     };
@@ -96,3 +96,4 @@ export class NotificationService {
     catch { /* storage full */ }
   }
 }
+

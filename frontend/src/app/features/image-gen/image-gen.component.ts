@@ -14,6 +14,7 @@ import { type JobStatus } from '../../core/models/models';
 import { ModelPickerComponent, type PickerGroup, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
 import { AspectRatioPickerComponent, type AspectRatio } from '../../shared/components/aspect-ratio-picker/aspect-ratio-picker.component';
 import { ResolutionPickerComponent } from '../../shared/components/resolution-picker/resolution-picker.component';
+import { AdvancedOptionsPanelComponent } from '../../shared/components/advanced-options-panel/advanced-options-panel.component';
 
 interface ImageModel {
   id: string;
@@ -72,7 +73,7 @@ const IDEOGRAM_STYLE_PRESETS = [
 @Component({
   selector: 'app-image-gen',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MediaPreviewComponent, JobStatusComponent, ModelPickerComponent, AspectRatioPickerComponent, ResolutionPickerComponent],
+  imports: [CommonModule, FormsModule, RouterLink, MediaPreviewComponent, JobStatusComponent, ModelPickerComponent, AspectRatioPickerComponent, ResolutionPickerComponent, AdvancedOptionsPanelComponent],
   template: `
 <div class="flex flex-col lg:flex-row lg:h-full">
   <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
@@ -162,19 +163,10 @@ const IDEOGRAM_STYLE_PRESETS = [
       }
 
       @if (showFluxAdvanced() || showNanoAdvanced() || showImagenAdvanced() || showSeedreamAdvanced() || showIdeogramAdvanced()) {
-        <div class="rounded-xl border border-border overflow-hidden">
-          <button type="button"
-                  class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-left"
-                  (click)="advancedOpen.update(v => !v)">
-            <div>
-              <p class="text-sm font-medium text-gray-900">Advanced Options</p>
-              <p class="text-xs text-gray-400">{{ selectedModel()?.name }} generation controls</p>
-            </div>
-            <span class="text-sm text-gray-400">{{ advancedOpen() ? 'Hide' : 'Show' }}</span>
-          </button>
-
-          @if (advancedOpen()) {
-            <div class="p-4 space-y-4 bg-white">
+        <app-advanced-options-panel
+          [subtitle]="(selectedModel()?.name ?? 'Model') + ' generation controls'"
+          [open]="advancedOpen()"
+          (openChange)="advancedOpen.set($event)">
               <div>
                 <label class="form-label">Seed</label>
                 <div class="flex gap-2">
@@ -423,9 +415,7 @@ const IDEOGRAM_STYLE_PRESETS = [
                   <p class="text-xs text-gray-400 mt-2">If both width and height are set, they override the preset image size.</p>
                 </div>
               }
-            </div>
-          }
-        </div>
+        </app-advanced-options-panel>
       }
 
       @if (errorMsg()) {

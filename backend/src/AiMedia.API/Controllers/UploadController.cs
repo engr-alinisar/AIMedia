@@ -57,4 +57,27 @@ public class UploadController(IStorageService storage) : ControllerBase
         var url = storage.GetPublicUrl(key);
         return Ok(new { url });
     }
+
+    [HttpPost("video")]
+    [RequestSizeLimit(50 * 1024 * 1024)] // 50MB
+    public async Task<IActionResult> UploadVideo(IFormFile file, CancellationToken ct)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { error = "No file provided." });
+
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                             ?? User.FindFirst("sub")?.Value
+                             ?? throw new UnauthorizedAccessException());
+
+        var uploadId = Guid.NewGuid();
+        await using var stream = file.OpenReadStream();
+        if (!FileSignatureValidator.TryDetectVideo(stream, out var contentType, out var extension))
+            return BadRequest(new { error = "Only valid MP4 and WebM videos are allowed." });
+
+        var key = $"{userId}/inputs/{uploadId}{extension}";
+        await storage.UploadAsync(stream, key, contentType, ct);
+
+        var url = storage.GetPublicUrl(key);
+        return Ok(new { url });
+    }
 }

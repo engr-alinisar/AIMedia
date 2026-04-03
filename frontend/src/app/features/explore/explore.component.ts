@@ -361,7 +361,7 @@ export class ExploreComponent implements OnInit {
   }
 
   isVideo(item: ExploreItemDto): boolean {
-    return item.product === 'ImageToVideo' || item.product === 'TextToVideo';
+    return item.product === 'ImageToVideo' || item.product === 'MotionControl' || item.product === 'TextToVideo';
   }
 
   isAudio(item: ExploreItemDto): boolean {
@@ -388,7 +388,7 @@ export class ExploreComponent implements OnInit {
 
   productLabel(product: string): string {
     const labels: Record<string, string> = {
-      ImageGen: 'Image Gen', ImageToVideo: 'Img → Video', TextToVideo: 'Text → Video',
+      ImageGen: 'Image Gen', ImageToVideo: 'Img -> Video', MotionControl: 'Motion', TextToVideo: 'Text -> Video',
       Voice: 'Voice', Transcription: 'Transcript', BackgroundRemoval: 'BG Removal',
     };
     return labels[product] ?? product;
@@ -396,7 +396,7 @@ export class ExploreComponent implements OnInit {
 
   productColor(product: string): string {
     const colors: Record<string, string> = {
-      ImageGen: '#7C3AED', ImageToVideo: '#EF4444', TextToVideo: '#F97316',
+      ImageGen: '#7C3AED', ImageToVideo: '#EF4444', MotionControl: '#7C3AED', TextToVideo: '#F97316',
       Voice: '#059669', Transcription: '#2563EB', BackgroundRemoval: '#0891B2',
     };
     return colors[product] ?? '#6B7280';
@@ -405,7 +405,7 @@ export class ExploreComponent implements OnInit {
   noPromptLabel(product: string): string {
     const labels: Record<string, string> = {
       Voice: 'Text-to-speech output', Transcription: 'Audio to Text output',
-      BackgroundRemoval: 'Background removed', ImageToVideo: 'Image animated to video',
+      BackgroundRemoval: 'Background removed', ImageToVideo: 'Image animated to video', MotionControl: 'Motion-controlled video',
     };
     return labels[product] ?? 'AI generated content';
   }
@@ -416,7 +416,7 @@ export class ExploreComponent implements OnInit {
 
   tryThis(item: ExploreItemDto) {
     const routes: Record<string, string> = {
-      ImageGen: '/text-to-image', ImageToVideo: '/image-to-video', TextToVideo: '/text-to-video',
+      ImageGen: '/text-to-image', ImageToVideo: '/image-to-video', MotionControl: '/motion-control', TextToVideo: '/text-to-video',
       Voice: '/voice', Transcription: '/transcription', BackgroundRemoval: '/background-removal',
     };
     const route = routes[item.product];
@@ -431,3 +431,5 @@ export class ExploreComponent implements OnInit {
     this.router.navigate([route], { queryParams });
   }
 }
+
+

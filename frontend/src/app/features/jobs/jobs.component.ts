@@ -247,6 +247,7 @@ export class JobsComponent implements OnInit, OnDestroy {
     { label: 'All Types', value: '' },
     { label: 'Text to Image', value: 'ImageGen' },
     { label: 'Image to Video', value: 'ImageToVideo' },
+    { label: 'Motion Control', value: 'MotionControl' },
     { label: 'Text to Video', value: 'TextToVideo' },
     { label: 'Text to Audio', value: 'Voice' },
     { label: 'Audio to Text', value: 'Transcription' },
@@ -308,15 +309,15 @@ export class JobsComponent implements OnInit, OnDestroy {
 
   productIcon(p: string) {
     const map: Record<string, string> = {
-      ImageGen: '🖼️', ImageToVideo: '🎬', TextToVideo: '🎥',
-      Voice: '🎙️', Transcription: '📝', BackgroundRemoval: '✂️'
+      ImageGen: '\uD83D\uDDBC\uFE0F', ImageToVideo: '\uD83C\uDFAC', MotionControl: '\uD83C\uDF9E\uFE0F', TextToVideo: '\uD83C\uDFA5',
+      Voice: '\uD83C\uDF99\uFE0F', Transcription: '\uD83D\uDCDD', BackgroundRemoval: '\u2702\uFE0F'
     };
-    return map[p] ?? '🎨';
+    return map[p] ?? '\uD83C\uDFA8';
   }
 
   productLabel(p: string) {
     const map: Record<string, string> = {
-      ImageGen: 'Text to Image', ImageToVideo: 'Image to Video', TextToVideo: 'Text to Video',
+      ImageGen: 'Text to Image', ImageToVideo: 'Image to Video', MotionControl: 'Motion Control', TextToVideo: 'Text to Video',
       Voice: 'Text to Audio', Transcription: 'Audio to Text', BackgroundRemoval: 'Image Studio'
     };
     return map[p] ?? p;
@@ -324,7 +325,7 @@ export class JobsComponent implements OnInit, OnDestroy {
 
   retryLink(job: JobDto): string {
     const map: Record<string, string> = {
-      ImageGen: '/text-to-image', ImageToVideo: '/image-to-video',
+      ImageGen: '/text-to-image', ImageToVideo: '/image-to-video', MotionControl: '/motion-control',
       TextToVideo: '/text-to-video', Voice: '/voice',
       Transcription: '/transcription', BackgroundRemoval: '/background-removal'
     };
@@ -333,7 +334,7 @@ export class JobsComponent implements OnInit, OnDestroy {
 
   downloadName(job: JobDto): string {
     const ext: Record<string, string> = {
-      ImageGen: 'png', ImageToVideo: 'mp4', TextToVideo: 'mp4',
+      ImageGen: 'png', ImageToVideo: 'mp4', MotionControl: 'mp4', TextToVideo: 'mp4',
       Voice: 'mp3', Transcription: 'txt', BackgroundRemoval: 'png'
     };
     return `aimedia-${job.product.toLowerCase()}.${ext[job.product] ?? 'bin'}`;
@@ -451,3 +452,5 @@ export class JobsComponent implements OnInit, OnDestroy {
     }
   }
 }
+
+

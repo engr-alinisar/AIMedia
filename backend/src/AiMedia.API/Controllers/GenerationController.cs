@@ -2,6 +2,7 @@ using System.Security.Claims;
 using AiMedia.Application.Commands.GenerateBackgroundRemoval;
 using AiMedia.Application.Commands.GenerateImage;
 using AiMedia.Application.Commands.GenerateImageToVideo;
+using AiMedia.Application.Commands.GenerateMotionControl;
 using AiMedia.Application.Commands.GenerateTextToVideo;
 using AiMedia.Application.Commands.GenerateTranscription;
 using AiMedia.Application.Commands.GenerateVoice;
@@ -63,6 +64,24 @@ public class GenerationController : ControllerBase
             request.Resolution, request.MultiShot, request.GenerateAudio, request.Zone,
             request.NegativePrompt, request.CfgScale, request.MultiPrompts, request.PromptOptimizer,
             request.Seed, request.AutoFix), ct);
+        return Accepted(result);
+    }
+
+    [HttpPost("motion-control")]
+    public async Task<IActionResult> MotionControl([FromBody] GenerateMotionControlRequest request, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GenerateMotionControlCommand(
+            GetUserId(),
+            request.ImageUrl,
+            request.VideoUrl,
+            request.Prompt,
+            request.ModelId,
+            request.DurationSeconds,
+            request.IsPublic,
+            request.Zone,
+            request.KeepOriginalSound,
+            request.CharacterOrientation,
+            request.ElementImageUrl), ct);
         return Accepted(result);
     }
 
@@ -210,6 +229,18 @@ public record GenerateTextToVideoRequest(
     bool PromptOptimizer = true,
     int? Seed = null,
     bool AutoFix = false);
+
+public record GenerateMotionControlRequest(
+    string ImageUrl,
+    string VideoUrl,
+    string Prompt,
+    string ModelId = "fal-ai/kling-video/v2.6/standard/motion-control",
+    int DurationSeconds = 5,
+    bool IsPublic = true,
+    string? Zone = null,
+    bool KeepOriginalSound = true,
+    string CharacterOrientation = "video",
+    string? ElementImageUrl = null);
 
 public record GenerateVoiceRequest(
     string Text,

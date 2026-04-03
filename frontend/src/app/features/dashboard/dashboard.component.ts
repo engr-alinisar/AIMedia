@@ -98,21 +98,38 @@ export class DashboardComponent implements OnInit {
   name = () => this.auth.user()?.fullName ?? this.auth.user()?.email?.split('@')[0] ?? 'there';
 
   quickActions = [
-    { icon: '🖼️', label: 'Text to Image', route: '/text-to-image', product: 'ImageGen', fallbackCost: 'From 10 credits' },
-    { icon: '🎬', label: 'Image to Video', route: '/image-to-video', product: 'ImageToVideo', fallbackCost: 'From 42 credits' },
-    { icon: '🎥', label: 'Text to Video', route: '/text-to-video', product: 'TextToVideo', fallbackCost: 'From 25 credits' },
-    { icon: '🎙️', label: 'Text to Audio', route: '/voice', product: 'Voice', fallbackCost: 'From 4 credits' },
-    { icon: '📝', label: 'Audio to Text', route: '/transcription', product: 'Transcription', fallbackCost: 'From 1 credit' },
-    { icon: '✂️', label: 'Remove BG', route: '/background-removal', product: 'BackgroundRemoval', fallbackCost: 'From 4 credits' },
+    { icon: '\uD83D\uDDBC\uFE0F', label: 'Text to Image', route: '/text-to-image', product: 'ImageGen', fallbackCost: 'From 10 credits' },
+    { icon: '\uD83C\uDFAC', label: 'Image to Video', route: '/image-to-video', product: 'ImageToVideo', fallbackCost: 'From 42 credits' },
+    { icon: '\uD83C\uDF9E\uFE0F', label: 'Motion Control', route: '/motion-control', product: 'MotionControl', fallbackCost: 'From 55 credits' },
+    { icon: '\uD83C\uDFA5', label: 'Text to Video', route: '/text-to-video', product: 'TextToVideo', fallbackCost: 'From 25 credits' },
+    { icon: '\uD83C\uDF99\uFE0F', label: 'Text to Audio', route: '/voice', product: 'Voice', fallbackCost: 'From 4 credits' },
+    { icon: '\uD83D\uDCDD', label: 'Audio to Text', route: '/transcription', product: 'Transcription', fallbackCost: 'From 1 credit' },
+    { icon: '\u2702\uFE0F', label: 'Remove BG', route: '/background-removal', product: 'BackgroundRemoval', fallbackCost: 'From 4 credits' },
   ];
 
   productIcon(p: string) {
-    const map: Record<string, string> = { ImageGen: '🖼️', ImageToVideo: '🎬', TextToVideo: '🎥', Voice: '🎙️', Transcription: '📝', BackgroundRemoval: '✂️' };
-    return map[p] ?? '🎨';
+    const map: Record<string, string> = {
+      ImageGen: '\uD83D\uDDBC\uFE0F',
+      ImageToVideo: '\uD83C\uDFAC',
+      MotionControl: '\uD83C\uDF9E\uFE0F',
+      TextToVideo: '\uD83C\uDFA5',
+      Voice: '\uD83C\uDF99\uFE0F',
+      Transcription: '\uD83D\uDCDD',
+      BackgroundRemoval: '\u2702\uFE0F'
+    };
+    return map[p] ?? '\uD83C\uDFA8';
   }
 
   productLabel(p: string) {
-    const map: Record<string, string> = { ImageGen: 'Text to Image', ImageToVideo: 'Image to Video', TextToVideo: 'Text to Video', Voice: 'Text to Audio', Transcription: 'Audio to Text', BackgroundRemoval: 'Image Studio' };
+    const map: Record<string, string> = {
+      ImageGen: 'Text to Image',
+      ImageToVideo: 'Image to Video',
+      MotionControl: 'Motion Control',
+      TextToVideo: 'Text to Video',
+      Voice: 'Text to Audio',
+      Transcription: 'Audio to Text',
+      BackgroundRemoval: 'Image Studio'
+    };
     return map[p] ?? p;
   }
 
@@ -142,6 +159,7 @@ export class DashboardComponent implements OnInit {
     const map: Record<string, string[]> = {
       ImageGen: ['fal-ai/flux/schnell', 'fal-ai/flux-pro/v1.1', 'fal-ai/flux-2-pro', 'fal-ai/nano-banana', 'fal-ai/nano-banana-2', 'fal-ai/nano-banana-pro', 'fal-ai/imagen3/fast', 'fal-ai/imagen4/preview', 'fal-ai/bytedance/seedream/v4/text-to-image', 'fal-ai/bytedance/seedream/v5/lite/text-to-image', 'fal-ai/ideogram/v2', 'fal-ai/ideogram/v3'],
       ImageToVideo: ['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/kling-video/o3/standard/image-to-video', 'fal-ai/kling-video/v2.6/pro/image-to-video', 'fal-ai/kling-video/v2.5-turbo/pro/image-to-video', 'fal-ai/minimax/hailuo-2.3/pro/image-to-video', 'fal-ai/minimax/hailuo-02/standard/image-to-video', 'fal-ai/veo3.1/image-to-video', 'fal-ai/veo3.1/fast/first-last-frame-to-video', 'fal-ai/veo3/fast', 'fal-ai/veo3/image-to-video'],
+      MotionControl: ['fal-ai/kling-video/v2.6/standard/motion-control', 'fal-ai/kling-video/v3/pro/motion-control'],
       TextToVideo: ['fal-ai/kling-video/v3/pro/text-to-video', 'fal-ai/kling-video/o3/pro/text-to-video', 'fal-ai/kling-video/v2.6/pro/text-to-video', 'fal-ai/kling-video/v2.5-turbo/pro/text-to-video', 'fal-ai/minimax/hailuo-2.3/pro/text-to-video', 'fal-ai/minimax/hailuo-02/standard/text-to-video', 'fal-ai/veo3.1', 'fal-ai/veo3.1/fast', 'fal-ai/veo3'],
       Voice: ['fal-ai/kokoro/american-english', 'fal-ai/kokoro/british-english', 'fal-ai/kokoro/spanish', 'fal-ai/kokoro/french', 'fal-ai/kokoro/japanese', 'fal-ai/kokoro/brazilian-portuguese', 'fal-ai/kokoro/hindi', 'fal-ai/kokoro/mandarin-chinese', 'fal-ai/kokoro/italian', 'fal-ai/elevenlabs/tts/eleven-v3', 'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/elevenlabs/tts/multilingual-v2', 'fal-ai/minimax/speech-2.8-hd', 'fal-ai/f5-tts'],
       Transcription: ['fal-ai/whisper', 'fal-ai/wizper', 'fal-ai/elevenlabs/speech-to-text/scribe-v2', 'fal-ai/elevenlabs/speech-to-text'],
@@ -164,3 +182,5 @@ export class DashboardComponent implements OnInit {
     return null;
   }
 }
+
+

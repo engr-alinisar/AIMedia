@@ -130,7 +130,7 @@ import type { ExploreItemDto } from '../../core/models/models';
 <section class="py-16 bg-white">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="text-center mb-10">
-      <p class="text-sm font-semibold uppercase tracking-widest mb-2" style="color:#7c3aed;">6 AI Tools</p>
+      <p class="text-sm font-semibold uppercase tracking-widest mb-2" style="color:#7c3aed;">7 AI Tools</p>
       <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900">What do you want to create?</h2>
     </div>
 
@@ -345,7 +345,7 @@ export class LandingComponent implements OnInit {
 
   tools = [
     {
-      icon: '🖼️',
+      icon: '\uD83D\uDDBC\uFE0F',
       title: 'Text to Image',
       description: 'Turn text prompts into stunning, high-quality images using state-of-the-art diffusion models.',
       route: '/text-to-image',
@@ -357,9 +357,9 @@ export class LandingComponent implements OnInit {
       textColor: '#7c3aed',
     },
     {
-      icon: '🎬',
+      icon: '\uD83C\uDFAC',
       title: 'Image to Video',
-      description: 'Animate any image into a dynamic, fluid video clip — bring your photos to life.',
+      description: 'Animate any image into a dynamic, fluid video clip � bring your photos to life.',
       route: '/image-to-video',
       product: 'ImageToVideo',
       modelIds: ['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/kling-video/o3/standard/image-to-video', 'fal-ai/kling-video/v2.6/pro/image-to-video', 'fal-ai/kling-video/v2.5-turbo/pro/image-to-video', 'fal-ai/minimax/hailuo-2.3/pro/image-to-video', 'fal-ai/minimax/hailuo-02/standard/image-to-video', 'fal-ai/veo3.1/image-to-video', 'fal-ai/veo3.1/fast/first-last-frame-to-video', 'fal-ai/veo3/fast', 'fal-ai/veo3/image-to-video'],
@@ -369,9 +369,21 @@ export class LandingComponent implements OnInit {
       textColor: '#dc2626',
     },
     {
-      icon: '🎥',
+      icon: '\uD83D\uDDBC\uFE0F',
+      title: 'Motion Control',
+      description: 'Transfer motion from a reference video onto a character and look from your reference image.',
+      route: '/motion-control',
+      product: 'MotionControl',
+      modelIds: ['fal-ai/kling-video/v2.6/standard/motion-control', 'fal-ai/kling-video/v3/pro/motion-control'],
+      fallbackPrice: 'from 55 credits',
+      color: 'linear-gradient(90deg, #8B5CF6, #6D28D9)',
+      bgColor: '#f5f3ff',
+      textColor: '#7c3aed',
+    },
+    {
+      icon: '\uD83C\uDFAC',
       title: 'Text to Video',
-      description: 'Generate cinematic videos directly from text descriptions — no footage required.',
+      description: 'Generate cinematic videos directly from text descriptions � no footage required.',
       route: '/text-to-video',
       product: 'TextToVideo',
       modelIds: ['fal-ai/kling-video/v3/pro/text-to-video', 'fal-ai/kling-video/o3/pro/text-to-video', 'fal-ai/kling-video/v2.6/pro/text-to-video', 'fal-ai/kling-video/v2.5-turbo/pro/text-to-video', 'fal-ai/minimax/hailuo-2.3/pro/text-to-video', 'fal-ai/minimax/hailuo-02/standard/text-to-video', 'fal-ai/veo3.1', 'fal-ai/veo3.1/fast', 'fal-ai/veo3'],
@@ -381,7 +393,7 @@ export class LandingComponent implements OnInit {
       textColor: '#ea580c',
     },
     {
-      icon: '🎙️',
+      icon: '\uD83D\uDDBC\uFE0F',
       title: 'Text to Audio',
       description: 'Convert text to natural, expressive speech with realistic AI voices.',
       route: '/voice',
@@ -393,7 +405,7 @@ export class LandingComponent implements OnInit {
       textColor: '#059669',
     },
     {
-      icon: '📝',
+      icon: '\uD83C\uDFAC',
       title: 'Audio to Text',
       description: 'Transcribe any audio or video file to accurate, formatted text instantly.',
       route: '/transcription',
@@ -405,7 +417,7 @@ export class LandingComponent implements OnInit {
       textColor: '#2563eb',
     },
     {
-      icon: '✂️',
+      icon: '\uD83C\uDFAC',
       title: 'Image Studio',
       description: 'Remove backgrounds from images in one click with pixel-perfect AI precision.',
       route: '/background-removal',
@@ -434,7 +446,7 @@ export class LandingComponent implements OnInit {
   }
 
   isVideoItem(item: ExploreItemDto): boolean {
-    return item.product === 'ImageToVideo' || item.product === 'TextToVideo';
+    return item.product === 'ImageToVideo' || item.product === 'MotionControl' || item.product === 'TextToVideo';
   }
 
   isAudioItem(item: ExploreItemDto): boolean {
@@ -447,7 +459,7 @@ export class LandingComponent implements OnInit {
 
   getProductLabel(product: string): string {
     const labels: Record<string, string> = {
-      ImageGen: 'Image', ImageToVideo: 'Img→Video', TextToVideo: 'Text→Video',
+      ImageGen: 'Image', ImageToVideo: 'Img -> Video', MotionControl: 'Motion', TextToVideo: 'Text -> Video',
       Voice: 'Voice', Transcription: 'Transcript', BackgroundRemoval: 'BG Removal',
     };
     return labels[product] ?? product;
@@ -455,7 +467,7 @@ export class LandingComponent implements OnInit {
 
   getProductColor(product: string): string {
     const colors: Record<string, string> = {
-      ImageGen: '#7C3AED', ImageToVideo: '#EF4444', TextToVideo: '#F97316',
+      ImageGen: '#7C3AED', ImageToVideo: '#EF4444', MotionControl: '#7C3AED', TextToVideo: '#F97316',
       Voice: '#059669', Transcription: '#2563EB', BackgroundRemoval: '#0891B2',
     };
     return colors[product] ?? '#6B7280';
@@ -498,3 +510,7 @@ export class LandingComponent implements OnInit {
     return null;
   }
 }
+
+
+
+

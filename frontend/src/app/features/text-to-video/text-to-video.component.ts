@@ -16,6 +16,7 @@ import { AspectRatioPickerComponent, type AspectRatio,
 import { DurationPickerComponent } from '../../shared/components/duration-picker/duration-picker.component';
 import { ResolutionPickerComponent } from '../../shared/components/resolution-picker/resolution-picker.component';
 import { ModelPickerComponent, type PickerGroup, type PickerModel } from '../../shared/components/model-picker/model-picker.component';
+import { AdvancedOptionsPanelComponent } from '../../shared/components/advanced-options-panel/advanced-options-panel.component';
 
 interface TtvModel {
   id: string;
@@ -59,7 +60,7 @@ interface TtvGroup {
   selector: 'app-text-to-video',
   standalone: true,
   imports: [CommonModule, FormsModule, MediaPreviewComponent, JobStatusComponent,
-            AspectRatioPickerComponent, DurationPickerComponent, ResolutionPickerComponent, ModelPickerComponent],
+            AspectRatioPickerComponent, DurationPickerComponent, ResolutionPickerComponent, ModelPickerComponent, AdvancedOptionsPanelComponent],
   template: `
 <div class="flex flex-col lg:flex-row lg:h-full">
   <div class="w-full lg:w-[420px] lg:flex-shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-white flex flex-col">
@@ -189,16 +190,10 @@ interface TtvGroup {
 
       <!-- Advanced Options -->
       @if (selectedModel()?.supportsNegativePrompt || selectedModel()?.supportsCfgScale || selectedModel()?.supportsPromptOptimizer || selectedModel()?.supportsSeed || selectedModel()?.supportsAutoFix) {
-        <button type="button" (click)="showAdvanced.update(v => !v)"
-                class="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors">
-          <svg class="w-3.5 h-3.5 transition-transform" [class.rotate-90]="showAdvanced()"
-               fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-          </svg>
-          Advanced Options
-        </button>
-        @if (showAdvanced()) {
-          <div class="space-y-4 pl-1">
+        <app-advanced-options-panel
+          [subtitle]="(selectedModel()?.name ?? 'Model') + ' video controls'"
+          [open]="showAdvanced()"
+          (openChange)="showAdvanced.set($event)">
             @if (selectedModel()?.supportsNegativePrompt) {
               <div>
                 <label class="form-label">Negative Prompt <span class="text-gray-400 font-normal">(optional)</span></label>
@@ -258,8 +253,7 @@ interface TtvGroup {
                 </button>
               </div>
             }
-          </div>
-        }
+        </app-advanced-options-panel>
       }
 
       @if (errorMsg()) {

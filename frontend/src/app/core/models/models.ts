@@ -1,6 +1,6 @@
 export type ModelTier = 'Free' | 'Standard' | 'Premium';
 export type JobStatus = 'Queued' | 'Processing' | 'Completed' | 'Failed' | 'Cancelled';
-export type ProductType = 'ImageGen' | 'ImageToVideo' | 'TextToVideo' | 'Voice' | 'Transcription' | 'BackgroundRemoval';
+export type ProductType = 'ImageGen' | 'ImageToVideo' | 'MotionControl' | 'TextToVideo' | 'Voice' | 'Transcription' | 'BackgroundRemoval';
 export type SubscriptionPlan = 'Free' | 'Starter' | 'Creator' | 'Pro';
 
 export interface User {
@@ -123,6 +123,7 @@ export interface ExploreItemDto {
 export const CREDIT_COSTS: Record<ProductType, Record<ModelTier, number>> = {
   ImageGen:          { Free: 5,  Standard: 8,  Premium: 11 },
   ImageToVideo:      { Free: 5,  Standard: 18, Premium: 30 }, // per second
+  MotionControl:     { Free: 5,  Standard: 18, Premium: 30 }, // per second
   TextToVideo:       { Free: 5,  Standard: 18, Premium: 30 }, // per second
   Voice:             { Free: 4,  Standard: 18, Premium: 18 },
   Transcription:     { Free: 10, Standard: 10, Premium: 18 },
@@ -131,6 +132,6 @@ export const CREDIT_COSTS: Record<ProductType, Record<ModelTier, number>> = {
 
 export function estimateCredits(product: ProductType, tier: ModelTier, duration = 5): number {
   const base = CREDIT_COSTS[product]?.[tier] ?? 0;
-  if (product === 'ImageToVideo' || product === 'TextToVideo') return base * duration;
+  if (product === 'ImageToVideo' || product === 'MotionControl' || product === 'TextToVideo') return base * duration;
   return base;
 }

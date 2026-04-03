@@ -335,6 +335,7 @@ export class PublicShellComponent implements OnInit, OnDestroy {
       category: 'Video AI',
       items: [
         { label: 'Image to Video', icon: '🎬', route: '/image-to-video', badge: 'HOT', badgeColor: '#EF4444' },
+        { label: 'Motion Control', icon: '\uD83C\uDF9E\uFE0F', route: '/motion-control', badge: 'NEW', badgeColor: '#7C3AED' },
         { label: 'Text to Video',  icon: '🎥', route: '/text-to-video' },
       ]
     },
@@ -399,3 +400,7 @@ export class PublicShellComponent implements OnInit, OnDestroy {
     document.removeEventListener('click', this.onDocumentClick);
   }
 }
+
+
+
+

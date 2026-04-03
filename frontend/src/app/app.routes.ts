@@ -18,6 +18,7 @@ export const routes: Routes = [
       { path: 'text-to-image',      loadComponent: () => import('./features/image-gen/image-gen.component').then(m => m.ImageGenComponent) },
       { path: 'image-gen',          redirectTo: 'text-to-image', pathMatch: 'full' },
       { path: 'image-to-video',     loadComponent: () => import('./features/image-to-video/image-to-video.component').then(m => m.ImageToVideoComponent) },
+      { path: 'motion-control',     loadComponent: () => import('./features/motion-control/motion-control.component').then(m => m.MotionControlComponent) },
       { path: 'text-to-video',      loadComponent: () => import('./features/text-to-video/text-to-video.component').then(m => m.TextToVideoComponent) },
       { path: 'voice',              loadComponent: () => import('./features/voice/voice.component').then(m => m.VoiceComponent) },
       { path: 'transcription',      loadComponent: () => import('./features/transcription/transcription.component').then(m => m.TranscriptionComponent) },
