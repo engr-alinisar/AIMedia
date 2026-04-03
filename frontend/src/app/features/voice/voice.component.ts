@@ -559,6 +559,7 @@ export class VoiceComponent implements OnInit, OnDestroy {
     if (qp['prompt']) this.text = qp['prompt'];
     this.textLength.set(this.text.length);
     if (qp['model']) this.selectModelById(qp['model']);
+    if (qp['outputUrl']) this.outputUrl.set(qp['outputUrl']);
   }
 
   onModelSelect(id: string) { this.selectModelById(id); }

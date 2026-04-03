@@ -427,6 +427,9 @@ export class ExploreComponent implements OnInit {
     if (item.outputUrl) queryParams['outputUrl'] = item.outputUrl;
     if (item.multiPrompts?.length) queryParams['multiPrompts'] = JSON.stringify(item.multiPrompts);
     if (item.inputImageUrl) queryParams['imageUrl'] = item.inputImageUrl;
+    if (item.inputVideoUrl) queryParams['videoUrl'] = item.inputVideoUrl;
+    const elementUrl = item.inputElements?.[0]?.imageUrl ?? item.inputElements?.[0]?.frontalImageUrl;
+    if (elementUrl) queryParams['elementUrl'] = elementUrl;
     if (item.inputElements?.length) queryParams['elements'] = JSON.stringify(item.inputElements);
     this.router.navigate([route], { queryParams });
   }

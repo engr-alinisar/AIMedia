@@ -763,6 +763,7 @@ export class ImageGenComponent implements OnInit, OnDestroy {
       const m = this.groups.flatMap(g => g.subModels).find(x => x.id === qp['model']);
       if (m) this.selectModel(m);
     }
+    if (qp['outputUrl']) this.outputUrl.set(qp['outputUrl']);
   }
 
   onModelSelect(id: string) {

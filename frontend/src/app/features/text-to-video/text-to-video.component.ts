@@ -642,10 +642,20 @@ export class TextToVideoComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.modelCatalog.loadAll();
     const qp = this.route.snapshot.queryParams;
-    if (qp['prompt']) this.prompt = qp['prompt'];
     if (qp['model']) {
       const m = this.allModels.find(x => x.id === qp['model']);
       if (m) this.selectModel(m);
+    }
+    if (qp['prompt']) this.prompt = qp['prompt'];
+    if (qp['multiPrompts']) {
+      try {
+        const segments: string[] = JSON.parse(qp['multiPrompts']);
+        if (segments.length > 0) {
+          this.multiPrompts.set(segments);
+          this.multiShot.set(true);
+          this.clampDuration();
+        }
+      } catch {}
     }
     if (qp['outputUrl']) this.outputUrl.set(qp['outputUrl']);
   }

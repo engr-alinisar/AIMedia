@@ -114,7 +114,8 @@ export interface ExploreItemDto {
   title?: string;
   multiPrompts?: string[];
   inputImageUrl?: string;
-  inputElements?: { frontalImageUrl?: string; referenceImageUrls?: string[] }[];
+  inputVideoUrl?: string;
+  inputElements?: { imageUrl?: string; frontalImageUrl?: string; referenceImageUrls?: string[] }[];
   ownerId?: string;
   isPublic?: boolean;
 }

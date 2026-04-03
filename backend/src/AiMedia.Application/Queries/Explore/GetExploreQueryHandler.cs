@@ -40,6 +40,7 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
             List<string>? multiPrompts = null;
 
             string? inputImageUrl = null;
+            string? inputVideoUrl = null;
             List<ExploreElementDto>? inputElements = null;
             if (j.FalInput != null)
             {
@@ -75,12 +76,22 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
                         }
                     }
 
+                    foreach (var key in new[] { "video_url", "reference_video_url" })
+                    {
+                        if (root.TryGetProperty(key, out var videoProp))
+                        {
+                            inputVideoUrl = videoProp.GetString();
+                            break;
+                        }
+                    }
+
                     // Extract Kling elements (frontal + reference images)
                     if (root.TryGetProperty("elements", out var elsProp) && elsProp.ValueKind == JsonValueKind.Array)
                     {
                         inputElements = new List<ExploreElementDto>();
                         foreach (var el in elsProp.EnumerateArray())
                         {
+                            var imageUrl = el.TryGetProperty("image_url", out var ip) ? ip.GetString() : null;
                             var frontal = el.TryGetProperty("frontal_image_url", out var fp) ? fp.GetString() : null;
                             List<string>? refs = null;
                             if (el.TryGetProperty("reference_image_urls", out var rp) && rp.ValueKind == JsonValueKind.Array)
@@ -91,8 +102,8 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
                                     .Select(r => r!)
                                     .ToList();
                             }
-                            if (frontal != null)
-                                inputElements.Add(new ExploreElementDto(frontal, refs));
+                            if (imageUrl != null || frontal != null || refs?.Count > 0)
+                                inputElements.Add(new ExploreElementDto(imageUrl, frontal, refs));
                         }
                         if (inputElements.Count == 0) inputElements = null;
                     }
@@ -121,6 +132,7 @@ public class GetExploreQueryHandler(IAppDbContext db, IStorageService storage) :
                 j.Title,
                 multiPrompts,
                 inputImageUrl,
+                inputVideoUrl,
                 inputElements,
                 j.UserId,
                 j.IsPublic

@@ -344,6 +344,22 @@ export class BackgroundRemovalComponent implements OnInit, OnDestroy {
     this.startPolling();
     this.route.queryParams.subscribe(p => {
       if (p['model']) this.selectModelById(p['model']);
+      if (p['prompt']) this.prompt = p['prompt'];
+      if (p['imageUrl']) {
+        this.previewSrc.set(p['imageUrl']);
+        this.fileName.set('Explore reference');
+      }
+      if (p['outputUrl']) {
+        const model = this.selectedModel();
+        this.jobs.set([{
+          id: 'explore-preview',
+          status: 'Completed',
+          outputUrl: p['outputUrl'],
+          errorMessage: null,
+          modelName: model?.name ?? 'Image Studio',
+          creditsReserved: model?.credits ?? 0
+        }]);
+      }
     });
   }
 

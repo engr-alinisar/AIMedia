@@ -385,6 +385,12 @@ export class TranscriptionComponent implements OnInit, OnDestroy {
       const m = this.allModels().find(x => x.id === qp['model']);
       if (m) this.selectModel(m);
     }
+    if (qp['outputUrl']) {
+      fetch(qp['outputUrl'])
+        .then(r => r.text())
+        .then(text => this.transcript.set(text))
+        .catch(() => this.transcript.set('(could not load transcript)'));
+    }
   }
 
   onModelSelect(id: string) {

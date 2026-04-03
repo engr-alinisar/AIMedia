@@ -321,10 +321,13 @@ export class MotionControlComponent implements OnInit, OnDestroy {
   showAdvanced = signal(false);
 
   imageFile = signal<File | null>(null);
+  imageSourceUrl = signal('');
   imagePreview = signal('');
   videoFile = signal<File | null>(null);
+  videoSourceUrl = signal('');
   videoPreview = signal('');
   elementFile = signal<File | null>(null);
+  elementSourceUrl = signal('');
   elementPreview = signal('');
 
   videoDurationSeconds = signal<number | null>(null);
@@ -355,8 +358,8 @@ export class MotionControlComponent implements OnInit, OnDestroy {
 
   canGenerate = computed(() =>
     !!this.selectedModel() &&
-    !!this.imageFile() &&
-    !!this.videoFile() &&
+    (!!this.imageFile() || !!this.imageSourceUrl()) &&
+    (!!this.videoFile() || !!this.videoSourceUrl()) &&
     !!this.prompt().trim() &&
     !!this.videoDurationSeconds() &&
     this.videoDurationSeconds()! <= this.maxAllowedDuration() &&
@@ -373,6 +376,21 @@ export class MotionControlComponent implements OnInit, OnDestroy {
       const match = this.models.find(m => m.id === qp['model']);
       if (match) this.selectModel(match);
     }
+    if (qp['prompt']) this.prompt.set(qp['prompt']);
+    if (qp['imageUrl']) {
+      this.imageSourceUrl.set(qp['imageUrl']);
+      this.imagePreview.set(qp['imageUrl']);
+    }
+    if (qp['videoUrl']) {
+      this.videoSourceUrl.set(qp['videoUrl']);
+      this.videoPreview.set(qp['videoUrl']);
+      void this.loadRemoteVideoUrl(qp['videoUrl']);
+    }
+    if (qp['elementUrl']) {
+      this.elementSourceUrl.set(qp['elementUrl']);
+      this.elementPreview.set(qp['elementUrl']);
+    }
+    if (qp['outputUrl']) this.outputUrl.set(qp['outputUrl']);
   }
 
   onModelSelect(id: string) {
@@ -385,6 +403,7 @@ export class MotionControlComponent implements OnInit, OnDestroy {
     this.showAdvanced.set(false);
     if (!model.supportsElementBinding) {
       this.elementFile.set(null);
+      this.elementSourceUrl.set('');
       this.elementPreview.set('');
     }
   }
@@ -393,6 +412,7 @@ export class MotionControlComponent implements OnInit, OnDestroy {
     this.characterOrientation.set(value);
     if (value !== 'video') {
       this.elementFile.set(null);
+      this.elementSourceUrl.set('');
       this.elementPreview.set('');
     }
 
@@ -430,6 +450,7 @@ export class MotionControlComponent implements OnInit, OnDestroy {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
     this.elementFile.set(file);
+    this.elementSourceUrl.set('');
     this.loadPreview(file, this.elementPreview);
   }
 
@@ -448,17 +469,32 @@ export class MotionControlComponent implements OnInit, OnDestroy {
     this.outputUrl.set(undefined);
     this.errorMsg.set(undefined);
 
-    this.gen.uploadFile(this.imageFile()!).subscribe({
-      next: imageRes => {
-        this.gen.uploadVideo(this.videoFile()!).subscribe({
-          next: videoRes => {
-            this.submitJob(imageRes.url, videoRes.url);
-          },
+    const imageFile = this.imageFile();
+    const videoFile = this.videoFile();
+    const restoredImageUrl = this.imageSourceUrl();
+    const restoredVideoUrl = this.videoSourceUrl();
+
+    const continueWithImage = (imageUrl: string) => {
+      if (videoFile) {
+        this.gen.uploadVideo(videoFile).subscribe({
+          next: videoRes => this.submitJob(imageUrl, videoRes.url),
           error: err => this.handleSubmitError(err, 'Reference video upload failed.')
         });
-      },
-      error: err => this.handleSubmitError(err, 'Reference image upload failed.')
-    });
+        return;
+      }
+
+      this.submitJob(imageUrl, restoredVideoUrl);
+    };
+
+    if (imageFile) {
+      this.gen.uploadFile(imageFile).subscribe({
+        next: imageRes => continueWithImage(imageRes.url),
+        error: err => this.handleSubmitError(err, 'Reference image upload failed.')
+      });
+      return;
+    }
+
+    continueWithImage(restoredImageUrl);
   }
 
   private submitJob(imageUrl: string, videoUrl: string) {
@@ -486,6 +522,7 @@ export class MotionControlComponent implements OnInit, OnDestroy {
       });
     };
 
+    const restoredElementUrl = this.elementSourceUrl();
     if (this.selectedModel()?.supportsElementBinding && this.characterOrientation() === 'video' && this.elementFile()) {
       this.gen.uploadFile(this.elementFile()!).subscribe({
         next: elementRes => submit(elementRes.url),
@@ -494,7 +531,7 @@ export class MotionControlComponent implements OnInit, OnDestroy {
       return;
     }
 
-    submit(undefined);
+    submit(restoredElementUrl || undefined);
   }
 
   private startFallback() {
@@ -539,11 +576,18 @@ export class MotionControlComponent implements OnInit, OnDestroy {
 
   private loadImageFile(file: File) {
     this.imageFile.set(file);
+    this.imageSourceUrl.set('');
     this.loadPreview(file, this.imagePreview);
   }
 
   private async loadVideoFile(file: File) {
+    const previousPreview = this.videoPreview();
+    if (previousPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(previousPreview);
+    }
+
     this.videoFile.set(file);
+    this.videoSourceUrl.set('');
     this.videoPreview.set(URL.createObjectURL(file));
 
     try {
@@ -553,6 +597,24 @@ export class MotionControlComponent implements OnInit, OnDestroy {
       if (rounded > this.maxAllowedDuration()) {
         this.errorMsg.set(`This orientation supports a maximum ${this.maxAllowedDuration()}s reference video.`);
       } else if (this.errorMsg()?.includes('maximum')) {
+        this.errorMsg.set(undefined);
+      }
+    } catch {
+      this.videoDurationSeconds.set(null);
+      this.errorMsg.set('Could not read the reference video duration.');
+    }
+  }
+
+  private async loadRemoteVideoUrl(url: string) {
+    this.videoFile.set(null);
+
+    try {
+      const duration = await this.readVideoDurationFromUrl(url);
+      const rounded = Math.max(1, Math.round(duration));
+      this.videoDurationSeconds.set(rounded);
+      if (rounded > this.maxAllowedDuration()) {
+        this.errorMsg.set(`This orientation supports a maximum ${this.maxAllowedDuration()}s reference video.`);
+      } else if (this.errorMsg()?.includes('maximum') || this.errorMsg() === 'Could not read the reference video duration.') {
         this.errorMsg.set(undefined);
       }
     } catch {
@@ -581,6 +643,16 @@ export class MotionControlComponent implements OnInit, OnDestroy {
         URL.revokeObjectURL(objectUrl);
         reject(new Error('Failed to read video duration.'));
       };
+    });
+  }
+
+  private readVideoDurationFromUrl(url: string): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.src = url;
+      video.onloadedmetadata = () => resolve(video.duration);
+      video.onerror = () => reject(new Error('Failed to read video duration.'));
     });
   }
 
